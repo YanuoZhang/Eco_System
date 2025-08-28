@@ -1,12 +1,19 @@
 {
-  "name": "eco-system-tools",
+  "name": "eco-system",
   "private": true,
   "version": "0.1.0",
+  "workspaces": [
+    "ecopath-frontend",
+    "ecopath-backend"
+  ],
   "scripts": {
     "prepare": "husky",
-    "lint": "echo 'no source lint yet' && exit 0",
-    "test": "echo 'no tests yet' && exit 0",
-    "format:check": "echo 'no formatting in root' && exit 0"
+    "lint": "npm -ws run lint --if-present",
+    "format": "npm -ws run format --if-present",
+    "format:check": "npm -ws run format:check --if-present",
+    "build": "npm -ws run build --if-present",
+    "dev:front": "npm --workspace ecopath-frontend run dev",
+    "dev:back": "npm --workspace ecopath-backend run dev"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
