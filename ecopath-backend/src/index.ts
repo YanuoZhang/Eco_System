@@ -21,6 +21,5 @@ app.get("/api/environment", (_req, res) => {
 });
 
 app.listen(port, () => {
-  // eslint-disable-next-line no-console
   console.log(`API server listening on http://localhost:${port}`);
 });
