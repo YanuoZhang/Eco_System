@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch_name" = "main" ]; then
+  echo "[Husky] Direct pushes to 'main' are blocked. Please open a PR instead."
+  exit 1
+fi
+
+echo "[Husky] Root pre-push checks passed (no source in root)."

@@ -1,0 +1,22 @@
+{
+  "name": "eco-system-tools",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "prepare": "husky",
+    "lint": "echo 'no source lint yet' && exit 0",
+    "test": "echo 'no tests yet' && exit 0",
+    "format:check": "echo 'no formatting in root' && exit 0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "husky": "^9.0.0"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  }
+}
+
