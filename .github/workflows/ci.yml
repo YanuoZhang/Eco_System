@@ -12,14 +12,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
       - name: Install tools
         run: npm ci
-      - name: Commitlint PR title
+      - name: Commitlint check
         if: github.event_name == 'pull_request'
         run: |
-          npx --yes commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.sha }}
+          # Get the base branch (usually main) and current PR head
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          npx --yes commitlint --from origin/${{ github.event.pull_request.base.ref }} --to HEAD
+      - name: Commitlint check (push to main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # For pushes to main, check the last commit
+          npx --yes commitlint --from HEAD~1 --to HEAD
 
