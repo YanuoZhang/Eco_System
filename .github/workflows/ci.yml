@@ -32,6 +32,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Clean npm cache (frontend)
+        run: npm cache clean --force
       - name: Install frontend deps
         working-directory: ecopath-frontend
         run: npm ci
@@ -46,6 +48,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Clean npm cache (backend)
+        run: npm cache clean --force
       - name: Install backend deps
         working-directory: ecopath-backend
         run: npm ci
