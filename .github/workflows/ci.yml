@@ -20,10 +20,10 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}
-          npx --yes -p @commitlint/cli -p @commitlint/config-conventional commitlint --extends @commitlint/config-conventional --from origin/${{ github.event.pull_request.base.ref }} --to HEAD
+          npx --yes -p @commitlint/cli -p @commitlint/config-conventional commitlint -x @commitlint/config-conventional --from origin/${{ github.event.pull_request.base.ref }} --to HEAD
       - name: Commitlint (push main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: npx --yes -p @commitlint/cli -p @commitlint/config-conventional commitlint --extends @commitlint/config-conventional --from HEAD~1 --to HEAD
+        run: npx --yes -p @commitlint/cli -p @commitlint/config-conventional commitlint -x @commitlint/config-conventional --from HEAD~1 --to HEAD
 
   frontend-lint:
     runs-on: ubuntu-latest
