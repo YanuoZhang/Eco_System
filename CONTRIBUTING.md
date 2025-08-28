@@ -4,10 +4,6 @@
 - Direct commits and pushes to `main` are blocked by local hooks.
 - Please create feature branches from `main` and merge via Pull Request.
 
-## Commit Message
-- Use Conventional Commits: `type(scope): subject`
-  - Examples: `chore(ci): setup husky and commitlint`
-
 ## Commit Template
 ```
 <type>(<scope>): <subject>
