@@ -7,7 +7,7 @@
     "ecopath-backend"
   ],
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky || true",
     "lint": "npm -ws run lint --if-present",
     "format": "npm -ws run format --if-present",
     "format:check": "npm -ws run format:check --if-present",

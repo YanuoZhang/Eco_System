@@ -1,4 +1,0 @@
-# Ignore environment files and build outputs
-.env
-node_modules/
-dist/
