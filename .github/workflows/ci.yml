@@ -48,10 +48,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: ecopath-frontend/package-lock.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('ecopath-frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install frontend deps
         working-directory: ecopath-frontend
         run: npm ci
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers (if needed)
         working-directory: ecopath-frontend
         run: npx playwright install --with-deps
       - name: Run E2E tests
