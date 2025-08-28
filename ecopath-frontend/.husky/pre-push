@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch_name" = "main" ]; then
+  echo "[Husky] Direct pushes to 'main' are blocked. Please open a PR instead."
+  exit 1
+fi
+
+npm run lint || exit 1
+npm run type-check || exit 1
+npm run test || exit 1
