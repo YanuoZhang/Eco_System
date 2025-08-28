@@ -10,15 +10,13 @@ jobs:
   commitlint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install tools
+      - name: Install root tools
         run: npm ci
       - name: Commitlint (PR)
         if: github.event_name == 'pull_request'
@@ -27,8 +25,7 @@ jobs:
           npx --yes commitlint --from origin/${{ github.event.pull_request.base.ref }} --to HEAD
       - name: Commitlint (push main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          npx --yes commitlint --from HEAD~1 --to HEAD
+        run: npx --yes commitlint --from HEAD~1 --to HEAD
 
   frontend-lint:
     runs-on: ubuntu-latest
@@ -37,10 +34,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install workspace deps
-        run: npm ci --workspaces
+      - name: Install frontend deps
+        working-directory: ecopath-frontend
+        run: npm ci
       - name: Lint frontend
-        run: npm --workspace ecopath-frontend run lint
+        working-directory: ecopath-frontend
+        run: npm run lint
 
   backend-lint:
     runs-on: ubuntu-latest
@@ -49,8 +48,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install workspace deps
-        run: npm ci --workspaces
+      - name: Install backend deps
+        working-directory: ecopath-backend
+        run: npm ci
       - name: Lint backend
-        run: npm --workspace ecopath-backend run lint
+        working-directory: ecopath-backend
+        run: npm run lint
 
