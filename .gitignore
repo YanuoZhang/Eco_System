@@ -10,6 +10,10 @@
 **/.next/
 **/out/
 
+# Test artifacts
+**/coverage/
+**/test-results/
+
 # Env files (keep examples tracked)
 **/.env
 **/.env.local
@@ -25,5 +29,4 @@
 # Tooling
 **/*.tsbuildinfo
 **/.vercel/
-**/coverage/
 

@@ -7,4 +7,9 @@ if [ "$branch_name" = "main" ]; then
   exit 1
 fi
 
-echo "[Husky] Root pre-commit checks passed (no source in root)."
+# Run unit tests for frontend and backend before committing
+printf "[Husky] Running workspace unit tests...\n"
+npm --workspace ecopath-frontend run test || exit 1
+npm --workspace ecopath-backend run test || exit 1
+
+printf "[Husky] Pre-commit checks passed.\n"
