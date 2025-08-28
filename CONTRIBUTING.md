@@ -1,5 +1,7 @@
 # Contributing
 
+For end-to-end development workflow and team practices, see [`DEVELOPMENT_GUIDE.md`](./DEVELOPMENT_GUIDE.md).
+
 ## Branch Protection
 - Direct commits and pushes to `main` are blocked by local hooks.
 - Please create feature branches from `main` and merge via Pull Request.
