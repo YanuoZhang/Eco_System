@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import Home from "@/app/page";
 
 describe("Home page", () => {
-  it("renders Journey Homepage title", () => {
+  it("renders Environmental Journey title", () => {
     render(<Home />);
-    expect(screen.getByText(/Journey Homepage/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your Environmental Journey/i)).toBeInTheDocument();
   });
 });
