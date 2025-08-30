@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import EnergyMixChart, { EnergyMix } from './EnergyMixChart';
 import EmissionsChart, { EmissionData } from './EmissionsChart';
 import ClimateTargetSidebar from './ClimateTargetSidebar';
+import PageHeader from './PageHeader';
 import { useStateContext } from '@/contexts/StateContext';
 
 // Mock data for different states - in real app this would come from API
@@ -166,9 +167,10 @@ const STATE_EMISSIONS_DATA: Record<string, EmissionData[]> = {
 interface DataInsightProps {
   onNext?: () => void;
   onPrev?: () => void;
+  onBackToHomepage?: () => void;
 }
 
-export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
+export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataInsightProps) {
   const { selectedState } = useStateContext();
   const [energyData, setEnergyData] = useState<EnergyMix[]>(STATE_ENERGY_DATA['Victoria (VIC)']);
   const [emissionsData, setEmissionsData] = useState<EmissionData[]>(STATE_EMISSIONS_DATA['Victoria (VIC)']);
@@ -188,30 +190,16 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
       {/* Page Header */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-green-200/50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center">
-                <span className="text-3xl">📊</span>
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-green-800 mb-2">Data Insight Hub</h1>
-                <p className="text-green-600 text-lg">Comprehensive environmental data analysis for {selectedState.split(' ')[0]}</p>
-              </div>
-            </div>
-            
-            {/* Tool Badge */}
-            <div className="text-right">
-              <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full border border-blue-200 text-sm font-medium">
-                <span className="text-lg">🔍</span>
-                <span>Analytics Tool</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">State-wide environmental insights</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Data Insight Hub"
+        description={`Comprehensive environmental data analysis for ${selectedState.split(' ')[0]}`}
+        icon="📊"
+        gradientColors="from-green-500 to-blue-500"
+        onBackToHomepage={onBackToHomepage}
+        showToolBadge={true}
+        toolBadgeText="Analytics Tool"
+        toolBadgeDescription="State-wide environmental insights"
+      />
 
       {/* Feature Description */}
       <div className="bg-gradient-to-r from-green-50 to-blue-50 border-b border-green-200/50">
@@ -362,8 +350,9 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
           </div>
 
           {/* Navigation */}
-          {(onNext || onPrev) && (
-            <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              {/* Previous Step Button */}
               {onPrev && (
                 <button
                   onClick={onPrev}
@@ -373,24 +362,25 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
                   <span>Previous Step</span>
                 </button>
               )}
-
-              <div className="text-center">
-                <p className="text-green-600 text-sm mb-2">
-                  Explore environmental data for {selectedState.split(' ')[0]}
-                </p>
-              </div>
-
-              {onNext && (
-                <button
-                  onClick={onNext}
-                  className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 cursor-pointer whitespace-nowrap shadow-lg"
-                >
-                  <span>Next Journey</span>
-                  <span>→</span>
-                </button>
-              )}
             </div>
-          )}
+
+            <div className="text-center">
+              <p className="text-green-600 text-sm mb-2">
+                Explore environmental data for {selectedState.split(' ')[0]}
+              </p>
+            </div>
+
+            {/* Next Step Button */}
+            {onNext && (
+              <button
+                onClick={onNext}
+                className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 cursor-pointer whitespace-nowrap shadow-lg"
+              >
+                <span>Next Journey</span>
+                <span>→</span>
+              </button>
+            )}
+          </div>
         </div>
       </main>
     </div>

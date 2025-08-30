@@ -70,9 +70,9 @@ export default function Home() {
       case 1:
         return <JourneyWelcome onNext={nextStep} />;
       case 2:
-        return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} />;
+        return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} onBackToHomepage={() => setCurrentStep(1)} />;
       case 3:
-        return <FootprintCalculator onPrev={prevStep} />;
+        return <FootprintCalculator onPrev={prevStep} onBackToHomepage={() => setCurrentStep(1)} />;
       default:
         return null;
     }
