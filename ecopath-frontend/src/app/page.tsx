@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import HeroSection from '@/components/HeroSection';
 import JourneyWelcome from '@/components/JourneyWelcome';
+import DataInsight from '@/components/DataInsight';
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -39,32 +40,7 @@ export default function Home() {
       case 1:
         return <JourneyWelcome onNext={nextStep} />;
       case 2:
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-green-800 mb-4">
-                🌍 Environmental Data Insights
-              </h1>
-              <p className="text-xl text-green-700 mb-8 max-w-3xl mx-auto">
-                Explore environmental data around you, understand air quality, carbon emissions and sustainable development opportunities
-              </p>
-              <div className="space-x-4">
-                <button
-                  onClick={prevStep}
-                  className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors"
-                >
-                  ← Previous Step
-                </button>
-                <button
-                  onClick={() => setCurrentStep(1)}
-                  className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
-                >
-                  Start Over
-                </button>
-              </div>
-            </div>
-          </div>
-        );
+        return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} />;
       default:
         return null;
     }
