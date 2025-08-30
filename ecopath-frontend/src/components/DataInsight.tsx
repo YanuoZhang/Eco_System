@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import EnergyMixChart, { EnergyMix } from './EnergyMixChart';
+import EmissionsChart, { EmissionData } from './EmissionsChart';
 import { useStateContext } from '@/contexts/StateContext';
 
 // Mock data for different states - in real app this would come from API
@@ -61,6 +62,106 @@ const STATE_ENERGY_DATA: Record<string, EnergyMix[]> = {
   ]
 };
 
+// Mock emissions data for different states
+const STATE_EMISSIONS_DATA: Record<string, EmissionData[]> = {
+  'Victoria (VIC)': [
+    { year: 2014, value: 48.2 },
+    { year: 2015, value: 47.8 },
+    { year: 2016, value: 47.1 },
+    { year: 2017, value: 46.5 },
+    { year: 2018, value: 45.9 },
+    { year: 2019, value: 45.2 },
+    { year: 2020, value: 44.1 },
+    { year: 2021, value: 43.5 },
+    { year: 2022, value: 43.1 },
+    { year: 2023, value: 42.7 }
+  ],
+  'New South Wales (NSW)': [
+    { year: 2014, value: 52.8 },
+    { year: 2015, value: 52.1 },
+    { year: 2016, value: 51.5 },
+    { year: 2017, value: 50.9 },
+    { year: 2018, value: 50.2 },
+    { year: 2019, value: 49.8 },
+    { year: 2020, value: 48.9 },
+    { year: 2021, value: 48.3 },
+    { year: 2022, value: 47.8 },
+    { year: 2023, value: 47.2 }
+  ],
+  'Queensland (QLD)': [
+    { year: 2014, value: 58.9 },
+    { year: 2015, value: 58.2 },
+    { year: 2016, value: 57.8 },
+    { year: 2017, value: 57.1 },
+    { year: 2018, value: 56.5 },
+    { year: 2019, value: 55.9 },
+    { year: 2020, value: 55.2 },
+    { year: 2021, value: 54.8 },
+    { year: 2022, value: 54.1 },
+    { year: 2023, value: 53.7 }
+  ],
+  'Western Australia (WA)': [
+    { year: 2014, value: 35.2 },
+    { year: 2015, value: 34.8 },
+    { year: 2016, value: 34.1 },
+    { year: 2017, value: 33.5 },
+    { year: 2018, value: 32.9 },
+    { year: 2019, value: 32.2 },
+    { year: 2020, value: 31.8 },
+    { year: 2021, value: 31.1 },
+    { year: 2022, value: 30.5 },
+    { year: 2023, value: 29.9 }
+  ],
+  'South Australia (SA)': [
+    { year: 2014, value: 28.5 },
+    { year: 2015, value: 27.9 },
+    { year: 2016, value: 27.2 },
+    { year: 2017, value: 26.8 },
+    { year: 2018, value: 26.1 },
+    { year: 2019, value: 25.5 },
+    { year: 2020, value: 24.9 },
+    { year: 2021, value: 24.2 },
+    { year: 2022, value: 23.8 },
+    { year: 2023, value: 23.1 }
+  ],
+  'Tasmania (TAS)': [
+    { year: 2014, value: 12.8 },
+    { year: 2015, value: 12.5 },
+    { year: 2016, value: 12.1 },
+    { year: 2017, value: 11.8 },
+    { year: 2018, value: 11.5 },
+    { year: 2019, value: 11.2 },
+    { year: 2020, value: 10.9 },
+    { year: 2021, value: 10.5 },
+    { year: 2022, value: 10.2 },
+    { year: 2023, value: 9.8 }
+  ],
+  'Australian Capital Territory (ACT)': [
+    { year: 2014, value: 2.8 },
+    { year: 2015, value: 2.5 },
+    { year: 2016, value: 2.1 },
+    { year: 2017, value: 1.8 },
+    { year: 2018, value: 1.5 },
+    { year: 2019, value: 1.2 },
+    { year: 2020, value: 0.9 },
+    { year: 2021, value: 0.5 },
+    { year: 2022, value: 0.2 },
+    { year: 2023, value: 0.1 }
+  ],
+  'Northern Territory (NT)': [
+    { year: 2014, value: 8.9 },
+    { year: 2015, value: 8.5 },
+    { year: 2016, value: 8.1 },
+    { year: 2017, value: 7.8 },
+    { year: 2018, value: 7.5 },
+    { year: 2019, value: 7.2 },
+    { year: 2020, value: 6.9 },
+    { year: 2021, value: 6.5 },
+    { year: 2022, value: 6.2 },
+    { year: 2023, value: 5.8 }
+  ]
+};
+
 interface DataInsightProps {
   onNext?: () => void;
   onPrev?: () => void;
@@ -69,11 +170,19 @@ interface DataInsightProps {
 export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
   const { selectedState } = useStateContext();
   const [energyData, setEnergyData] = useState<EnergyMix[]>(STATE_ENERGY_DATA['Victoria (VIC)']);
+  const [emissionsData, setEmissionsData] = useState<EmissionData[]>(STATE_EMISSIONS_DATA['Victoria (VIC)']);
+  const [activeTab, setActiveTab] = useState<'energy' | 'emissions'>('energy');
 
   useEffect(() => {
-    // Update energy data when state changes
+    // Update data when state changes
     setEnergyData(STATE_ENERGY_DATA[selectedState] || []);
+    setEmissionsData(STATE_EMISSIONS_DATA[selectedState] || []);
   }, [selectedState]);
+
+  const tabs = [
+    { id: 'energy', label: 'Energy Mix', icon: '⚡' },
+    { id: 'emissions', label: 'Emissions', icon: '🌱' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
@@ -140,68 +249,164 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
               <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
             </div>
 
-            {/* Energy Mix Chart and Side Panels */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Energy Mix Chart - Left Column */}
-              <div className="lg:col-span-2">
-                <EnergyMixChart 
-                  data={energyData} 
-                  title={`${selectedState.split(' ')[0]} Energy Generation Mix`}
-                />
-              </div>
-
-              {/* Right Column - Side Panels */}
-              <div className="space-y-6">
-                {/* Renewable Growth */}
-                <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-                  <h5 className="font-medium text-green-800 mb-4 flex items-center">
-                    <span className="text-lg mr-2">🌱</span>
-                    Renewable Growth
-                  </h5>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Wind Power</span>
-                      <span className="text-green-600 font-medium">+15.2%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Solar Power</span>
-                      <span className="text-green-600 font-medium">+28.7%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Total Renewables</span>
-                      <span className="text-green-600 font-medium">
-                        {energyData
-                          .filter(item => ['Wind', 'Solar', 'Hydro'].includes(item.source))
-                          .reduce((sum, item) => sum + item.percentage, 0)
-                          .toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Storage & Grid */}
-                <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-                  <h5 className="font-medium text-purple-800 mb-4 flex items-center">
-                    <span className="text-lg mr-2">🔋</span>
-                    Storage & Grid
-                  </h5>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Battery storage</span>
-                      <span className="text-purple-600 font-medium">850 MW</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Pumped hydro</span>
-                      <span className="text-purple-600 font-medium">1,500 MW</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Grid stability</span>
-                      <span className="text-purple-600 font-medium">99.8% reliability</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="flex space-x-8">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as 'energy' | 'emissions')}
+                    className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activeTab === tab.id
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-lg">{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
             </div>
+
+            {/* Tab Content */}
+            {activeTab === 'energy' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Energy Mix Chart - Left Column */}
+                <div className="lg:col-span-2">
+                  <EnergyMixChart 
+                    data={energyData} 
+                    title={`${selectedState.split(' ')[0]} Energy Generation Mix`}
+                  />
+                </div>
+
+                {/* Right Column - Side Panels */}
+                <div className="space-y-6">
+                  {/* Renewable Growth */}
+                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                    <h5 className="font-medium text-green-800 mb-4 flex items-center">
+                      <span className="text-lg mr-2">🌱</span>
+                      Renewable Growth
+                    </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Wind Power</span>
+                        <span className="text-green-600 font-medium">+15.2%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Solar Power</span>
+                        <span className="text-green-600 font-medium">+28.7%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Total Renewables</span>
+                        <span className="text-green-600 font-medium">
+                          {energyData
+                            .filter(item => ['Wind', 'Solar', 'Hydro'].includes(item.source))
+                            .reduce((sum, item) => sum + item.percentage, 0)
+                            .toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Storage & Grid */}
+                  <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+                    <h5 className="font-medium text-purple-800 mb-4 flex items-center">
+                      <span className="text-lg mr-2">🔋</span>
+                      Storage & Grid
+                    </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Battery storage</span>
+                        <span className="text-purple-600 font-medium">850 MW</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Pumped hydro</span>
+                        <span className="text-purple-600 font-medium">1,500 MW</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Grid stability</span>
+                        <span className="text-purple-600 font-medium">99.8% reliability</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'emissions' && (
+              <div className="space-y-6">
+                {/* Emissions Chart */}
+                <EmissionsChart 
+                  data={emissionsData}
+                  title={`${selectedState.split(' ')[0]} Greenhouse Gas Emissions`}
+                />
+                
+                {/* Emissions Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                    <h5 className="font-medium text-blue-800 mb-4 flex items-center">
+                      <span className="text-lg mr-2">📈</span>
+                      Trend Analysis
+                    </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">10-year change</span>
+                        <span className="text-blue-600 font-medium">
+                          {emissionsData.length >= 10 
+                            ? `${((emissionsData[emissionsData.length - 1].value - emissionsData[0].value) / emissionsData[0].value * 100).toFixed(1)}%`
+                            : 'N/A'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Annual reduction</span>
+                        <span className="text-blue-600 font-medium">~0.5 Mt CO₂-e</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
+                    <h5 className="font-medium text-orange-800 mb-4 flex items-center">
+                      <span className="text-lg mr-2">🎯</span>
+                      Targets
+                    </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">2030 target</span>
+                        <span className="text-orange-600 font-medium">-50%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">2050 target</span>
+                        <span className="text-orange-600 font-medium">Net Zero</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                    <h5 className="font-medium text-green-800 mb-4 flex items-center">
+                      <span className="text-lg mr-2">🌍</span>
+                      Impact
+                    </h5>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">Per capita</span>
+                        <span className="text-green-600 font-medium">
+                          {emissionsData.length > 0 
+                            ? `${(emissionsData[emissionsData.length - 1].value / 6.8).toFixed(1)} t CO₂-e`
+                            : 'N/A'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700">National share</span>
+                        <span className="text-green-600 font-medium">~25%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Navigation */}
