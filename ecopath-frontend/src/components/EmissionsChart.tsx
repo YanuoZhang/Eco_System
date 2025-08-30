@@ -44,7 +44,11 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
   const latestData = data.length > 0 ? data[data.length - 1] : null;
 
   // Custom tooltip format
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ value: number }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white/95 backdrop-blur-sm border border-green-200 rounded-lg p-3 shadow-lg">

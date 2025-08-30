@@ -1,41 +1,29 @@
 'use client';
 
 import { useStateContext } from '@/contexts/StateContext';
+import PageHeader from './PageHeader';
 
 interface FootprintCalculatorProps {
   onPrev?: () => void;
+  onBackToHomepage?: () => void;
 }
 
-export default function FootprintCalculator({ onPrev }: FootprintCalculatorProps) {
+export default function FootprintCalculator({ onPrev, onBackToHomepage }: FootprintCalculatorProps) {
   const { selectedState } = useStateContext();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
       {/* Page Header */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-green-200/50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center">
-                <span className="text-3xl">🧮</span>
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-green-800 mb-2">Footprint Calculator</h1>
-                <p className="text-green-600 text-lg">Calculate your environmental impact for {selectedState.split(' ')[0]}</p>
-              </div>
-            </div>
-            
-            {/* Tool Badge */}
-            <div className="text-right">
-              <div className="inline-flex items-center space-x-2 bg-purple-50 text-purple-700 px-4 py-2 rounded-full border border-purple-200 text-sm font-medium">
-                <span className="text-lg">📊</span>
-                <span>Impact Tool</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Personal carbon footprint</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Footprint Calculator"
+        description={`Calculate your environmental impact for ${selectedState.split(' ')[0]}`}
+        icon="🧮"
+        gradientColors="from-green-500 to-blue-500"
+        onBackToHomepage={onBackToHomepage}
+        showToolBadge={true}
+        toolBadgeText="Impact Tool"
+        toolBadgeDescription="Personal carbon footprint"
+      />
 
       {/* Main Content - Under Development Status */}
       <main className="py-12">
@@ -48,7 +36,7 @@ export default function FootprintCalculator({ onPrev }: FootprintCalculatorProps
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-4">Under Development</h2>
               <p className="text-xl text-gray-600 mb-2">Footprint Calculator feature is currently under development</p>
-              <p className="text-lg text-gray-500">We're working hard to build you a powerful carbon footprint calculator for {selectedState.split(' ')[0]}</p>
+              <p className="text-lg text-gray-500">We&apos;re working hard to build you a powerful carbon footprint calculator for {selectedState.split(' ')[0]}</p>
             </div>
 
             {/* Upcoming Features Preview */}
