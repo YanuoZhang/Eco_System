@@ -22,6 +22,19 @@ const TIME_RANGES = [
 export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions' }: EmissionsChartProps) {
   const [selectedTimeRange, setSelectedTimeRange] = useState(10);
 
+  // Handle no data case first
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
+          <p className="text-gray-500">Emissions data is not available for the selected state and time period.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Filter data based on selected time range
   const filteredData = selectedTimeRange > 0 
     ? data.slice(-selectedTimeRange)
@@ -43,19 +56,6 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
     }
     return null;
   };
-
-  // Handle no data case
-  if (data.length === 0) {
-    return (
-      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">📊</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-          <p className="text-gray-500">Emissions data is not available for the selected state and time period.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
