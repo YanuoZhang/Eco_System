@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import HeroSection from '@/components/HeroSection';
 import JourneyWelcome from '@/components/JourneyWelcome';
@@ -9,7 +9,7 @@ import FootprintCalculator from '@/components/FootprintCalculator';
 import GlobalStateSelector from '@/components/GlobalStateSelector';
 import { StateProvider } from '@/contexts/StateContext';
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(3);
@@ -177,5 +177,23 @@ export default function Home() {
         </main>
       </div>
     </StateProvider>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🌱</span>
+          </div>
+          <h2 className="text-2xl font-bold text-green-800 mb-2">Loading...</h2>
+          <p className="text-green-600">Preparing your environmental journey</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

@@ -36,7 +36,7 @@ export default function FootprintCalculator({ onPrev, onBackToHomepage }: Footpr
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-4">Under Development</h2>
               <p className="text-xl text-gray-600 mb-2">Footprint Calculator feature is currently under development</p>
-              <p className="text-lg text-gray-500">We're working hard to build you a powerful carbon footprint calculator for {selectedState.split(' ')[0]}</p>
+              <p className="text-lg text-gray-500">We&apos;re working hard to build you a powerful carbon footprint calculator for {selectedState.split(' ')[0]}</p>
             </div>
 
             {/* Upcoming Features Preview */}

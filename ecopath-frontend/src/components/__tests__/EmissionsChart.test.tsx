@@ -339,13 +339,13 @@ describe("EmissionsChart", () => {
     });
 
     it("handles undefined data gracefully", () => {
-      render(<EmissionsChart data={undefined as any} />);
+      render(<EmissionsChart data={undefined as unknown as EmissionData[]} />);
       
       expect(screen.getByText("No Data Available")).toBeInTheDocument();
     });
 
     it("handles null data gracefully", () => {
-      render(<EmissionsChart data={null as any} />);
+      render(<EmissionsChart data={null as unknown as EmissionData[]} />);
       
       expect(screen.getByText("No Data Available")).toBeInTheDocument();
     });
