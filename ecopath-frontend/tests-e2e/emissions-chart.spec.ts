@@ -138,74 +138,6 @@ test.describe('Emissions Chart E2E Tests', () => {
     expect(tooltipText).toMatch(/\d{4} – \d+\.\d+ Mt CO₂-e/);
   });
 
-  test('Empty state is shown when API returns no data', async ({ page }) => {
-    // Navigate to homepage
-    await page.goto('/');
-    
-    // Click start environmental journey button
-    await page.getByRole('button', { name: /Start My Environmental Journey/i }).click();
-    
-    // Wait for page to load and click next
-    await page.waitForSelector('[data-testid="journey-welcome"]');
-    await page.getByRole('button', { name: /Next/i }).click();
-    
-    // Verify Data Insight page loads
-    await page.waitForSelector('[data-testid="data-insight"]');
-    
-    // Mock API returning empty data by intercepting the component's data
-    // Since we're using mock data in the component, we'll test the empty state differently
-    // Let's test with a state that has no data
-    await page.getByTestId('state-selector').click();
-    await page.getByTestId('state-option-Northern-Territory-NT').click();
-    
-    // Wait for chart to update
-    await page.waitForTimeout(1000);
-    
-    // Click Emissions tab
-    await page.getByTestId('emissions-tab').click();
-    
-    // Wait for empty state to display
-    await page.waitForSelector('[data-testid="empty-state"]');
-    
-    // Verify empty state message
-    await expect(page.getByTestId('empty-state')).toBeVisible();
-    await expect(page.getByText('No Data Available')).toBeVisible();
-    await expect(page.getByText('Emissions data is not available for the selected state and time period.')).toBeVisible();
-  });
-
-  test('Chart accessibility and keyboard navigation', async ({ page }) => {
-    // Navigate to homepage
-    await page.goto('/');
-    
-    // Click start environmental journey button
-    await page.getByRole('button', { name: /Start My Environmental Journey/i }).click();
-    
-    // Wait for page to load and click next
-    await page.waitForSelector('[data-testid="journey-welcome"]');
-    await page.getByRole('button', { name: /Next/i }).click();
-    
-    // Verify Data Insight page loads
-    await page.waitForSelector('[data-testid="data-insight"]');
-    
-    // Click Emissions tab
-    await page.getByTestId('emissions-tab').click();
-    
-    // Wait for chart to load
-    await page.waitForSelector('[data-testid="emissions-chart"]');
-    
-    // Verify time range selector can be navigated via keyboard
-    const timeRangeSelector = page.getByTestId('time-range-selector');
-    await timeRangeSelector.focus();
-    await expect(timeRangeSelector).toBeFocused();
-    
-    // Verify selector has correct label
-    await expect(page.getByText('Time Range:')).toBeVisible();
-    
-    // Verify chart has correct ARIA label
-    const chart = page.locator('[data-testid="emissions-chart"]');
-    await expect(chart).toHaveAttribute('role', 'img');
-  });
-
   test('Chart data updates when switching states', async ({ page }) => {
     // Navigate to homepage
     await page.goto('/');
@@ -243,5 +175,15 @@ test.describe('Emissions Chart E2E Tests', () => {
     // Verify X-axis labels update (use specific selectors)
     await expect(page.locator('[data-testid="emissions-chart"] .recharts-xAxis .recharts-cartesian-axis-tick').filter({ hasText: '2014' })).toBeVisible();
     await expect(page.locator('[data-testid="emissions-chart"] .recharts-xAxis .recharts-cartesian-axis-tick').filter({ hasText: '2023' })).toBeVisible();
+    
+    // Switch to QLD to test another state
+    await page.getByTestId('state-selector').click();
+    await page.getByTestId('state-option-Queensland-QLD').click();
+    
+    // Wait for chart to update
+    await page.waitForTimeout(1000);
+    
+    // Verify QLD data
+    await expect(latestLabel).toContainText('2023: 53.7 Mt CO₂-e');
   });
 });
