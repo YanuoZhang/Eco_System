@@ -78,7 +78,7 @@ export default function ClimateTargetSidebar({
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   useEffect(() => {
-    if (stateName) {
+    if (stateName && !error) {
       setIsLoadingData(true);
       // Simulate API call delay
       const timer = setTimeout(() => {
@@ -89,12 +89,12 @@ export default function ClimateTargetSidebar({
 
       return () => clearTimeout(timer);
     }
-  }, [stateName]);
+  }, [stateName, error]);
 
   // Loading skeleton
   if (isLoading || isLoadingData) {
     return (
-      <div className="bg-green-50 rounded-lg p-6 border border-green-200 shadow-sm animate-pulse">
+      <div className="bg-green-50 rounded-lg p-6 border border-green-200 shadow-sm animate-pulse" data-testid="loading-skeleton">
         <div className="space-y-4">
           <div className="h-4 bg-green-200 rounded w-3/4"></div>
           <div className="h-6 bg-green-200 rounded w-1/2"></div>
@@ -105,7 +105,7 @@ export default function ClimateTargetSidebar({
     );
   }
 
-  // Error state
+  // Error state - should take precedence over loading
   if (error) {
     return (
       <div className="bg-red-50 rounded-lg p-6 border border-red-200 shadow-sm">
@@ -125,6 +125,8 @@ export default function ClimateTargetSidebar({
       </div>
     );
   }
+
+
 
   // No data state
   if (!climateTarget) {
@@ -163,13 +165,13 @@ export default function ClimateTargetSidebar({
               <span className="text-green-600 font-semibold">-{climateTarget.progress}%</span>
             </div>
             
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="h-3 rounded-full bg-green-500 transition-all duration-500"
-                style={{ width: `${Math.min(climateTarget.progress, 100)}%` }}
-              ></div>
-            </div>
+                      {/* Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-3" role="progressbar">
+            <div 
+              className="h-3 rounded-full bg-green-500 transition-all duration-500"
+              style={{ width: `${Math.min(climateTarget.progress, 100)}%` }}
+            ></div>
+          </div>
           </div>
         </div>
       </div>
@@ -186,15 +188,15 @@ export default function ClimateTargetSidebar({
           {/* Initiatives List */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full" data-testid="initiative-bullet"></div>
               <span className="text-blue-700">Renewable energy expansion</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full" data-testid="initiative-bullet"></div>
               <span className="text-blue-700">Electric vehicle rollout</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full" data-testid="initiative-bullet"></div>
               <span className="text-blue-700">Energy efficiency programs</span>
             </div>
           </div>
