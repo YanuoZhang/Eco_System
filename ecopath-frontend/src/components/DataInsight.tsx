@@ -2,17 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import EnergyMixChart, { EnergyMix } from './EnergyMixChart';
-
-const AUSTRALIAN_STATES = [
-  'Victoria (VIC)',
-  'New South Wales (NSW)', 
-  'Queensland (QLD)', 
-  'Western Australia (WA)',
-  'South Australia (SA)', 
-  'Tasmania (TAS)', 
-  'Australian Capital Territory (ACT)', 
-  'Northern Territory (NT)'
-];
+import { useStateContext } from '@/contexts/StateContext';
 
 // Mock data for different states - in real app this would come from API
 const STATE_ENERGY_DATA: Record<string, EnergyMix[]> = {
@@ -77,17 +67,13 @@ interface DataInsightProps {
 }
 
 export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
-  const [selectedState, setSelectedState] = useState('Victoria (VIC)');
+  const { selectedState } = useStateContext();
   const [energyData, setEnergyData] = useState<EnergyMix[]>(STATE_ENERGY_DATA['Victoria (VIC)']);
 
   useEffect(() => {
     // Update energy data when state changes
     setEnergyData(STATE_ENERGY_DATA[selectedState] || []);
   }, [selectedState]);
-
-  const handleStateChange = (state: string) => {
-    setSelectedState(state);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
@@ -140,7 +126,7 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
       {/* Main Content */}
       <main className="py-12">
         <div className="max-w-6xl mx-auto px-4">
-          {/* State Selection */}
+          {/* State Information Display */}
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-green-200 shadow-lg mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -152,23 +138,6 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
                 </p>
               </div>
               <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            </div>
-
-            {/* State Selector */}
-            <div className="mb-6">
-              <label htmlFor="state-select" className="block text-sm font-medium text-gray-700 mb-2">
-                Select State
-              </label>
-              <select
-                id="state-select"
-                value={selectedState}
-                onChange={(e) => handleStateChange(e.target.value)}
-                className="w-full max-w-md p-3 bg-white text-gray-800 rounded-lg border-2 border-green-300 focus:border-green-500 focus:outline-none shadow-sm"
-              >
-                {AUSTRALIAN_STATES.map((state) => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
             </div>
 
             {/* Energy Mix Chart and Side Panels */}

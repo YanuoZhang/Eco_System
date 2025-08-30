@@ -1,10 +1,14 @@
 'use client';
 
+import { useStateContext } from '@/contexts/StateContext';
+
 interface FootprintCalculatorProps {
   onPrev?: () => void;
 }
 
 export default function FootprintCalculator({ onPrev }: FootprintCalculatorProps) {
+  const { selectedState } = useStateContext();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
       {/* Page Header */}
@@ -17,7 +21,7 @@ export default function FootprintCalculator({ onPrev }: FootprintCalculatorProps
               </div>
               <div>
                 <h1 className="text-4xl font-bold text-green-800 mb-2">Footprint Calculator</h1>
-                <p className="text-green-600 text-lg">Calculate your environmental impact</p>
+                <p className="text-green-600 text-lg">Calculate your environmental impact for {selectedState.split(' ')[0]}</p>
               </div>
             </div>
             
@@ -44,7 +48,7 @@ export default function FootprintCalculator({ onPrev }: FootprintCalculatorProps
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-4">Under Development</h2>
               <p className="text-xl text-gray-600 mb-2">Footprint Calculator feature is currently under development</p>
-              <p className="text-lg text-gray-500">We're working hard to build you a powerful carbon footprint calculator</p>
+              <p className="text-lg text-gray-500">We're working hard to build you a powerful carbon footprint calculator for {selectedState.split(' ')[0]}</p>
             </div>
 
             {/* Upcoming Features Preview */}
