@@ -338,7 +338,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                 {/* Climate Targets Sidebar - Right Column */}
                 <div className="lg:col-span-1">
                   <ClimateTargetSidebar 
-                    stateName={selectedState.split(' ')[0]}
+                    stateName={selectedState}
                     isLoading={false}
                     error={null}
                     onRetry={() => {

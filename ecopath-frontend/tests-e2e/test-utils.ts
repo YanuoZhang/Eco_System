@@ -77,6 +77,12 @@ export const MOCK_CLIMATE_TARGETS = {
     progress: 8,
     targetYear: 2050,
     description: 'Progressive climate action with renewable energy focus'
+  },
+  [TEST_STATES.WA]: {
+    planName: 'WA Climate Action Plan',
+    progress: 15,
+    targetYear: 2050,
+    description: 'Western Australia climate action plan'
   }
 };
 

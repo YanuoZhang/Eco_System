@@ -18,49 +18,49 @@ interface ClimateTargetSidebarProps {
 
 // Mock climate targets data for different states
 const MOCK_CLIMATE_TARGETS: Record<string, ClimateTarget> = {
-  'Victoria': {
+  'Victoria (VIC)': {
     planName: 'Victoria 2030 Net Zero Plan',
     progress: 18,
     targetYear: 2030,
     description: 'Ambitious plan to achieve net zero emissions by 2030'
   },
-  'New South Wales': {
+  'New South Wales (NSW)': {
     planName: 'NSW Net Zero Plan Stage 1',
     progress: 12,
     targetYear: 2050,
     description: 'Comprehensive plan to reach net zero by 2050'
   },
-  'Queensland': {
+  'Queensland (QLD)': {
     planName: 'Queensland Climate Action Plan',
     progress: 8,
     targetYear: 2050,
     description: 'Progressive climate action with renewable energy focus'
   },
-  'Western Australia': {
+  'Western Australia (WA)': {
     planName: 'WA Climate Policy',
     progress: 15,
     targetYear: 2050,
     description: 'Balanced approach to climate action and economic growth'
   },
-  'South Australia': {
+  'South Australia (SA)': {
     planName: 'SA Climate Change Action Plan',
     progress: 22,
     targetYear: 2050,
     description: 'Leading renewable energy transition in Australia'
   },
-  'Tasmania': {
+  'Tasmania (TAS)': {
     planName: 'Tasmania Climate Action Plan',
     progress: 35,
     targetYear: 2030,
     description: 'Already carbon negative, working towards enhanced sustainability'
   },
-  'Northern Territory': {
+  'Northern Territory (NT)': {
     planName: 'NT Climate Change Response',
     progress: 5,
     targetYear: 2050,
     description: 'Developing comprehensive climate action framework'
   },
-  'Australian Capital Territory': {
+  'Australian Capital Territory (ACT)': {
     planName: 'ACT Climate Change Strategy',
     progress: 28,
     targetYear: 2045,
@@ -82,7 +82,7 @@ export default function ClimateTargetSidebar({
       setIsLoadingData(true);
       // Simulate API call delay
       const timer = setTimeout(() => {
-        const target = MOCK_CLIMATE_TARGETS[stateName] || MOCK_CLIMATE_TARGETS['Victoria'];
+        const target = MOCK_CLIMATE_TARGETS[stateName] || MOCK_CLIMATE_TARGETS['Victoria (VIC)'];
         setClimateTarget(target);
         setIsLoadingData(false);
       }, 500);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 const AUSTRALIAN_STATES = [
   'Victoria (VIC)',
@@ -27,7 +27,23 @@ interface StateProviderProps {
 }
 
 export function StateProvider({ children, initialState = 'Victoria (VIC)' }: StateProviderProps) {
-  const [selectedState, setSelectedState] = useState(initialState);
+  // Initialize selectedState from localStorage or default
+  const [selectedState, setSelectedState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('selectedState');
+      if (savedState && AUSTRALIAN_STATES.includes(savedState)) {
+        return savedState;
+      }
+    }
+    return initialState;
+  });
+
+  // Persist selectedState to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedState', selectedState);
+    }
+  }, [selectedState]);
 
   const value = {
     selectedState,

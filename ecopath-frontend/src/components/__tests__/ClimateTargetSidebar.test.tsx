@@ -188,7 +188,7 @@ describe('ClimateTargetSidebar', () => {
       });
       
       // Test with high progress value
-      rerender(<ClimateTargetSidebar {...mockProps} stateName="Tasmania" />);
+      rerender(<ClimateTargetSidebar {...mockProps} stateName="Tasmania (TAS)" />);
       
       await waitFor(() => {
         expect(screen.getByText('-35%')).toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('ClimateTargetSidebar', () => {
       });
       
       // Test with zero progress
-      rerender(<ClimateTargetSidebar {...mockProps} stateName="Northern Territory" />);
+      rerender(<ClimateTargetSidebar {...mockProps} stateName="Northern Territory (NT)" />);
       
       await waitFor(() => {
         expect(screen.getByText('-5%')).toBeInTheDocument();
@@ -318,7 +318,7 @@ describe('ClimateTargetSidebar', () => {
       });
       
       // Change to different state
-      rerender(<ClimateTargetSidebar {...mockProps} stateName="South Australia" />);
+      rerender(<ClimateTargetSidebar {...mockProps} stateName="South Australia (SA)" />);
       
       await waitFor(() => {
         expect(screen.getByText('-22%')).toBeInTheDocument();
