@@ -4,7 +4,50 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Home from "@/app/page";
 
+// Mock Next.js hooks
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
+const mockBack = vi.fn();
+const mockForward = vi.fn();
+const mockRefresh = vi.fn();
+const mockPrefetch = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: mockReplace,
+    back: mockBack,
+    forward: mockForward,
+    refresh: mockRefresh,
+    prefetch: mockPrefetch,
+  }),
+  useSearchParams: () => ({
+    get: (key: string) => key === 'step' ? '1' : null,
+    has: (key: string) => key === 'step',
+    forEach: () => {},
+    entries: () => [],
+    keys: () => [],
+    values: () => [],
+    toString: () => 'step=1',
+  }),
+}));
+
+// Mock window.location
+Object.defineProperty(window, 'location', {
+  value: {
+    href: 'http://localhost:3000?step=1',
+    pathname: '/',
+    search: '?step=1',
+  },
+  writable: true,
+});
+
 describe("Home page", () => {
+  beforeEach(() => {
+    // Reset mocks before each test
+    vi.clearAllMocks();
+  });
+
   it("renders Environmental Journey title", () => {
     render(<Home />);
     expect(screen.getByText(/Your Environmental Journey/i)).toBeInTheDocument();
@@ -64,9 +107,9 @@ describe("Home page", () => {
         expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
-      // Should show Previous Step and Next Step buttons
+      // Should show Previous Step and Next Journey buttons
       expect(screen.getByRole("button", { name: /← Previous Step/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Next Step/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Next Journey/i })).toBeInTheDocument();
     });
 
     it("can navigate back from Step 2 to Step 1", async () => {
@@ -139,6 +182,20 @@ describe("Home page", () => {
       // Step 2 should be active
       expect(screen.getByText(/Step 2/i)).toBeInTheDocument();
       expect(screen.getByText(/Discover Your Environment/i, { selector: 'h3' })).toBeInTheDocument();
+    });
+
+    it("displays correct step icons", () => {
+      render(<Home />);
+      
+      // Should show step icons in stepper (more specific selectors)
+      const stepperIcons = screen.getAllByText(/🌱|🌍|🧮/);
+      expect(stepperIcons.length).toBeGreaterThanOrEqual(3);
+      
+      // Check that all three step icons are present
+      const iconTexts = stepperIcons.map(icon => icon.textContent);
+      expect(iconTexts).toContain('🌱');
+      expect(iconTexts).toContain('🌍');
+      expect(iconTexts).toContain('🧮');
     });
 
     it("renders without hydration errors", () => {

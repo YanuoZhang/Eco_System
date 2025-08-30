@@ -259,7 +259,7 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
                   onClick={onNext}
                   className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 cursor-pointer whitespace-nowrap shadow-lg"
                 >
-                  <span>Next Step</span>
+                  <span>Next Journey</span>
                   <span>→</span>
                 </button>
               )}

@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import HeroSection from '@/components/HeroSection';
 import JourneyWelcome from '@/components/JourneyWelcome';
 import DataInsight from '@/components/DataInsight';
+import FootprintCalculator from '@/components/FootprintCalculator';
 
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [currentStep, setCurrentStep] = useState(3);
 
   const steps = [
     { 
@@ -20,8 +24,32 @@ export default function Home() {
       title: 'Discover Your Environment', 
       icon: '🌍',
       description: 'Explore local environmental data'
+    },
+    { 
+      id: 3, 
+      title: 'Calculate Your Footprint', 
+      icon: '🧮',
+      description: 'Measure your environmental impact'
     }
   ];
+
+  // Sync URL with current step
+  useEffect(() => {
+    const stepFromUrl = searchParams.get('step');
+    if (stepFromUrl) {
+      const stepNumber = parseInt(stepFromUrl);
+      if (stepNumber >= 1 && stepNumber <= steps.length) {
+        setCurrentStep(stepNumber);
+      }
+    }
+  }, [searchParams, steps.length]);
+
+  // Update URL when step changes
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('step', currentStep.toString());
+    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
+  }, [currentStep, router]);
 
   const nextStep = () => {
     if (currentStep < steps.length) {
@@ -41,6 +69,8 @@ export default function Home() {
         return <JourneyWelcome onNext={nextStep} />;
       case 2:
         return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} />;
+      case 3:
+        return <FootprintCalculator onPrev={prevStep} />;
       default:
         return null;
     }
