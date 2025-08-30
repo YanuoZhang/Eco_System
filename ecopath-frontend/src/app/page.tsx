@@ -23,7 +23,9 @@ export default function Home() {
   ];
 
   const nextStep = () => {
-   
+    if (currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
   const prevStep = () => {
