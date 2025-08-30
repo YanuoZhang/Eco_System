@@ -5,6 +5,7 @@ import EnergyMixChart, { EnergyMix } from './EnergyMixChart';
 import EmissionsChart, { EmissionData } from './EmissionsChart';
 import ClimateTargetSidebar from './ClimateTargetSidebar';
 import PageHeader from './PageHeader';
+import DataSources from './DataSources';
 import { useStateContext } from '@/contexts/StateContext';
 
 // Mock data for different states - in real app this would come from API
@@ -348,6 +349,9 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
               </div>
             )}
           </div>
+
+          {/* Data Sources Section */}
+          <DataSources />
 
           {/* Navigation */}
           <div className="flex justify-between items-center">
