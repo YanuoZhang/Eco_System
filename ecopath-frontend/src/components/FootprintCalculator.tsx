@@ -12,7 +12,7 @@ export default function FootprintCalculator({ onPrev, onBackToHomepage }: Footpr
   const { selectedState } = useStateContext();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
+    <div data-testid="footprint-calculator" className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
       {/* Page Header */}
       <PageHeader
         title="Footprint Calculator"

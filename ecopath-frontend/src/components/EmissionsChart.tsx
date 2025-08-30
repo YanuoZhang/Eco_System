@@ -61,6 +61,20 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
     return null;
   };
 
+  // Show empty state if no data
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+        {/* No Data State */}
+        <div data-testid="empty-state" className="text-center py-12">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Data Available</h3>
+          <p className="text-gray-600">Emissions data is not available for the selected state and time period.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
       {/* Chart Header */}
@@ -70,7 +84,10 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
           {latestData && (
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Latest:</span>
-              <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+              <span 
+                data-testid="latest-label"
+                className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full"
+              >
                 {latestData.year}: {latestData.value.toFixed(1)} Mt CO₂-e
               </span>
             </div>
@@ -81,12 +98,13 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">Time Range:</span>
           <select
+            data-testid="time-range-selector"
             value={selectedTimeRange}
             onChange={(e) => setSelectedTimeRange(Number(e.target.value))}
             className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             {TIME_RANGES.map((range) => (
-              <option key={range.value} value={range.value}>
+              <option key={range.value} value={range.value} data-testid={`range-${range.value === 0 ? 'all' : range.value + 'y'}`}>
                 {range.label}
               </option>
             ))}
@@ -95,7 +113,7 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
       </div>
 
       {/* Chart Container */}
-      <div className="h-80">
+      <div data-testid="emissions-chart" className="h-80" role="img">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={filteredData}

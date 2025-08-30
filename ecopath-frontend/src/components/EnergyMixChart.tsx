@@ -30,7 +30,7 @@ export default function EnergyMixChart({ data, title = "Energy Generation Mix" }
   };
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm relative">
+    <div data-testid="energy-mix-chart" className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm relative">
       <h3 className="text-xl font-semibold text-gray-800 mb-4">{title}</h3>
       
       {/* Energy Mix Bars */}
@@ -38,6 +38,7 @@ export default function EnergyMixChart({ data, title = "Energy Generation Mix" }
         {data.map((energy, index) => (
           <div 
             key={index} 
+            data-testid={`energy-source-${energy.source.toLowerCase().replace(/\s+/g, '-')}`}
             className="bg-white rounded-lg p-4 border cursor-pointer transition-all duration-200 hover:shadow-md hover:border-purple-300"
                                     onMouseEnter={() => handleEnergyHover(energy, index)}
                         onMouseLeave={handleEnergyLeave}

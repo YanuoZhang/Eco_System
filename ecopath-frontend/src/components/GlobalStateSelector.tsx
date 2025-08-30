@@ -1,22 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStateContext } from '@/contexts/StateContext';
 
 export default function GlobalStateSelector() {
   const { selectedState, setSelectedState } = useStateContext();
   const [isExpanded, setIsExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleStateChange = (state: string) => {
+    console.log('State change requested:', state);
     setSelectedState(state);
     setIsExpanded(false);
+    console.log('State changed to:', state);
   };
 
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      console.log('Click outside detected, target:', event.target);
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        console.log('Closing dropdown due to click outside');
+        setIsExpanded(false);
+      }
+    };
+
+    if (isExpanded) {
+      console.log('Adding click outside listener');
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      console.log('Removing click outside listener');
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded]);
+
   return (
-    <div className="fixed top-20 right-4 z-50">
+    <div className="fixed top-20 right-4 z-50" ref={containerRef}>
       <div className="relative">
         {/* Main State Display Button */}
         <button
+          data-testid="state-selector"
           onClick={() => setIsExpanded(!isExpanded)}
           className="bg-white/90 backdrop-blur-sm border-2 border-green-300 hover:border-green-500 rounded-full px-4 py-3 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-3 min-w-[200px]"
         >
@@ -51,8 +76,9 @@ export default function GlobalStateSelector() {
               {['Victoria (VIC)', 'New South Wales (NSW)', 'Queensland (QLD)', 'Western Australia (WA)', 'South Australia (SA)', 'Tasmania (TAS)', 'Australian Capital Territory (ACT)', 'Northern Territory (NT)'].map((state) => (
                 <button
                   key={state}
+                  data-testid={`state-option-${state.replace(/\s+/g, '-').replace(/[()]/g, '')}`}
                   onClick={() => handleStateChange(state)}
-                  className={`w-full text-left px-4 py-3 hover:bg-green-50 transition-colors duration-150 ${
+                  className={`w-full text-left px-4 py-3 hover:bg-green-50 transition-colors duration-200 ${
                     selectedState === state 
                       ? 'bg-green-100 text-green-800 border-r-2 border-green-500' 
                       : 'text-gray-700 hover:text-green-700'
@@ -82,13 +108,7 @@ export default function GlobalStateSelector() {
         )}
       </div>
 
-      {/* Click outside to close */}
-      {isExpanded && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setIsExpanded(false)}
-        />
-      )}
+      {/* Click outside to close - using event listener instead of overlay */}
     </div>
   );
 }

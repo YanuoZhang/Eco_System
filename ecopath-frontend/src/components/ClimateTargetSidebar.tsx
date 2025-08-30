@@ -108,17 +108,18 @@ export default function ClimateTargetSidebar({
   // Error state - should take precedence over loading
   if (error) {
     return (
-      <div className="bg-red-50 rounded-lg p-6 border border-red-200 shadow-sm">
+      <div data-testid="error-state" className="bg-red-50 rounded-lg p-6 border border-red-200 shadow-sm">
         <div className="text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h3 className="text-lg font-medium text-red-800 mb-2">Error Loading Data</h3>
+          <h3 className="text-lg font-medium text-red-800 mb-2">Failed to load climate target data</h3>
           <p className="text-red-600 mb-4">{error}</p>
           {onRetry && (
             <button
+              data-testid="retry-button"
               onClick={onRetry}
               className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
             >
-              Try Again
+              Retry
             </button>
           )}
         </div>
@@ -142,10 +143,15 @@ export default function ClimateTargetSidebar({
   }
 
   return (
-    <div className="space-y-6">
+    <div data-testid="climate-sidebar" className="space-y-6" aria-label="Climate Action Plan Information">
       {/* Reduction Goals Card - Green Theme */}
       <div className="bg-green-50 rounded-lg p-6 border border-green-200 shadow-sm">
         <div className="space-y-4">
+          {/* Plan Name */}
+          <div className="text-center pb-2 border-b border-green-200">
+            <h4 data-testid="plan-name" className="text-lg font-semibold text-green-800">{climateTarget.planName}</h4>
+          </div>
+          
           {/* Header */}
           <div className="flex items-center space-x-2">
             <span className="text-2xl">🏆</span>
@@ -162,16 +168,19 @@ export default function ClimateTargetSidebar({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-green-800 font-medium">Current Progress</span>
-              <span className="text-green-600 font-semibold">-{climateTarget.progress}%</span>
+              <span data-testid="progress-text" className="text-green-600 font-semibold">-{climateTarget.progress}%</span>
             </div>
             
-                      {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-3" role="progressbar">
-            <div 
-              className="h-3 rounded-full bg-green-500 transition-all duration-500"
-              style={{ width: `${Math.min(climateTarget.progress, 100)}%` }}
-            ></div>
-          </div>
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-200 rounded-full h-3" role="progressbar" data-testid="progress-bar">
+              <div 
+                className="h-3 rounded-full bg-green-500 transition-all duration-500"
+                style={{ width: `${Math.min(climateTarget.progress, 100)}%` }}
+                aria-valuenow={climateTarget.progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              ></div>
+            </div>
           </div>
         </div>
       </div>
@@ -203,6 +212,14 @@ export default function ClimateTargetSidebar({
         </div>
       </div>
 
+      {/* Target Year Display */}
+      <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 shadow-sm">
+        <div className="text-center">
+          <div className="text-2xl mb-2">🎯</div>
+          <div className="text-yellow-800 font-semibold" data-testid="target-year">Target: {climateTarget.targetYear}</div>
+          <div className="text-yellow-600 text-sm mt-1">{climateTarget.description}</div>
+        </div>
+      </div>
 
     </div>
   );

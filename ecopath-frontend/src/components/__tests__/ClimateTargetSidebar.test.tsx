@@ -125,7 +125,7 @@ describe('ClimateTargetSidebar', () => {
       const errorMessage = 'Failed to load climate data';
       render(<ClimateTargetSidebar {...mockProps} error={errorMessage} />);
       
-      expect(screen.getByText('Error Loading Data')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load climate target data')).toBeInTheDocument();
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
       expect(screen.getByText('⚠️')).toBeInTheDocument();
     });
@@ -134,7 +134,7 @@ describe('ClimateTargetSidebar', () => {
       const mockOnRetry = vi.fn();
       render(<ClimateTargetSidebar {...mockProps} error="Test error" onRetry={mockOnRetry} />);
       
-      const retryButton = screen.getByText('Try Again');
+      const retryButton = screen.getByText('Retry');
       expect(retryButton).toBeInTheDocument();
       expect(retryButton).toHaveClass('bg-red-100', 'text-red-800');
     });
@@ -145,7 +145,7 @@ describe('ClimateTargetSidebar', () => {
       
       render(<ClimateTargetSidebar {...mockProps} error="Test error" onRetry={mockOnRetry} />);
       
-      const retryButton = screen.getByText('Try Again');
+      const retryButton = screen.getByText('Retry');
       await user.click(retryButton);
       
       expect(mockOnRetry).toHaveBeenCalledTimes(1);
@@ -154,7 +154,7 @@ describe('ClimateTargetSidebar', () => {
     it('applies correct error styling', () => {
       render(<ClimateTargetSidebar {...mockProps} error="Test error" />);
       
-      const errorContainer = screen.getByText('Error Loading Data').closest('div[class*="bg-red-50"]');
+      const errorContainer = screen.getByText('Failed to load climate target data').closest('div[class*="bg-red-50"]');
       expect(errorContainer).toHaveClass('bg-red-50', 'border-red-200');
     });
   });
