@@ -29,7 +29,7 @@ describe("Home page", () => {
       
       // Initially on Step 1
       expect(screen.getByText(/Start your environmental exploration/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Environmental Data Insights/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Data Insight Hub/i)).not.toBeInTheDocument();
       
       // Click the CTA button to go to next step
       const nextButton = screen.getByRole("button", { name: /Start My Environmental Journey/i });
@@ -37,10 +37,10 @@ describe("Home page", () => {
       
       // Wait for the transition (JourneyWelcome has a 1.5s delay)
       await waitFor(() => {
-        expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+        expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
-      expect(screen.getByText(/Explore environmental data around you/i)).toBeInTheDocument();
+      expect(screen.getByText(/Victoria \(VIC\) Environmental Data/i)).toBeInTheDocument();
       
       // Step 1 content should be hidden from main content (but stepper still shows it)
       // The stepper continues to show all step information, which is expected
@@ -61,12 +61,12 @@ describe("Home page", () => {
       
       // Wait for the transition
       await waitFor(() => {
-        expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+        expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
-      // Should show Previous Step and Start Over buttons
+      // Should show Previous Step and Next Step buttons
       expect(screen.getByRole("button", { name: /← Previous Step/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Start Over/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Next Step/i })).toBeInTheDocument();
     });
 
     it("can navigate back from Step 2 to Step 1", async () => {
@@ -79,11 +79,11 @@ describe("Home page", () => {
       
       // Wait for the transition
       await waitFor(() => {
-        expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+        expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Verify we're on Step 2
-      expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+      expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       
       // Click Previous Step button
       const prevButton = screen.getByRole("button", { name: /← Previous Step/i });
@@ -91,7 +91,7 @@ describe("Home page", () => {
       
       // Should be back on Step 1
       expect(screen.getByText(/Start your environmental exploration/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Environmental Data Insights/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Data Insight Hub/i)).not.toBeInTheDocument();
     });
 
     it("can start over from Step 2", async () => {
@@ -104,19 +104,19 @@ describe("Home page", () => {
       
       // Wait for the transition
       await waitFor(() => {
-        expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+        expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Verify we're on Step 2
-      expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+      expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       
-      // Click Start Over button
-      const startOverButton = screen.getByRole("button", { name: /Start Over/i });
-      await user.click(startOverButton);
+      // Click Previous Step button to go back
+      const prevButton = screen.getByRole("button", { name: /← Previous Step/i });
+      await user.click(prevButton);
       
       // Should be back on Step 1
       expect(screen.getByText(/Start your environmental exploration/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Environmental Data Insights/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Data Insight Hub/i)).not.toBeInTheDocument();
     });
 
     it("shows correct step progress in stepper", async () => {
@@ -133,7 +133,7 @@ describe("Home page", () => {
       
       // Wait for the transition
       await waitFor(() => {
-        expect(screen.getByText(/Environmental Data Insights/i)).toBeInTheDocument();
+        expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       }, { timeout: 3000 });
       
       // Step 2 should be active
