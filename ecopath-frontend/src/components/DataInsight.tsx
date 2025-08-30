@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import EnergyMixChart, { EnergyMix } from './EnergyMixChart';
 import EmissionsChart, { EmissionData } from './EmissionsChart';
+import ClimateTargetSidebar from './ClimateTargetSidebar';
 import { useStateContext } from '@/contexts/StateContext';
 
 // Mock data for different states - in real app this would come from API
@@ -335,75 +336,26 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
             )}
 
             {activeTab === 'emissions' && (
-              <div className="space-y-6">
-                {/* Emissions Chart */}
-                <EmissionsChart 
-                  data={emissionsData}
-                  title={`${selectedState.split(' ')[0]} Greenhouse Gas Emissions`}
-                />
-                
-                {/* Emissions Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-                    <h5 className="font-medium text-blue-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">📈</span>
-                      Trend Analysis
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">10-year change</span>
-                        <span className="text-blue-600 font-medium">
-                          {emissionsData.length >= 10 
-                            ? `${((emissionsData[emissionsData.length - 1].value - emissionsData[0].value) / emissionsData[0].value * 100).toFixed(1)}%`
-                            : 'N/A'
-                          }
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Annual reduction</span>
-                        <span className="text-blue-600 font-medium">~0.5 Mt CO₂-e</span>
-                      </div>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Emissions Chart - Left Column */}
+                <div className="lg:col-span-2">
+                  <EmissionsChart 
+                    data={emissionsData}
+                    title={`${selectedState.split(' ')[0]} Greenhouse Gas Emissions`}
+                  />
+                </div>
 
-                  <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
-                    <h5 className="font-medium text-orange-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">🎯</span>
-                      Targets
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">2030 target</span>
-                        <span className="text-orange-600 font-medium">-50%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">2050 target</span>
-                        <span className="text-orange-600 font-medium">Net Zero</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-                    <h5 className="font-medium text-green-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">🌍</span>
-                      Impact
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Per capita</span>
-                        <span className="text-green-600 font-medium">
-                          {emissionsData.length > 0 
-                            ? `${(emissionsData[emissionsData.length - 1].value / 6.8).toFixed(1)} t CO₂-e`
-                            : 'N/A'
-                          }
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">National share</span>
-                        <span className="text-green-600 font-medium">~25%</span>
-                      </div>
-                    </div>
-                  </div>
+                {/* Climate Targets Sidebar - Right Column */}
+                <div className="lg:col-span-1">
+                  <ClimateTargetSidebar 
+                    stateName={selectedState.split(' ')[0]}
+                    isLoading={false}
+                    error={null}
+                    onRetry={() => {
+                      // Handle retry logic if needed
+                      console.log('Retrying climate data load...');
+                    }}
+                  />
                 </div>
               </div>
             )}
