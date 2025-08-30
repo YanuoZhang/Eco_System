@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-export interface EnergyMix {
-  source: string;
-  percentage: number;
-  generation: string;
-  trend: number;
-}
+import EnergyMixChart, { EnergyMix } from './EnergyMixChart';
 
 const AUSTRALIAN_STATES = [
   'Victoria (VIC)',
@@ -181,35 +175,10 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Energy Mix Chart - Left Column */}
               <div className="lg:col-span-2">
-                <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-                  <h4 className="text-lg font-medium text-purple-800 mb-4">{selectedState.split(' ')[0]} Energy Generation Mix</h4>
-                  <div className="space-y-4">
-                    {energyData.map((energy, index) => (
-                      <div key={index} className="bg-white rounded-lg p-4 border">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center space-x-3">
-                            <div className="font-medium text-gray-800">{energy.source}</div>
-                            <div className={`text-xs px-2 py-1 rounded-full ${
-                              energy.trend > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                            }`}>
-                              {energy.trend > 0 ? '+' : ''}{energy.trend}%
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-purple-600">{energy.percentage}%</div>
-                            <div className="text-xs text-gray-500">{energy.generation}</div>
-                          </div>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="h-2 rounded-full bg-gradient-to-r from-purple-400 to-blue-500"
-                            style={{ width: `${energy.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <EnergyMixChart 
+                  data={energyData} 
+                  title={`${selectedState.split(' ')[0]} Energy Generation Mix`}
+                />
               </div>
 
               {/* Right Column - Side Panels */}
