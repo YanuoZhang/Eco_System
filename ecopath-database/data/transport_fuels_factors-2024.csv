@@ -1,0 +1,28 @@
+Fuel Type ,Fuel Combusted ,Combined CO2-e/GJ,GJ,CO2-e,Unit 
+Liquid fuels ,Automotive gasoline/petrol (other than for use as fuel in an aircraft),67.8,34.2,2318.76,kg CO2-e/kL
+Liquid fuels ,Aviation gasoline,67.4,33.1,2230.94,kg CO2-e/kL
+Liquid fuels ,Kerosene (other than for use as fuel in an aircraft),69.11,37.5,2591.625,kg CO2-e/kL
+Liquid fuels ,Aviation turbine fuel/kerosene ,69.82,36.8,2569.376,kg CO2-e/kL
+Liquid fuels ,Diesel oil,70.2,38.6,2709.72,kg CO2-e/kL
+Liquid fuels ,Liquefied petroleum gas (LPG),60.6,25.7,1557.42,kg CO2-e/kL
+Liquid fuels ,Biodiesel,0.28,34.6,9.688,kg CO2-e/kL
+Liquid fuels ,Ethanol for use as a fuel in an internal combustion engine,0.28,23.4,6.552,kg CO2-e/kL
+Liquid fuels ,Renewable aviation kerosene,0.22,36.8,8.096,kg CO2-e/t
+Liquid fuels ,Renewable diesel,0.3,38.6,11.58,kg CO2-e/t
+Liquid fuels ,Gasoline-Cars and light commercial vehicles,67.62,34.2,2312.604,kg CO2-e/kL
+Liquid fuels ,Diesel oil-Cars and light commercial vehicles,70.41,38.6,2717.826,kg CO2-e/kL
+Liquid fuels ,Liquefied petroleum gas (LPG)-Cars and light commercial vehicles,61,26.2,1598.2,kg CO2-e/kL
+Liquid fuels ,Fuel oil-Cars and light commercial vehicles,74.18,39.7,2944.946,kg CO2-e/kL
+Liquid fuels ,Ethanol-Cars and light commercial vehicles,0.4,23.4,9.36,kg CO2-e/kL
+Liquid fuels ,Biodiesel-Cars and light commercial vehicles,2.5,34.6,86.5,kg CO2-e/kL
+Liquid fuels ,Other biofuels-Cars and light commercial vehicles,2.5,23.4,58.5,kg CO2-e/kL
+Liquid fuels ,Liquefied natural gas-Light duty vehicles,59,25.3,1492.7,kg CO2-e/kL
+Liquid fuels ,Liquefied natural gas-Heavy duty vehicles,54.5,25.3,1378.85,kg CO2-e/kL
+Liquid fuels ,Diesel oil - Euro iv or higher-Heavy duty vehicles,70.37,38.6,2716.282,kg CO2-e/kL
+Liquid fuels ,Diesel oil - Euro iii-Heavy duty vehicles,70.4,38.6,2717.44,kg CO2-e/kL
+Liquid fuels ,Diesel oil - Euro i-Heavy duty vehicles,70.5,38.6,2721.3,kg CO2-e/kL
+Liquid fuels ,Gasoline for use as fuel in an aircraft-Aviation,67.66,33.1,2239.546,kg CO2-e/kL
+Liquid fuels ,Kerosene for use as fuel in an aircraft-Aviation,70.21,36.8,2583.728,kg CO2-e/kL
+Liquid fuels ,Renewable aviation kerosene,0.61,36.8,22.448,kg CO2-e/kL
+Liquid fuels ,Compressed natural gas-Light duty vehicles,59,0.0393,2.3187,kg CO2-e/m3
+Liquid fuels ,Compressed natural gas-Heavy duty vehicles,54.5,0.0393,2.14185,kg CO2-e/m3

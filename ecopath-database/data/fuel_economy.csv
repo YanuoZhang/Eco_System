@@ -1,0 +1,17 @@
+state,Vehicle type,Petrol l/100km,Diesel l/100km,LPG/CNG l/100km
+NSW,Passenger vehicles,11.5,11.4,8.2
+NSW,Buses,16.5,32.1,0
+VIC,Passenger vehicles,10.1,10.9,11.7
+VIC,Buses,14.1,28.1,15.1
+QLD,Passenger vehicles,11.6,11.5,8
+QLD,Buses,17,26.2,51.7
+SA,Passenger vehicles,10.8,12.2,11.6
+SA,Buses,8.3,31.5,42
+WA,Passenger vehicles,11.5,12.2,13.4
+WA,Buses,15.3,24.9,62.2
+TAS,Passenger vehicles,11,11.7,9
+TAS,Buses,12.5,29.3,0
+NT,Passenger vehicles,10.8,11.4,7.8
+NT,Buses,15.8,21.5,0
+ACT,Passenger vehicles,10.5,10.8,9.8
+ACT,Buses,14.7,36.4,61.2

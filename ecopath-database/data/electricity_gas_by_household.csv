@@ -1,0 +1,15 @@
+state,energy_type,energy_pj
+NSW,Natural gas,31.3
+NSW,Electricity,84.8
+VIC,Natural gas,86.247
+VIC,Electricity,54.631
+QLD,Natural gas,4.774
+QLD,Electricity,60.758
+WA,Natural gas,10.368
+WA,Electricity,23.514
+SA,Natural gas,6.49
+SA,Electricity,17.694
+TAS,Natural gas,0.418
+TAS,Electricity,7.884
+NT,Natural gas,0.009
+NT,Electricity,3.207
