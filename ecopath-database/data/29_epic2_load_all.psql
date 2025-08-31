@@ -1,0 +1,37 @@
+-- =====================================================================
+-- 29_epic2_load_all.psql
+-- Purpose: Orchestrate schema + all Epic 2 data loads
+-- Run from ecopath-database folder:
+--   psql -d eco_system -f data/29_epic2_load_all.psql
+-- =====================================================================
+
+\set ON_ERROR_STOP on
+\pset pager off
+\timing on
+
+ROLLBACK;
+
+\echo '== EcoPath DB | EPIC 2 START =='
+
+\echo '-> 11_epic2_schema.sql'
+\i ./11_epic2_schema.sql
+
+\echo '-> 12_load_electricity_factors.sql'
+\i ./12_load_electricity_factors.sql
+
+\echo '-> 13_load_household_energy.sql'
+\i ./13_load_household_energy.sql
+
+\echo '-> 14_load_fuel_economy.sql'
+\i ./14_load_fuel_economy.sql
+
+\echo '-> 15_load_gas_factors.sql'
+\i ./15_load_gas_factors.sql
+
+\echo '-> 16_load_total_dwellings.sql'
+\i ./16_load_total_dwellings.sql
+
+\echo '-> 17_load_transport_fuels_factors.sql'
+\i ./17_load_transport_fuels_factors.sql
+
+\echo '== EcoPath DB | EPIC 2 COMPLETE =='
