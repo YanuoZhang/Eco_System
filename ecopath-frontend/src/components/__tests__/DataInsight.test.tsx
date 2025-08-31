@@ -13,7 +13,7 @@ const mockForward = vi.fn();
 const mockRefresh = vi.fn();
 const mockPrefetch = vi.fn();
 
-vi.mock('next/navigation', () => ({
+vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
     replace: mockReplace,
@@ -23,22 +23,22 @@ vi.mock('next/navigation', () => ({
     prefetch: mockPrefetch,
   }),
   useSearchParams: () => ({
-    get: (key: string) => key === 'step' ? '1' : null,
-    has: (key: string) => key === 'step',
+    get: (key: string) => (key === "step" ? "1" : null),
+    has: (key: string) => key === "step",
     forEach: () => {},
     entries: () => [],
     keys: () => [],
     values: () => [],
-    toString: () => 'step=1',
+    toString: () => "step=1",
   }),
 }));
 
 // Mock window.location
-Object.defineProperty(window, 'location', {
+Object.defineProperty(window, "location", {
   value: {
-    href: 'http://localhost:3000?step=1',
-    pathname: '/',
-    search: '?step=1',
+    href: "http://localhost:3000?step=1",
+    pathname: "/",
+    search: "?step=1",
   },
   writable: true,
 });
@@ -57,9 +57,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
       expect(screen.getByText(/Victoria.*Environmental Data/i)).toBeInTheDocument();
     });
@@ -68,9 +68,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Real-time data from EPA Victoria & AEMO/i)).toBeInTheDocument();
       expect(screen.getByText(/Victoria Energy Generation Mix/i)).toBeInTheDocument();
     });
@@ -79,22 +79,22 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Victoria Energy Generation Mix/i)).toBeInTheDocument();
     });
 
     it("renders navigation buttons", () => {
       const mockOnNext = vi.fn();
       const mockOnPrev = vi.fn();
-      
+
       render(
         <TestWrapper>
           <DataInsight onNext={mockOnNext} onPrev={mockOnPrev} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByRole("button", { name: /Previous Step/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Next Journey/i })).toBeInTheDocument();
     });
@@ -105,9 +105,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Victoria.*Environmental Data/i)).toBeInTheDocument();
       expect(screen.getByText(/Real-time data from EPA Victoria & AEMO/i)).toBeInTheDocument();
     });
@@ -116,9 +116,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Victoria Energy Generation Mix/i)).toBeInTheDocument();
     });
   });
@@ -128,9 +128,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Renewable Growth/i)).toBeInTheDocument();
       expect(screen.getByText(/Wind Power/i)).toBeInTheDocument();
       expect(screen.getByText(/Solar Power/i)).toBeInTheDocument();
@@ -140,9 +140,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Storage & Grid/i)).toBeInTheDocument();
       expect(screen.getByText(/Battery storage/i)).toBeInTheDocument();
       expect(screen.getByText(/Grid stability/i)).toBeInTheDocument();
@@ -152,9 +152,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Victoria Energy Generation Mix/i)).toBeInTheDocument();
     });
   });
@@ -163,48 +163,48 @@ describe("DataInsight", () => {
     it("calls onPrev when Previous button is clicked", async () => {
       const mockOnPrev = vi.fn();
       const user = userEvent.setup();
-      
+
       render(
         <TestWrapper>
           <DataInsight onPrev={mockOnPrev} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const prevButton = screen.getByRole("button", { name: /Previous Step/i });
       await user.click(prevButton);
-      
+
       expect(mockOnPrev).toHaveBeenCalledTimes(1);
     });
 
     it("calls onNext when Next button is clicked", async () => {
       const mockOnNext = vi.fn();
       const user = userEvent.setup();
-      
+
       render(
         <TestWrapper>
           <DataInsight onNext={mockOnNext} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const nextButton = screen.getByRole("button", { name: /Next Journey/i });
       await user.click(nextButton);
-      
+
       expect(mockOnNext).toHaveBeenCalledTimes(1);
     });
 
     it("buttons are properly styled and accessible", () => {
       const mockOnNext = vi.fn();
       const mockOnPrev = vi.fn();
-      
+
       render(
         <TestWrapper>
           <DataInsight onNext={mockOnNext} onPrev={mockOnPrev} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const prevButton = screen.getByRole("button", { name: /Previous Step/i });
       const nextButton = screen.getByRole("button", { name: /Next Journey/i });
-      
+
       expect(prevButton).toBeInTheDocument();
       expect(nextButton).toBeInTheDocument();
     });
@@ -215,9 +215,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const mainContainer = screen.getByRole("main");
       expect(mainContainer).toBeInTheDocument();
     });
@@ -226,9 +226,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Victoria Energy Generation Mix/i)).toBeInTheDocument();
       expect(screen.getByText(/Renewable Growth/i)).toBeInTheDocument();
       expect(screen.getByText(/Storage & Grid/i)).toBeInTheDocument();
@@ -238,9 +238,9 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Victoria Energy Generation Mix/i)).toBeInTheDocument();
       expect(screen.getByText(/Renewable Growth/i)).toBeInTheDocument();
     });
@@ -251,34 +251,36 @@ describe("DataInsight", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByText(/Data Insight Hub/i)).toBeInTheDocument();
     });
 
     it("maintains component state during interactions", async () => {
       const mockOnNext = vi.fn();
       const user = userEvent.setup();
-      
+
       render(
         <TestWrapper>
           <DataInsight onNext={mockOnNext} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const nextButton = screen.getByRole("button", { name: /Next Journey/i });
       await user.click(nextButton);
-      
+
       expect(mockOnNext).toHaveBeenCalledTimes(1);
     });
 
     it("renders without crashing when no props provided", () => {
-      expect(() => render(
-        <TestWrapper>
-          <DataInsight />
-        </TestWrapper>
-      )).not.toThrow();
+      expect(() =>
+        render(
+          <TestWrapper>
+            <DataInsight />
+          </TestWrapper>,
+        ),
+      ).not.toThrow();
     });
   });
 
@@ -286,16 +288,16 @@ describe("DataInsight", () => {
     it("maintains proper tab order", () => {
       const mockOnNext = vi.fn();
       const mockOnPrev = vi.fn();
-      
+
       render(
         <TestWrapper>
           <DataInsight onNext={mockOnNext} onPrev={mockOnPrev} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const prevButton = screen.getByRole("button", { name: /Previous Step/i });
       const nextButton = screen.getByRole("button", { name: /Next Journey/i });
-      
+
       expect(prevButton).toBeInTheDocument();
       expect(nextButton).toBeInTheDocument();
     });
@@ -303,100 +305,100 @@ describe("DataInsight", () => {
     it("provides keyboard navigation support", () => {
       const mockOnNext = vi.fn();
       const mockOnPrev = vi.fn();
-      
+
       render(
         <TestWrapper>
           <DataInsight onNext={mockOnNext} onPrev={mockOnPrev} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const prevButton = screen.getByRole("button", { name: /Previous Step/i });
       const nextButton = screen.getByRole("button", { name: /Next Journey/i });
-      
+
       expect(prevButton).toBeInTheDocument();
       expect(nextButton).toBeInTheDocument();
     });
   });
 
-  describe('TC-1.6.1: Back to Homepage Navigation', () => {
-    it('displays Back to Homepage button when onBackToHomepage is provided', () => {
+  describe("TC-1.6.1: Back to Homepage Navigation", () => {
+    it("displays Back to Homepage button when onBackToHomepage is provided", () => {
       const mockOnBackToHomepage = vi.fn();
       render(
         <TestWrapper>
           <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
-      const backButton = screen.getByRole('button', { name: /back to homepage/i });
+
+      const backButton = screen.getByRole("button", { name: /back to homepage/i });
       expect(backButton).toBeInTheDocument();
-      expect(backButton.tagName).toBe('BUTTON');
+      expect(backButton.tagName).toBe("BUTTON");
     });
 
-    it('does not display Back to Homepage button when onBackToHomepage is not provided', () => {
+    it("does not display Back to Homepage button when onBackToHomepage is not provided", () => {
       render(
         <TestWrapper>
           <DataInsight />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
-      const backButton = screen.queryByRole('button', { name: /back to homepage/i });
+
+      const backButton = screen.queryByRole("button", { name: /back to homepage/i });
       expect(backButton).not.toBeInTheDocument();
     });
 
-    it('shows house icon in Back to Homepage button', () => {
+    it("shows house icon in Back to Homepage button", () => {
       const mockOnBackToHomepage = vi.fn();
       render(
         <TestWrapper>
           <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
-      const backButton = screen.getByRole('button', { name: /back to homepage/i });
-      const houseIcon = backButton.querySelector('span:first-child');
-      expect(houseIcon).toHaveTextContent('🏠');
+
+      const backButton = screen.getByRole("button", { name: /back to homepage/i });
+      const houseIcon = backButton.querySelector("span:first-child");
+      expect(houseIcon).toHaveTextContent("🏠");
     });
 
-    it('calls onBackToHomepage when Back to Homepage is clicked', () => {
+    it("calls onBackToHomepage when Back to Homepage is clicked", () => {
       const mockOnBackToHomepage = vi.fn();
       render(
         <TestWrapper>
           <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
-      const backButton = screen.getByRole('button', { name: /back to homepage/i });
+
+      const backButton = screen.getByRole("button", { name: /back to homepage/i });
       fireEvent.click(backButton);
-      
+
       expect(mockOnBackToHomepage).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('TC-1.6.2: Homepage Landing Section Visibility', () => {
-    it('Back to Homepage button has correct styling and hover effects', () => {
+  describe("TC-1.6.2: Homepage Landing Section Visibility", () => {
+    it("Back to Homepage button has correct styling and hover effects", () => {
       const mockOnBackToHomepage = vi.fn();
       render(
         <TestWrapper>
           <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
-      const backButton = screen.getByRole('button', { name: /back to homepage/i });
+
+      const backButton = screen.getByRole("button", { name: /back to homepage/i });
       // Check if button has some styling classes
-      expect(backButton.className).toContain('bg-blue-100');
-      expect(backButton.className).toContain('text-blue-700');
+      expect(backButton.className).toContain("bg-blue-100");
+      expect(backButton.className).toContain("text-blue-700");
     });
 
-    it('Back to Homepage button is positioned correctly in header layout', () => {
+    it("Back to Homepage button is positioned correctly in header layout", () => {
       const mockOnBackToHomepage = vi.fn();
       render(
         <TestWrapper>
           <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
-      const backButton = screen.getByRole('button', { name: /back to homepage/i });
-      const headerContainer = backButton.closest('div');
-      expect(headerContainer).toHaveClass('flex', 'items-center', 'space-x-4');
+
+      const backButton = screen.getByRole("button", { name: /back to homepage/i });
+      const headerContainer = backButton.closest("div");
+      expect(headerContainer).toHaveClass("flex", "items-center", "space-x-4");
     });
   });
 });

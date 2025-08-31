@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import HeroSection from '@/components/HeroSection';
-import JourneyWelcome from '@/components/JourneyWelcome';
-import DataInsight from '@/components/DataInsight';
-import FootprintCalculator from '@/components/FootprintCalculator';
-import GlobalStateSelector from '@/components/GlobalStateSelector';
-import { StateProvider } from '@/contexts/StateContext';
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import HeroSection from "@/components/HeroSection";
+import JourneyWelcome from "@/components/JourneyWelcome";
+import DataInsight from "@/components/DataInsight";
+import FootprintCalculator from "@/components/FootprintCalculator";
+import GlobalStateSelector from "@/components/GlobalStateSelector";
+import { StateProvider } from "@/contexts/StateContext";
 
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // Initialize currentStep from localStorage or URL params
   const [currentStep, setCurrentStep] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedStep = localStorage.getItem('currentStep');
+    if (typeof window !== "undefined") {
+      const savedStep = localStorage.getItem("currentStep");
       if (savedStep) {
         return parseInt(savedStep);
       }
@@ -25,29 +25,29 @@ function HomeContent() {
   });
 
   const steps = [
-    { 
-      id: 1, 
-      title: 'Welcome to Your Journey', 
-      icon: '🌱',
-      description: 'Start your environmental exploration'
+    {
+      id: 1,
+      title: "Welcome to Your Journey",
+      icon: "🌱",
+      description: "Start your environmental exploration",
     },
-    { 
-      id: 2, 
-      title: 'Discover Your Environment', 
-      icon: '🌍',
-      description: 'Explore local environmental data'
+    {
+      id: 2,
+      title: "Discover Your Environment",
+      icon: "🌍",
+      description: "Explore local environmental data",
     },
-    { 
-      id: 3, 
-      title: 'Calculate Your Footprint', 
-      icon: '🧮',
-      description: 'Measure your environmental impact'
-    }
+    {
+      id: 3,
+      title: "Calculate Your Footprint",
+      icon: "🧮",
+      description: "Measure your environmental impact",
+    },
   ];
 
   // Sync URL with current step
   useEffect(() => {
-    const stepFromUrl = searchParams.get('step');
+    const stepFromUrl = searchParams.get("step");
     if (stepFromUrl) {
       const stepNumber = parseInt(stepFromUrl);
       if (stepNumber >= 1 && stepNumber <= steps.length) {
@@ -59,14 +59,14 @@ function HomeContent() {
   // Update URL when step changes
   useEffect(() => {
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('step', currentStep.toString());
+    currentUrl.searchParams.set("step", currentStep.toString());
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
   }, [currentStep, router]);
 
   // Persist currentStep to localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('currentStep', currentStep.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentStep", currentStep.toString());
     }
   }, [currentStep]);
 
@@ -87,7 +87,13 @@ function HomeContent() {
       case 1:
         return <JourneyWelcome onNext={nextStep} />;
       case 2:
-        return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} onBackToHomepage={() => setCurrentStep(1)} />;
+        return (
+          <DataInsight
+            onNext={() => setCurrentStep(3)}
+            onPrev={prevStep}
+            onBackToHomepage={() => setCurrentStep(1)}
+          />
+        );
       case 3:
         return <FootprintCalculator onPrev={prevStep} onBackToHomepage={() => setCurrentStep(1)} />;
       default:
@@ -110,13 +116,17 @@ function HomeContent() {
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
         {/* Global State Selector */}
         <GlobalStateSelector />
-        
+
         {/* Stepper Zone */}
         <div className="bg-white/90 backdrop-blur-sm border-b border-green-200/50 py-6 sm:py-8">
           <div className="max-w-6xl mx-auto px-4">
             <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-2">Your Environmental Journey</h1>
-              <p className="text-green-600 text-sm sm:text-base">Follow the path to discover sustainable living</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-2">
+                Your Environmental Journey
+              </h1>
+              <p className="text-green-600 text-sm sm:text-base">
+                Follow the path to discover sustainable living
+              </p>
             </div>
 
             {/* Journey Steps */}
@@ -128,17 +138,20 @@ function HomeContent() {
                 return (
                   <div key={step.id} className="flex md:flex-col items-center md:text-center">
                     {/* Step Icon */}
-                    <div className={`relative w-20 h-20 rounded-full flex items-center justify-center border-4 transition-all duration-500 transform ${
-                      isCurrent 
-                        ? 'bg-gradient-to-br from-green-400 to-blue-400 border-white shadow-lg scale-110 animate-pulse' 
-                        : isCompleted
-                          ? 'bg-gradient-to-br from-green-500 to-emerald-500 border-emerald-200 shadow-md' 
-                          : 'bg-gray-100 border-gray-300'
-                    }`}>
-                      <span className={`text-3xl ${
-                        isCurrent ? 'text-white' : 
-                        isCompleted ? 'text-white' : 'text-gray-400'
-                      }`}>
+                    <div
+                      className={`relative w-20 h-20 rounded-full flex items-center justify-center border-4 transition-all duration-500 transform ${
+                        isCurrent
+                          ? "bg-gradient-to-br from-green-400 to-blue-400 border-white shadow-lg scale-110 animate-pulse"
+                          : isCompleted
+                            ? "bg-gradient-to-br from-green-500 to-emerald-500 border-emerald-200 shadow-md"
+                            : "bg-gray-100 border-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`text-3xl ${
+                          isCurrent ? "text-white" : isCompleted ? "text-white" : "text-gray-400"
+                        }`}
+                      >
                         {step.icon}
                       </span>
 
@@ -157,16 +170,26 @@ function HomeContent() {
 
                     {/* Step Info */}
                     <div className="text-center mt-4 max-w-32 ml-4 md:ml-0">
-                      <h3 className={`font-semibold text-sm mb-1 ${
-                        isCurrent ? 'text-green-700' : 
-                        isCompleted ? 'text-emerald-600' : 'text-gray-400'
-                      }`}>
+                      <h3
+                        className={`font-semibold text-sm mb-1 ${
+                          isCurrent
+                            ? "text-green-700"
+                            : isCompleted
+                              ? "text-emerald-600"
+                              : "text-gray-400"
+                        }`}
+                      >
                         {step.title}
                       </h3>
-                      <p className={`text-xs leading-tight ${
-                        isCurrent ? 'text-green-600' : 
-                        isCompleted ? 'text-emerald-500' : 'text-gray-400'
-                      }`}>
+                      <p
+                        className={`text-xs leading-tight ${
+                          isCurrent
+                            ? "text-green-600"
+                            : isCompleted
+                              ? "text-emerald-500"
+                              : "text-gray-400"
+                        }`}
+                      >
                         {step.description}
                       </p>
                     </div>
@@ -180,7 +203,9 @@ function HomeContent() {
               <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-green-200 shadow-sm">
                 <span className="text-xl sm:text-2xl">{steps[currentStep - 1]?.icon}</span>
                 <div className="text-left">
-                  <div className="font-semibold text-green-800 text-xs sm:text-sm">Step {currentStep}</div>
+                  <div className="font-semibold text-green-800 text-xs sm:text-sm">
+                    Step {currentStep}
+                  </div>
                   <div className="text-green-600 text-xs">{steps[currentStep - 1]?.title}</div>
                 </div>
               </div>
@@ -189,9 +214,7 @@ function HomeContent() {
         </div>
 
         {/* Journey Content */}
-        <main className="min-h-[calc(100vh-300px)]">
-          {renderCurrentStep()}
-        </main>
+        <main className="min-h-[calc(100vh-300px)]">{renderCurrentStep()}</main>
       </div>
     </StateProvider>
   );
@@ -199,17 +222,19 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">🌱</span>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🌱</span>
+            </div>
+            <h2 className="text-2xl font-bold text-green-800 mb-2">Loading...</h2>
+            <p className="text-green-600">Preparing your environmental journey</p>
           </div>
-          <h2 className="text-2xl font-bold text-green-800 mb-2">Loading...</h2>
-          <p className="text-green-600">Preparing your environmental journey</p>
         </div>
-      </div>
-    }>
+      }
+    >
       <HomeContent />
     </Suspense>
   );

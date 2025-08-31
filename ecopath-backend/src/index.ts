@@ -18,16 +18,16 @@ app.use(morgan("dev"));
 app.get("/healthz", async (_req: Request, res: Response) => {
   try {
     const dbConnected = await testConnection();
-    res.status(200).json({ 
-      status: "ok", 
+    res.status(200).json({
+      status: "ok",
       database: dbConnected ? "connected" : "disconnected",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: "error", 
+    res.status(500).json({
+      status: "error",
       database: "error",
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -41,7 +41,9 @@ app.get("/api/energy-mix", async (req: Request, res: Response) => {
   try {
     const stateParam = String(req.query.state || "").toUpperCase();
     if (!stateParam) {
-      return res.status(400).json({ error: "Missing required query param 'state' (e.g., ?state=VIC)" });
+      return res
+        .status(400)
+        .json({ error: "Missing required query param 'state' (e.g., ?state=VIC)" });
     }
 
     // Query real data from database
@@ -57,20 +59,20 @@ app.get("/api/energy-mix", async (req: Request, res: Response) => {
     `;
 
     const result = await pool.query(query, [stateParam]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: `No data found for state '${stateParam}'` });
     }
 
-    const data = result.rows.map(row => ({
+    const data = result.rows.map((row) => ({
       source: row.energy_type,
       percentage: Math.round(row.percentage),
-      generation: row.generation_gwh
+      generation: row.generation_gwh,
     }));
 
     return res.json(data);
   } catch (error) {
-    console.error('Error fetching energy mix data:', error);
+    console.error("Error fetching energy mix data:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -84,7 +86,7 @@ app.get("/api/emissions", async (req: Request, res: Response) => {
     // Validate state parameter
     if (!stateParam) {
       return res.status(400).json({
-        error: "Missing required query param 'state' (e.g., ?state=VIC&range=10y)"
+        error: "Missing required query param 'state' (e.g., ?state=VIC&range=10y)",
       });
     }
 
@@ -92,7 +94,7 @@ app.get("/api/emissions", async (req: Request, res: Response) => {
     const validRanges = ["5y", "10y", "all"];
     if (!validRanges.includes(rangeParam)) {
       return res.status(400).json({
-        error: `Invalid range parameter. Must be one of: ${validRanges.join(", ")}`
+        error: `Invalid range parameter. Must be one of: ${validRanges.join(", ")}`,
       });
     }
 
@@ -102,35 +104,35 @@ app.get("/api/emissions", async (req: Request, res: Response) => {
       FROM emission_total 
       WHERE state_id = $1
     `;
-    
+
     const params = [stateParam];
-    
+
     if (rangeParam === "5y") {
       query += " AND year >= EXTRACT(YEAR FROM CURRENT_DATE) - 5";
     } else if (rangeParam === "10y") {
       query += " AND year >= EXTRACT(YEAR FROM CURRENT_DATE) - 10";
     }
-    
+
     query += " ORDER BY year DESC";
 
     const result = await pool.query(query, params);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: `No emissions data found for state '${stateParam}'` });
     }
 
-    const data = result.rows.map(row => ({ year: row.year, value: row.value }));
+    const data = result.rows.map((row) => ({ year: row.year, value: row.value }));
     const latest = data.length > 0 ? data[0] : null;
 
     const response = {
       unit: "Mt CO2-e",
       latest: latest ? { year: latest.year, value: latest.value } : null,
-      data: data
+      data: data,
     };
 
     return res.json(response);
   } catch (error) {
-    console.error('Error fetching emissions data:', error);
+    console.error("Error fetching emissions data:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -168,7 +170,16 @@ const openapiDoc = {
                     properties: {
                       source: {
                         type: "string",
-                        enum: ["coal", "gas", "hydro", "wind", "solar", "bioenergy", "distillate", "battery"],
+                        enum: [
+                          "coal",
+                          "gas",
+                          "hydro",
+                          "wind",
+                          "solar",
+                          "bioenergy",
+                          "distillate",
+                          "battery",
+                        ],
                       },
                       percentage: { type: "number", format: "float", minimum: 0, maximum: 100 },
                       generation: {
@@ -207,7 +218,8 @@ const openapiDoc = {
             in: "query",
             required: false,
             schema: { type: "string", enum: ["5y", "10y", "all"], default: "all" },
-            description: "Time range filter: 5y (last 5 years), 10y (last 10 years), all (all available data).",
+            description:
+              "Time range filter: 5y (last 5 years), 10y (last 10 years), all (all available data).",
           },
         ],
         responses: {
@@ -260,20 +272,15 @@ const openapiDoc = {
 app.get("/openapi.json", (_req: Request, res: Response) => res.json(openapiDoc));
 app.use("/docs", swaggerUI.serve, swaggerUI.setup(openapiDoc));
 
-app.listen(port, async (err?: Error) => {
-  if (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-  
+app.listen(port, async () => {
   console.log(`🚀 API server listening on http://localhost:${port}`);
-  console.log(`📚 OpenAPI docs available at: http://localhost:${port}/docs`);
-  console.log(`🔍 OpenAPI spec available at: http://localhost:${port}/openapi.json`);
-  
+  console.log(`📚 OpenAPI docs available at http://localhost:${port}/docs`);
+  console.log(`🔍 OpenAPI spec available at http://localhost:${port}/openapi.json`);
+
   // Test database connection
   try {
     await testConnection();
-  } catch (error) {
-    console.warn('⚠️  Database connection failed. Some endpoints may not work properly.');
+  } catch {
+    console.warn("⚠️  Database connection failed. Some endpoints may not work properly.");
   }
 });

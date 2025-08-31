@@ -119,7 +119,7 @@ class EmissionsDataService {
   // Simulate database query
   async getEmissionsByState(state: string): Promise<EmissionData[]> {
     // Simulate async database call
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     const stateData = this.data[state.toUpperCase()];
     if (!stateData) {
@@ -131,13 +131,13 @@ class EmissionsDataService {
 
   // Simulate empty data scenario
   async getEmptyEmissions(): Promise<EmissionData[]> {
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     return [];
   }
 
   // Simulate data with future years (for testing edge cases)
   async getEmissionsWithFutureData(): Promise<EmissionData[]> {
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     return [
       { year: 2025, value: 40.0 }, // Future year
       { year: 2024, value: 41.0 }, // Future year
@@ -167,7 +167,7 @@ function createTestApp(customDataService?: EmissionsDataService) {
       // Validate state parameter
       if (!stateParam) {
         return res.status(400).json({
-          error: "Missing required query param 'state' (e.g., ?state=VIC&range=10y)"
+          error: "Missing required query param 'state' (e.g., ?state=VIC&range=10y)",
         });
       }
 
@@ -175,7 +175,7 @@ function createTestApp(customDataService?: EmissionsDataService) {
       const validRanges = ["5y", "10y", "all"];
       if (!validRanges.includes(rangeParam)) {
         return res.status(400).json({
-          error: `Invalid range parameter. Must be one of: ${validRanges.join(", ")}`
+          error: `Invalid range parameter. Must be one of: ${validRanges.join(", ")}`,
         });
       }
 
@@ -183,9 +183,9 @@ function createTestApp(customDataService?: EmissionsDataService) {
       let allData: EmissionData[];
       try {
         allData = await dataService.getEmissionsByState(stateParam);
-      } catch (error) {
+      } catch {
         return res.status(404).json({
-          error: `Unsupported or unknown state '${stateParam}'`
+          error: `Unsupported or unknown state '${stateParam}'`,
         });
       }
 
@@ -194,9 +194,9 @@ function createTestApp(customDataService?: EmissionsDataService) {
       const currentYear = new Date().getFullYear();
 
       if (rangeParam === "5y") {
-        filteredData = allData.filter(item => item.year >= currentYear - 5);
+        filteredData = allData.filter((item) => item.year >= currentYear - 5);
       } else if (rangeParam === "10y") {
-        filteredData = allData.filter(item => item.year >= currentYear - 10);
+        filteredData = allData.filter((item) => item.year >= currentYear - 10);
       }
       // For "all", use all data (no filtering)
 
@@ -210,14 +210,14 @@ function createTestApp(customDataService?: EmissionsDataService) {
       const response: EmissionsResponse = {
         unit: "Mt CO2-e",
         latest: latest ? { year: latest.year, value: latest.value } : null,
-        data: filteredData.map(item => ({ year: item.year, value: item.value }))
+        data: filteredData.map((item) => ({ year: item.year, value: item.value })),
       };
 
       return res.json(response);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error("Unexpected error:", error);
       return res.status(500).json({
-        error: "Internal server error"
+        error: "Internal server error",
       });
     }
   });
@@ -319,7 +319,9 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
 
       it("returns 400 for invalid range parameter", async () => {
         const app = createTestApp();
-        const res = await request(app).get("/api/emissions").query({ state: "VIC", range: "invalid" });
+        const res = await request(app)
+          .get("/api/emissions")
+          .query({ state: "VIC", range: "invalid" });
 
         expect(res.status).toBe(400);
         expect(res.body).toHaveProperty("error");
@@ -347,7 +349,9 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
 
           expect(res.status).toBe(404);
           expect(res.body).toHaveProperty("error");
-          expect(res.body.error).toContain(`Unsupported or unknown state '${invalidState.toUpperCase()}'`);
+          expect(res.body.error).toContain(
+            `Unsupported or unknown state '${invalidState.toUpperCase()}'`,
+          );
         });
       });
 
@@ -477,7 +481,9 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
       it("includes more data than 5y range", async () => {
         const app = createTestApp();
         const res5y = await request(app).get("/api/emissions").query({ state: "VIC", range: "5y" });
-        const res10y = await request(app).get("/api/emissions").query({ state: "VIC", range: "10y" });
+        const res10y = await request(app)
+          .get("/api/emissions")
+          .query({ state: "VIC", range: "10y" });
 
         expect(res10y.body.data.length).toBeGreaterThanOrEqual(res5y.body.data.length);
       });
@@ -494,7 +500,9 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
 
       it("default range behavior matches explicit 'all' range", async () => {
         const app = createTestApp();
-        const resWithRange = await request(app).get("/api/emissions").query({ state: "VIC", range: "all" });
+        const resWithRange = await request(app)
+          .get("/api/emissions")
+          .query({ state: "VIC", range: "all" });
         const resWithoutRange = await request(app).get("/api/emissions").query({ state: "VIC" });
 
         expect(resWithRange.body.data).toEqual(resWithoutRange.body.data);
@@ -558,7 +566,7 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
         // Create a custom mock service that returns empty data
         const emptyDataService = new EmissionsDataService();
         emptyDataService.getEmissionsByState = async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return [];
         };
 
@@ -575,7 +583,7 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
       it("latest is null when no data is available", async () => {
         const emptyDataService = new EmissionsDataService();
         emptyDataService.getEmissionsByState = async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return [];
         };
 
@@ -591,7 +599,7 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
       it("handles future years data correctly", async () => {
         const futureDataService = new EmissionsDataService();
         futureDataService.getEmissionsByState = async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return [
             { year: 2025, value: 40.0 },
             { year: 2024, value: 41.0 },
@@ -611,7 +619,7 @@ describe("Greenhouse Gas Emissions API - Unit Tests", () => {
       it("handles single data point correctly", async () => {
         const singleDataService = new EmissionsDataService();
         singleDataService.getEmissionsByState = async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return [{ year: 2023, value: 42.7 }];
         };
 

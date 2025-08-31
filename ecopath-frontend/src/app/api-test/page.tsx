@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ApiService, EnergyMixData, EmissionsData } from '@/services/api';
+import React, { useState } from "react";
+import { ApiService, EnergyMixData, EmissionsData } from "@/services/api";
 
 export default function ApiTestPage() {
   const [energyMixData, setEnergyMixData] = useState<EnergyMixData[]>([]);
   const [emissionsData, setEmissionsData] = useState<EmissionsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedState, setSelectedState] = useState('VIC');
+  const [selectedState, setSelectedState] = useState("VIC");
 
-  const states = ['VIC', 'NSW', 'QLD', 'SA', 'TAS', 'WA'];
+  const states = ["VIC", "NSW", "QLD", "SA", "TAS", "WA"];
 
   const testEnergyMix = async () => {
     try {
@@ -19,7 +19,7 @@ export default function ApiTestPage() {
       const data = await ApiService.getEnergyMix(selectedState);
       setEnergyMixData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -32,7 +32,7 @@ export default function ApiTestPage() {
       const data = await ApiService.getEmissions(selectedState);
       setEmissionsData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -43,10 +43,10 @@ export default function ApiTestPage() {
       setLoading(true);
       setError(null);
       const data = await ApiService.getEnvironment();
-      console.log('Environment data:', data);
+      console.log("Environment data:", data);
       alert(`Environment: ${data.env}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -56,19 +56,19 @@ export default function ApiTestPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">API Connection Test</h1>
-        
+
         {/* State Selector */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
           <h2 className="text-xl font-semibold mb-4">Select State</h2>
           <div className="flex flex-wrap gap-2">
-            {states.map(state => (
+            {states.map((state) => (
               <button
                 key={state}
                 onClick={() => setSelectedState(state)}
                 className={`px-4 py-2 rounded-lg border ${
                   selectedState === state
-                    ? 'bg-blue-500 text-white border-blue-500'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    ? "bg-blue-500 text-white border-blue-500"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 {state}
@@ -127,7 +127,10 @@ export default function ApiTestPage() {
             <h2 className="text-xl font-semibold mb-4">Energy Mix Data for {selectedState}</h2>
             <div className="space-y-3">
               {energyMixData.map((item, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                >
                   <span className="font-medium">{item.source}</span>
                   <span className="text-blue-600">{item.percentage}%</span>
                   <span className="text-gray-600">{item.generation} MW</span>
@@ -145,15 +148,21 @@ export default function ApiTestPage() {
               <p className="text-gray-600">Unit: {emissionsData.unit}</p>
               {emissionsData.latest && (
                 <p className="text-gray-600">
-                  Latest: {emissionsData.latest.year} - {emissionsData.latest.value} {emissionsData.unit}
+                  Latest: {emissionsData.latest.year} - {emissionsData.latest.value}{" "}
+                  {emissionsData.unit}
                 </p>
               )}
             </div>
             <div className="space-y-2">
               {emissionsData.data.slice(0, 5).map((item, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div
+                  key={index}
+                  className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                >
                   <span className="font-medium">{item.year}</span>
-                  <span className="text-red-600">{item.value} {emissionsData.unit}</span>
+                  <span className="text-red-600">
+                    {item.value} {emissionsData.unit}
+                  </span>
                 </div>
               ))}
             </div>

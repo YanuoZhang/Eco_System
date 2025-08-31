@@ -1,17 +1,16 @@
-import { Pool, PoolConfig } from 'pg';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { Pool, PoolConfig } from "pg";
+import { config } from "./index";
 
 const dbConfig: PoolConfig = {
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'ecopath',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  user: config.database.user,
+  host: config.database.host,
+  database: config.database.database,
+  password: config.database.password,
+  port: config.database.port,
+  max: config.database.max,
+  idleTimeoutMillis: config.database.idleTimeoutMillis,
+  connectionTimeoutMillis: config.database.connectionTimeoutMillis,
+  ...(config.database.ssl && { ssl: config.database.ssl }),
 };
 
 export const pool = new Pool(dbConfig);
@@ -20,11 +19,11 @@ export const pool = new Pool(dbConfig);
 export const testConnection = async () => {
   try {
     const client = await pool.connect();
-    console.log('✅ Database connected successfully');
+    console.log(`Database connected successfully in ${config.environment} mode`);
     client.release();
     return true;
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    console.error("Database connection failed:", error);
     return false;
   }
 };

@@ -5,7 +5,9 @@ This directory contains comprehensive unit tests and contract tests for the `/ap
 ## Test Files
 
 ### `energy-mix.test.ts`
+
 Main unit test file covering:
+
 - Valid state parameters (VIC, NSW, QLD, SA, TAS, WA)
 - Invalid state parameters (missing, empty, unsupported)
 - Schema validation against OpenAPI specification
@@ -14,7 +16,9 @@ Main unit test file covering:
 - Edge cases (case insensitive, consistency)
 
 ### `energy-mix.contract.test.ts`
+
 Contract tests focusing on API compliance:
+
 - OpenAPI schema compliance validation
 - Exact count of energy sources (5 per state)
 - Enum validation for energy sources
@@ -51,6 +55,7 @@ npm run test:watch
 ## Test Data
 
 The tests use the same mock data as the main application:
+
 - VIC: Coal-heavy mix (63% coal)
 - NSW: High coal usage (70% coal)
 - QLD: Coal dominant (72% coal)

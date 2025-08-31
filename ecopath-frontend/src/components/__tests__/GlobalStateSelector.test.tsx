@@ -14,9 +14,9 @@ describe("GlobalStateSelector", () => {
     render(
       <TestWrapper>
         <GlobalStateSelector />
-      </TestWrapper>
+      </TestWrapper>,
     );
-    
+
     // Check for the main button content
     expect(screen.getByText("Victoria")).toBeInTheDocument();
     expect(screen.getByText("(VIC)")).toBeInTheDocument();
@@ -27,12 +27,12 @@ describe("GlobalStateSelector", () => {
     render(
       <TestWrapper>
         <GlobalStateSelector />
-      </TestWrapper>
+      </TestWrapper>,
     );
-    
+
     const button = screen.getByRole("button");
     await user.click(button);
-    
+
     expect(screen.getByText(/Select State/i)).toBeInTheDocument();
     expect(screen.getByText(/Choose your location/i)).toBeInTheDocument();
   });
@@ -42,12 +42,12 @@ describe("GlobalStateSelector", () => {
     render(
       <TestWrapper>
         <GlobalStateSelector />
-      </TestWrapper>
+      </TestWrapper>,
     );
-    
+
     const button = screen.getByRole("button");
     await user.click(button);
-    
+
     // Check for some key elements in the dropdown
     expect(screen.getByText(/Real-time environmental data/i)).toBeInTheDocument();
     expect(screen.getByText(/Current selection/i)).toBeInTheDocument();
@@ -57,9 +57,9 @@ describe("GlobalStateSelector", () => {
     render(
       <TestWrapper>
         <GlobalStateSelector />
-      </TestWrapper>
+      </TestWrapper>,
     );
-    
+
     const button = screen.getByRole("button");
     expect(button).toBeInTheDocument();
   });

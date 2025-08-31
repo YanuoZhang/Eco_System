@@ -13,15 +13,18 @@ This guide will help you set up a local PostgreSQL database for the EcoPath back
 ### 1. Install PostgreSQL
 
 #### macOS (using Homebrew)
+
 ```bash
 brew install postgresql
 brew services start postgresql
 ```
 
 #### Windows
+
 Download and install from [PostgreSQL official website](https://www.postgresql.org/download/windows/)
 
 #### Linux (Ubuntu/Debian)
+
 ```bash
 sudo apt update
 sudo apt install postgresql postgresql-contrib
@@ -117,15 +120,17 @@ Once the database is set up, the following endpoints will return real data:
 ### Connection Issues
 
 1. **Check PostgreSQL service status**
+
    ```bash
    # macOS
    brew services list | grep postgresql
-   
+
    # Linux
    sudo systemctl status postgresql
    ```
 
 2. **Verify database exists**
+
    ```bash
    psql -U postgres -l | grep ecopath
    ```
@@ -137,6 +142,7 @@ Once the database is set up, the following endpoints will return real data:
 ### Permission Issues
 
 1. **Check user privileges**
+
    ```bash
    psql -U postgres -d ecopath -c "\du"
    ```
@@ -162,6 +168,7 @@ Once the database is set up, the following endpoints will return real data:
    - Update data loading scripts if needed
 
 2. **Reset database during development**
+
    ```bash
    npm run db:reset
    ```

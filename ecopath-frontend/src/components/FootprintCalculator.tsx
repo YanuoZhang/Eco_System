@@ -1,22 +1,28 @@
-'use client';
+"use client";
 
-import { useStateContext } from '@/contexts/StateContext';
-import PageHeader from './PageHeader';
+import { useStateContext } from "@/contexts/StateContext";
+import PageHeader from "./PageHeader";
 
 interface FootprintCalculatorProps {
   onPrev?: () => void;
   onBackToHomepage?: () => void;
 }
 
-export default function FootprintCalculator({ onPrev, onBackToHomepage }: FootprintCalculatorProps) {
+export default function FootprintCalculator({
+  onPrev,
+  onBackToHomepage,
+}: FootprintCalculatorProps) {
   const { selectedState } = useStateContext();
 
   return (
-    <div data-testid="footprint-calculator" className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
+    <div
+      data-testid="footprint-calculator"
+      className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50"
+    >
       {/* Page Header */}
       <PageHeader
         title="Footprint Calculator"
-        description={`Calculate your environmental impact for ${selectedState.split(' ')[0]}`}
+        description={`Calculate your environmental impact for ${selectedState.split(" ")[0]}`}
         icon="🧮"
         gradientColors="from-green-500 to-blue-500"
         onBackToHomepage={onBackToHomepage}
@@ -35,8 +41,13 @@ export default function FootprintCalculator({ onPrev, onBackToHomepage }: Footpr
                 <span className="text-6xl">🚧</span>
               </div>
               <h2 className="text-3xl font-bold text-gray-800 mb-4">Under Development</h2>
-              <p className="text-xl text-gray-600 mb-2">Footprint Calculator feature is currently under development</p>
-              <p className="text-lg text-gray-500">We&apos;re working hard to build you a powerful carbon footprint calculator for {selectedState.split(' ')[0]}</p>
+              <p className="text-xl text-gray-600 mb-2">
+                Footprint Calculator feature is currently under development
+              </p>
+              <p className="text-lg text-gray-500">
+                We&apos;re working hard to build you a powerful carbon footprint calculator for{" "}
+                {selectedState.split(" ")[0]}
+              </p>
             </div>
 
             {/* Upcoming Features Preview */}

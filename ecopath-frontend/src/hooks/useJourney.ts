@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export type JourneyStep = 1 | 2 | 3 | 4 | 5;
 
@@ -16,7 +16,7 @@ export const useJourney = () => {
   });
 
   const startJourney = useCallback(() => {
-    setJourneyState(prev => ({
+    setJourneyState((prev) => ({
       ...prev,
       isStarted: true,
       currentStep: 1,
@@ -24,21 +24,21 @@ export const useJourney = () => {
   }, []);
 
   const goToStep = useCallback((step: JourneyStep) => {
-    setJourneyState(prev => ({
+    setJourneyState((prev) => ({
       ...prev,
       currentStep: step,
     }));
   }, []);
 
   const nextStep = useCallback(() => {
-    setJourneyState(prev => ({
+    setJourneyState((prev) => ({
       ...prev,
       currentStep: Math.min(prev.currentStep + 1, 5) as JourneyStep,
     }));
   }, []);
 
   const previousStep = useCallback(() => {
-    setJourneyState(prev => ({
+    setJourneyState((prev) => ({
       ...prev,
       currentStep: Math.max(prev.currentStep - 1, 1) as JourneyStep,
     }));
