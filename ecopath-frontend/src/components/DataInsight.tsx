@@ -189,7 +189,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
+    <div data-testid="data-insight" className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50">
       {/* Page Header */}
       <PageHeader
         title="Data Insight Hub"
@@ -245,6 +245,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
+                    data-testid={tab.id === 'emissions' ? 'emissions-tab' : 'energy-tab'}
                     onClick={() => setActiveTab(tab.id as 'energy' | 'emissions')}
                     className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                       activeTab === tab.id
@@ -337,7 +338,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                 {/* Climate Targets Sidebar - Right Column */}
                 <div className="lg:col-span-1">
                   <ClimateTargetSidebar 
-                    stateName={selectedState.split(' ')[0]}
+                    stateName={selectedState}
                     isLoading={false}
                     error={null}
                     onRetry={() => {

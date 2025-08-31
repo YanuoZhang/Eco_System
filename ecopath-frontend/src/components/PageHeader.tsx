@@ -40,6 +40,7 @@ export default function PageHeader({
             {/* Back to Homepage Button */}
             {onBackToHomepage && (
               <button
+                data-testid="btn-back-home"
                 onClick={onBackToHomepage}
                 className="flex items-center space-x-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors cursor-pointer border border-blue-200"
               >

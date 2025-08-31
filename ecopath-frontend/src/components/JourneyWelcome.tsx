@@ -18,7 +18,7 @@ export default function JourneyWelcome({ onNext }: JourneyWelcomeProps) {
   };
 
   return (
-    <section className="py-8 sm:py-16 px-4 bg-gradient-to-b from-white to-green-50">
+    <section data-testid="journey-welcome" className="py-8 sm:py-16 px-4 bg-gradient-to-b from-white to-green-50">
       <div className="max-w-5xl mx-auto text-center">
         {/* Hero Animation */}
         <div className="mb-12 sm:mb-16">

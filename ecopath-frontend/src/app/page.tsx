@@ -12,7 +12,17 @@ import { StateProvider } from '@/contexts/StateContext';
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Initialize currentStep from localStorage or URL params
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedStep = localStorage.getItem('currentStep');
+      if (savedStep) {
+        return parseInt(savedStep);
+      }
+    }
+    return 1;
+  });
 
   const steps = [
     { 
@@ -52,6 +62,13 @@ function HomeContent() {
     currentUrl.searchParams.set('step', currentStep.toString());
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
   }, [currentStep, router]);
+
+  // Persist currentStep to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentStep', currentStep.toString());
+    }
+  }, [currentStep]);
 
   const nextStep = () => {
     if (currentStep < steps.length) {
