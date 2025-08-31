@@ -7,6 +7,7 @@ import ClimateTargetSidebar from './ClimateTargetSidebar';
 import PageHeader from './PageHeader';
 import DataSources from './DataSources';
 import { useStateContext } from '@/contexts/StateContext';
+import { ApiService, EnergyMixData, EmissionsData } from '@/services/api';
 
 // Mock data for different states - in real app this would come from API
 const STATE_ENERGY_DATA: Record<string, EnergyMix[]> = {
@@ -173,14 +174,74 @@ interface DataInsightProps {
 
 export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataInsightProps) {
   const { selectedState } = useStateContext();
-  const [energyData, setEnergyData] = useState<EnergyMix[]>(STATE_ENERGY_DATA['Victoria (VIC)']);
-  const [emissionsData, setEmissionsData] = useState<EmissionData[]>(STATE_EMISSIONS_DATA['Victoria (VIC)']);
   const [activeTab, setActiveTab] = useState<'energy' | 'emissions'>('energy');
+  const [energyMixData, setEnergyMixData] = useState<EnergyMix[]>([]);
+  const [emissionsData, setEmissionsData] = useState<EmissionData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch energy mix data from backend API
+  const fetchEnergyMixData = async (state: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Extract state code (e.g., "Victoria (VIC)" -> "VIC")
+      const stateCode = state.match(/\(([^)]+)\)/)?.[1] || state.split(' ')[0];
+      
+      const apiData = await ApiService.getEnergyMix(stateCode);
+      
+      // Transform API data to match EnergyMixChart interface
+      const transformedData: EnergyMix[] = apiData.map(item => ({
+        source: item.source.charAt(0).toUpperCase() + item.source.slice(1), // Capitalize first letter
+        percentage: item.percentage,
+        generation: `${item.generation} MW`,
+        trend: Math.random() * 20 - 10 // Mock trend data for now
+      }));
+      
+      setEnergyMixData(transformedData);
+    } catch (err) {
+      console.error('Error fetching energy mix data:', err);
+      setError('Failed to load energy mix data');
+      // Fallback to mock data
+      setEnergyMixData(STATE_ENERGY_DATA[state] || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch emissions data from backend API
+  const fetchEmissionsData = async (state: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const stateCode = state.match(/\(([^)]+)\)/)?.[1] || state.split(' ')[0];
+      const apiData = await ApiService.getEmissions(stateCode);
+      
+      // Transform API data to match EmissionsChart interface
+      const transformedData: EmissionData[] = apiData.data.map(item => ({
+        year: item.year,
+        value: item.value
+      }));
+      
+      setEmissionsData(transformedData);
+    } catch (err) {
+      console.error('Error fetching emissions data:', err);
+      setError('Failed to load emissions data');
+      // Fallback to mock data
+      setEmissionsData(STATE_EMISSIONS_DATA[state] || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when state changes
   useEffect(() => {
-    // Update data when state changes
-    setEnergyData(STATE_ENERGY_DATA[selectedState] || []);
-    setEmissionsData(STATE_EMISSIONS_DATA[selectedState] || []);
+    if (selectedState) {
+      fetchEnergyMixData(selectedState);
+      fetchEmissionsData(selectedState);
+    }
   }, [selectedState]);
 
   const tabs = [
@@ -266,7 +327,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                 {/* Energy Mix Chart - Left Column */}
                 <div className="lg:col-span-2">
                   <EnergyMixChart 
-                    data={energyData} 
+                    data={energyMixData} 
                     title={`${selectedState.split(' ')[0]} Energy Generation Mix`}
                   />
                 </div>
@@ -291,7 +352,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                       <div className="flex items-center justify-between">
                         <span className="text-gray-700">Total Renewables</span>
                         <span className="text-green-600 font-medium">
-                          {energyData
+                          {energyMixData
                             .filter(item => ['Wind', 'Solar', 'Hydro'].includes(item.source))
                             .reduce((sum, item) => sum + item.percentage, 0)
                             .toFixed(1)}%
@@ -339,8 +400,8 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                 <div className="lg:col-span-1">
                   <ClimateTargetSidebar 
                     stateName={selectedState}
-                    isLoading={false}
-                    error={null}
+                    isLoading={loading}
+                    error={error}
                     onRetry={() => {
                       // Handle retry logic if needed
                       console.log('Retrying climate data load...');
