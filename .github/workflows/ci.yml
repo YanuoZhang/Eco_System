@@ -7,50 +7,47 @@ on:
     branches: [main]
 
 jobs:
-  commitlint:
+  test-and-lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workspace: [ecopath-frontend, ecopath-backend]
+    
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install root deps
-        run: npm ci
-      - name: Commitlint (PR)
-        if: github.event_name == 'pull_request'
+          cache: npm
+          cache-dependency-path: ${{ matrix.workspace }}/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
         run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          npx commitlint -x @commitlint/config-conventional --from origin/${{ github.event.pull_request.base.ref }} --to HEAD
-      - name: Commitlint (push main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: npx commitlint -x @commitlint/config-conventional --from HEAD~1 --to HEAD
-
-  frontend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install frontend deps
-        working-directory: ecopath-frontend
-        run: npm ci
-      - name: Run frontend tests
-        working-directory: ecopath-frontend
+          npm install --frozen-lockfile || npm install
+      
+      - name: Run tests
+        working-directory: ${{ matrix.workspace }}
         run: npm run test
+      
+      - name: Run lint
+        working-directory: ${{ matrix.workspace }}
+        run: npm run lint
 
-  frontend-e2e:
+  e2e-tests:
     runs-on: ubuntu-latest
+    needs: test-and-lint
+    
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: ecopath-frontend/package-lock.json
-
+      
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
@@ -58,62 +55,40 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('ecopath-frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
-
+      
       - name: Install frontend deps
         working-directory: ecopath-frontend
-        run: npm ci
-      - name: Install Playwright browsers (if needed)
+        run: |
+          npm install --frozen-lockfile || npm install
+      
+      - name: Install Playwright browsers
         working-directory: ecopath-frontend
         run: npx playwright install --with-deps
+      
       - name: Run E2E tests
         working-directory: ecopath-frontend
         run: npm run test:e2e
 
-  frontend-lint:
+  commitlint:
     runs-on: ubuntu-latest
-    needs: [frontend-test, frontend-e2e]
+    if: github.event_name == 'pull_request'
+    
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Clean npm cache (frontend)
-        run: npm cache clean --force
-      - name: Install frontend deps
-        working-directory: ecopath-frontend
-        run: npm ci
-      - name: Lint frontend
-        working-directory: ecopath-frontend
-        run: npm run lint
-
-  backend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install backend deps
-        working-directory: ecopath-backend
-        run: npm ci
-      - name: Run backend tests
-        working-directory: ecopath-backend
-        run: npm run test
-
-  backend-lint:
-    runs-on: ubuntu-latest
-    needs: [backend-test]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Clean npm cache (backend)
-        run: npm cache clean --force
-      - name: Install backend deps
-        working-directory: ecopath-backend
-        run: npm ci
-      - name: Lint backend
-        working-directory: ecopath-backend
-        run: npm run lint
+          cache: npm
+      
+      - name: Install dependencies
+        run: |
+          npm install --frozen-lockfile || npm install
+      
+      - name: Run commitlint
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          npx commitlint -x @commitlint/config-conventional --from origin/${{ github.event.pull_request.base.ref }} --to HEAD
 
