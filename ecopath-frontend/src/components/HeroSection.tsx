@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/Button';
+import React from 'react';
 
 interface HeroSectionProps {
   onStartJourney: () => void;

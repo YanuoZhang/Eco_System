@@ -107,17 +107,12 @@ export async function waitForChart(page: Page, chartTestId: string) {
 }
 
 // Helper function: Mock API response
-export async function mockApiResponse(
-  page: Page, 
-  urlPattern: string, 
-  response: any, 
-  status: number = 200
-) {
-  await page.route(urlPattern, route => {
-    route.fulfill({
-      status,
+export async function mockApiResponse(page: Page, url: string, response: unknown): Promise<void> {
+  await page.route(url, async (route) => {
+    await route.fulfill({
+      status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(response)
+      body: JSON.stringify(response),
     });
   });
 }

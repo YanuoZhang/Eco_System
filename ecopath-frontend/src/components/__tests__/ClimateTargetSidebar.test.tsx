@@ -1,15 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
-import ClimateTargetSidebar, { ClimateTarget } from '../ClimateTargetSidebar';
+import ClimateTargetSidebar from '../ClimateTargetSidebar';
 
-// Mock data for testing
-const mockClimateTarget: ClimateTarget = {
-  planName: 'Victoria 2030 Net Zero Plan',
-  progress: 18,
-  targetYear: 2030,
-  description: 'Ambitious plan to achieve net zero emissions by 2030'
-};
+// Mock the context
+vi.mock('@/contexts/StateContext');
 
 const mockProps = {
   stateName: 'Victoria',

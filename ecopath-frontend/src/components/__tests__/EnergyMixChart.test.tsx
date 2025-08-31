@@ -1,5 +1,4 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
 import EnergyMixChart, { EnergyMix } from '../EnergyMixChart';
 
 // Mock data for testing

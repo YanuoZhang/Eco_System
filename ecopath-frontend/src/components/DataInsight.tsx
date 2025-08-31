@@ -7,7 +7,7 @@ import ClimateTargetSidebar from './ClimateTargetSidebar';
 import PageHeader from './PageHeader';
 import DataSources from './DataSources';
 import { useStateContext } from '@/contexts/StateContext';
-import { ApiService, EnergyMixData, EmissionsData } from '@/services/api';
+import { ApiService } from '@/services/api';
 
 // Mock data for different states - in real app this would come from API
 const STATE_ENERGY_DATA: Record<string, EnergyMix[]> = {
