@@ -70,6 +70,7 @@ export default function DataSources() {
       {/* Data Sources Button */}
       <div className="text-center py-8">
         <button
+          data-testid="data-sources-btn"
           onClick={openModal}
           className="inline-flex items-center space-x-2 bg-green-100 text-green-700 px-6 py-3 rounded-lg hover:bg-green-200 transition-colors cursor-pointer border border-green-200 shadow-sm"
         >
@@ -80,7 +81,7 @@ export default function DataSources() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div data-testid="data-sources-modal" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6">
@@ -93,6 +94,7 @@ export default function DataSources() {
                   </div>
                 </div>
                 <button
+                  data-testid="modal-close-btn"
                   onClick={closeModal}
                   className="text-white hover:text-green-100 transition-colors text-2xl"
                 >
@@ -107,6 +109,7 @@ export default function DataSources() {
                 {DATA_SOURCES.map((source, index) => (
                   <div
                     key={index}
+                    data-testid={`dataset-link-${index}`}
                     className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer group"
                     onClick={() => handleSourceClick(source.url)}
                   >

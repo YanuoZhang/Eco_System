@@ -8,7 +8,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ onStartJourney }: HeroSectionProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 flex items-center justify-center">
+    <div data-testid="landing-section" className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-yellow-50 flex items-center justify-center">
       <div className="text-center max-w-4xl mx-auto px-4">
         {/* Badge */}
         <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-green-200 shadow-sm mb-6">
