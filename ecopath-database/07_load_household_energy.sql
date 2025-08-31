@@ -2,7 +2,7 @@
 -- 13_load_household_energy.sql
 -- Source: data/electricity_gas_by_household.csv
 -- CSV columns: state, energy_type, energy_pj
--- Writes to: household_energy_by_state (year = 2024)
+-- Writes to: household_energy_2024 (year = 2024)
 -- Safe to re-run (ON CONFLICT upserts)
 -- =====================================================================
 
@@ -21,16 +21,16 @@ CREATE TEMP TABLE _tmp_household_energy (
 \copy _tmp_household_energy(state, energy_type, energy_pj) FROM 'data/electricity_gas_by_household.csv' CSV HEADER
 
 -- Upsert into target table, normalizing energy_type and mapping state abbrev
-INSERT INTO household_energy_by_state (
+INSERT INTO household_energy_2024 (
   year, state_id, energy_type, energy_pj
 )
 SELECT
   2024,
   s.state_id,
   CASE
-    WHEN lower(t.energy_type) LIKE 'electric%'     THEN 'Electricity'
-    WHEN lower(t.energy_type) LIKE 'natural gas%'  THEN 'Natural gas'
-    ELSE initcap(t.energy_type)  -- fallback; still passes CHECK if it matches one of allowed values
+    WHEN lower(t.energy_type) LIKE 'electric%'     THEN 'electricity'
+    WHEN lower(t.energy_type) LIKE 'natural gas%'  THEN 'natural_gas'
+    ELSE lower(t.energy_type)  -- fallback; still passes CHECK if it matches one of allowed values
   END AS energy_type,
   t.energy_pj
 FROM _tmp_household_energy t
