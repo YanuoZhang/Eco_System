@@ -118,18 +118,46 @@ async function loadPopulationData() {
     const lines = csvContent.split('\n').filter(line => line.trim());
     
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-      if (values.length >= 2) {
-        const year = parseInt(values[0]);
-        const population = parseInt(values[1]);
+      const line = lines[i];
+      // Simple CSV parsing that handles quoted values
+      const values: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim());
+      
+      if (values.length >= 3) {
+        // CSV format: state,year,Population
+        const stateFromFile = values[0];
+        const yearStr = values[1];
+        const populationStr = values[2].replace(/"/g, '').replace(/,/g, ''); // Remove quotes and commas
         
-        if (!isNaN(year) && !isNaN(population)) {
-          await pool.query(`
-            INSERT INTO population (state_id, year, population)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (state_id, year) DO UPDATE
-            SET population = EXCLUDED.population;
-          `, [state, year, population]);
+        // Convert year format from "1960-61" to 1960
+        const year = parseInt(yearStr.split('-')[0]);
+        const population = parseInt(populationStr);
+        
+        if (!isNaN(year) && !isNaN(population) && stateFromFile === state) {
+          try {
+            await pool.query(`
+              INSERT INTO population (state_id, year, population)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (state_id, year) DO UPDATE
+              SET population = EXCLUDED.population;
+            `, [state, year, population]);
+          } catch (error) {
+            console.log(`⚠️  Error inserting population data for ${state}, ${year}: ${error}`);
+          }
         }
       }
     }
