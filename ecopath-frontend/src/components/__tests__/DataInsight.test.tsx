@@ -5,6 +5,14 @@ import userEvent from "@testing-library/user-event";
 import DataInsight from "../DataInsight";
 import { StateProvider } from "@/contexts/StateContext";
 
+// Mock API service
+vi.mock("@/services/api", () => ({
+  ApiService: {
+    getEnergyMix: vi.fn().mockResolvedValue([]),
+    getEmissions: vi.fn().mockResolvedValue({ data: [] }),
+  },
+}));
+
 // Mock Next.js hooks
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
@@ -49,6 +57,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe("DataInsight", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // Clean up any pending timers or async operations
+    vi.clearAllTimers();
     vi.clearAllMocks();
   });
 

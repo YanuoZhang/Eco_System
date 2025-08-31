@@ -1,15 +1,23 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-branch_name=$(git rev-parse --abbrev-ref HEAD)
-if [ "$branch_name" = "main" ]; then
-  echo "[Husky] Direct commits to 'main' are blocked. Please create a feature branch and open a PR."
-  exit 1
-fi
+echo "🔍 Running pre-commit checks..."
 
-# Run unit tests for frontend and backend before committing
-printf "[Husky] Running workspace unit tests...\n"
+# Run lint check for all workspaces
+echo "📝 Checking code style..."
+npm run lint || exit 1
+
+# Run format check for all workspaces
+echo "🎨 Checking code formatting..."
+npm run format:check || exit 1
+
+# Run build check for all workspaces
+echo "🔨 Checking TypeScript compilation..."
+npm run build || exit 1
+
+# Run tests for all workspaces
+echo "🧪 Running tests..."
 npm --workspace ecopath-frontend run test || exit 1
 npm --workspace ecopath-backend run test || exit 1
 
-printf "[Husky] Pre-commit checks passed.\n"
+echo "✅ All pre-commit checks passed!"

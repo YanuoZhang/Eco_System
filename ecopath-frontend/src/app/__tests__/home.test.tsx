@@ -48,6 +48,12 @@ describe("Home page", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Clean up any pending timers or async operations
+    vi.clearAllTimers();
+    vi.clearAllMocks();
+  });
+
   it("renders Environmental Journey title", () => {
     render(<Home />);
     expect(screen.getByText(/Your Environmental Journey/i)).toBeInTheDocument();
