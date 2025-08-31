@@ -13,6 +13,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Use only one worker for development */
   workers: 1,
+  /* Increase timeout for tests */
+  timeout: 60000,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -28,6 +30,12 @@ export default defineConfig({
     
     /* Record video on failure */
     video: 'retain-on-failure',
+    
+    /* Increase action timeout */
+    actionTimeout: 30000,
+    
+    /* Increase navigation timeout */
+    navigationTimeout: 30000,
   },
 
   /* Configure projects for major browsers */

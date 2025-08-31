@@ -23,11 +23,39 @@ test.describe('Climate Target Sidebar E2E Tests', () => {
     // Verify Data Insight page loads
     await page.waitForSelector('[data-testid="data-insight"]');
     
-    // Click Emissions tab to show ClimateTargetSidebar
-    await page.getByTestId('emissions-tab').click();
+    // Wait a bit for the page to fully load
+    await page.waitForTimeout(1000);
     
-    // Wait for sidebar to load
-    await page.waitForSelector('[data-testid="climate-sidebar"]');
+    // Verify emissions tab is visible and clickable
+    const emissionsTab = page.getByTestId('emissions-tab');
+    await expect(emissionsTab).toBeVisible();
+    
+    // Click Emissions tab to show ClimateTargetSidebar
+    await emissionsTab.click();
+    
+    // Wait for the tab click to take effect
+    await page.waitForTimeout(500);
+    
+    // Debug: Check if the sidebar container exists
+    const sidebarContainer = page.locator('[data-testid="climate-sidebar"]');
+    
+    // Wait for sidebar to load with increased timeout and better error handling
+    try {
+      await sidebarContainer.waitFor({ state: 'visible', timeout: 10000 });
+    } catch (error) {
+      console.log('Sidebar not visible, checking if it exists in DOM...');
+      // Check if element exists in DOM even if not visible
+      const exists = await sidebarContainer.count() > 0;
+      if (exists) {
+        console.log('Sidebar exists in DOM but not visible');
+        // Wait a bit more and try again
+        await page.waitForTimeout(2000);
+        await sidebarContainer.waitFor({ state: 'visible', timeout: 10000 });
+      } else {
+        console.log('Sidebar does not exist in DOM');
+        throw error;
+      }
+    }
     
     // Verify sidebar title
     await expect(page.getByText('Reduction Goals')).toBeVisible();

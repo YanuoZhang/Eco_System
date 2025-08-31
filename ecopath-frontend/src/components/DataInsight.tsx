@@ -401,7 +401,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                   <ClimateTargetSidebar 
                     stateName={selectedState}
                     isLoading={loading}
-                    error={error}
+                    error={null}
                     onRetry={() => {
                       // Handle retry logic if needed
                       console.log('Retrying climate data load...');

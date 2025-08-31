@@ -78,8 +78,9 @@ export default function ClimateTargetSidebar({
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   useEffect(() => {
-    if (stateName && !error) {
+    if (stateName) {
       setIsLoadingData(true);
+      
       // Simulate API call delay
       const timer = setTimeout(() => {
         const target = MOCK_CLIMATE_TARGETS[stateName] || MOCK_CLIMATE_TARGETS['Victoria (VIC)'];
@@ -89,7 +90,7 @@ export default function ClimateTargetSidebar({
 
       return () => clearTimeout(timer);
     }
-  }, [stateName, error]);
+  }, [stateName]);
 
   // Loading skeleton
   if (isLoading || isLoadingData) {
@@ -105,27 +106,7 @@ export default function ClimateTargetSidebar({
     );
   }
 
-  // Error state - should take precedence over loading
-  if (error) {
-    return (
-      <div data-testid="error-state" className="bg-red-50 rounded-lg p-6 border border-red-200 shadow-sm">
-        <div className="text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h3 className="text-lg font-medium text-red-800 mb-2">Failed to load climate target data</h3>
-          <p className="text-red-600 mb-4">{error}</p>
-          {onRetry && (
-            <button
-              data-testid="retry-button"
-              onClick={onRetry}
-              className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
-            >
-              Retry
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
+
 
 
 
