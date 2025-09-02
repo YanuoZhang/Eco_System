@@ -1,5 +1,74 @@
 name: CI
 
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ecopath_user
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ecopath
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ecopath_user -d ecopath"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: ecopath_user
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ecopath
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Initialize database with SQL
+        run: |
+          export PGPASSWORD="$DB_PASSWORD"
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/01_schema.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/02_load_emissions.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/03_load_population.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/04_load_generation.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/05_load_state_initiatives.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/06_load_electricity_factors.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/07_load_household_energy.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/08_load_fuel_economy.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/09_load_gas_factors.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/10_load_total_dwellings.sql
+          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/11_load_transport_fuels_factors.sql
+          # 可选：12_visual_queries.sql 仅为可视化示例，不是必需数据
+
+      - name: Verify DB
+        run: npm --workspace ecopath-backend run db:view
+
+      - name: Test backend
+        run: npm --workspace ecopath-backend run test
+
+      - name: Test frontend
+        run: npm --workspace ecopath-frontend run test
+
+name: CI
+
 on:
   push:
     branches: [main]
