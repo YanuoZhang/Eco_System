@@ -18,17 +18,13 @@ CREATE TABLE emission_raw (
   "WA (Mt)" NUMERIC
 );
 
--- if data_dir is a full file path, use it directly
--- Prefer explicit data_file; fall back to data_dir for backward compatibility
+-- Require explicit data_file passed by CI; fail fast if not provided
 \if :{?data_file}
 \echo Loading emissions from data_file: :data_file
-\set data_cmd 'cat ' :data_file
+\copy emission_raw FROM :'data_file' WITH (FORMAT csv, HEADER true)
 \else
-\echo Falling back to data_dir (should be full file path): :data_dir
-\set data_cmd 'cat ' :data_dir
+\error 'psql variable data_file is required and must be an absolute CSV path'
 \endif
-\echo Using PROGRAM: :data_cmd
-\copy emission_raw FROM PROGRAM :'data_cmd' WITH CSV HEADER
 
 
 INSERT INTO emission_total (state_id, year, emissions_mt)
