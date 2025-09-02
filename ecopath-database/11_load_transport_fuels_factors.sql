@@ -21,7 +21,7 @@ CREATE TEMP TABLE _tmp_transport_fuels (
 );
 
 -- IMPORTANT: keep this command on ONE line; explicitly map 6 target columns.
-\copy _tmp_transport_fuels (fuel_type, fuel_name, combined_kg_per_gj, energy_gj_per_unit, emission_kg_per_unit, emission_unit) FROM 'data/transport_fuels_factors-2024.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"')
+\copy _tmp_transport_fuels (fuel_type, fuel_name, combined_kg_per_gj, energy_gj_per_unit, emission_kg_per_unit, emission_unit) FROM :'data_dir'/transport_fuels_factors-2024.csv WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"')
 
 -- Upsert into final table
 INSERT INTO transport_fuel_factors 

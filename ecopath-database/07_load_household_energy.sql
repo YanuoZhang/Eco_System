@@ -18,7 +18,7 @@ CREATE TEMP TABLE _tmp_household_energy (
 );
 
 -- Load CSV (one line; no semicolon)
-\copy _tmp_household_energy(state, energy_type, energy_pj) FROM 'data/electricity_gas_by_household.csv' CSV HEADER
+\copy _tmp_household_energy(state, energy_type, energy_pj) FROM :'data_dir'/electricity_gas_by_household.csv CSV HEADER
 
 -- Upsert into target table, normalizing energy_type and mapping state abbrev
 INSERT INTO household_energy_2024 (

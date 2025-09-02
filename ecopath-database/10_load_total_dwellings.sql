@@ -15,7 +15,7 @@ CREATE TEMP TABLE _tmp_dwellings(
   household_txt TEXT
 );
 
-\copy _tmp_dwellings(state_abbrev, household_txt) FROM 'data/total_dwellings.csv' CSV HEADER;
+\copy _tmp_dwellings(state_abbrev, household_txt) FROM :'data_dir'/total_dwellings.csv CSV HEADER;
 
 -- Upsert cleaned values
 INSERT INTO total_dwellings (year, state_id, households)
