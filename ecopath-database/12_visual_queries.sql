@@ -390,11 +390,11 @@ SELECT
   baseline_emissions_mt,
   latest_year,
   latest_emissions_mt,
-  reduction_pct_so_far,         -- e.g. 18.23   -> "Achieved: 18.23%"
+  reduction_pct AS reduction_pct_so_far,         -- e.g. 18.23   -> "Achieved: 18.23%"
   progress_to_target_pct,       -- e.g. 36.46   -> "36.46% of target"
   current_pace_pct_per_year,    -- optional: "*%/yr so far"
   required_pace_pct_per_year,   -- optional: "*%/yr needed"
-  expected_reduction_by_now,    -- optional: linear benchmark by now
+  -- expected_reduction_by_now,    -- optional: linear benchmark by now (column not defined in view)
   is_on_track                   -- optional: boolean for badge
 FROM vw_target_progress_latest
 WHERE state_id = 'VIC';
