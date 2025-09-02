@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "@/services/api";
 import { useStateContext } from "@/contexts/StateContext";
 import TimeUnitSelector, { TimeUnit } from "./TimeUnitSelector";
@@ -27,7 +27,7 @@ interface CarbonFootprintCalculatorProps {
   onPrev?: () => void;
 }
 
-const transportOptions = [
+const transportOptionsFallback = [
   { value: "car-petrol", label: "Petrol Car", emissionFactor: 0.21 },
   { value: "car-diesel", label: "Diesel Car", emissionFactor: 0.17 },
   { value: "car-hybrid", label: "Hybrid Car", emissionFactor: 0.12 },
@@ -48,6 +48,17 @@ export default function CarbonFootprintCalculator({
 }: CarbonFootprintCalculatorProps) {
   const { selectedState } = useStateContext();
   const [mounted, setMounted] = useState(false);
+  const [factors, setFactors] = useState<{
+    state: string;
+    electricity: number;
+    gas: number;
+    units?: { electricity?: string; gas?: string; transport?: string };
+    transport?: Record<string, number>;
+  } | null>(null);
+  const [supported, setSupported] = useState<{
+    energy?: { timeUnits?: string[]; units?: { electricity?: string; gas?: string } };
+    transport?: { timeUnits?: string[]; modes?: string[]; units?: Record<string, string> };
+  } | null>(null);
   const [timeUnit, setTimeUnit] = useState<TimeUnit["value"]>("month");
   const [transportTimeframe, setTransportTimeframe] = useState<
     "day" | "week" | "month" | "quarter"
@@ -66,6 +77,33 @@ export default function CarbonFootprintCalculator({
     setMounted(true);
   }, []);
 
+  // Fetch factors and supported units when state changes
+  useEffect(() => {
+    let active = true;
+    const fetchMeta = async () => {
+      try {
+        const stateCodeMatch = selectedState.match(/\((.*?)\)/);
+        const stateCode = stateCodeMatch ? stateCodeMatch[1] : "VIC";
+        const [f, s] = await Promise.all([
+          ApiService.getEmissionsFactors(stateCode),
+          ApiService.getSupportedUnits(),
+        ]);
+        if (!active) return;
+        setFactors(f);
+        setSupported(s);
+      } catch {
+        if (!active) return;
+        // Soft fail: keep UI functional with fallbacks
+        setFactors(null);
+        setSupported(null);
+      }
+    };
+    fetchMeta();
+    return () => {
+      active = false;
+    };
+  }, [selectedState]);
+
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError(null);
@@ -79,14 +117,34 @@ export default function CarbonFootprintCalculator({
       quarter: "Quarterly",
     };
 
+    const energyUnits = supported?.energy?.units;
+    const distanceUnit = supported?.transport?.units?.distance || "km";
+    const elecUnit = energyUnits?.electricity || "kWh";
+    const gasUnit = energyUnits?.gas || "MJ";
+
     const fieldLabels = {
-      electricity: `Electricity (kWh) - ${unitLabels[timeUnit]}`,
-      gas: `Gas (MJ) - ${unitLabels[timeUnit]}`,
-      distance: `Distance (km) - ${unitLabels[timeUnit]}`,
+      electricity: `Electricity (${elecUnit}) - ${unitLabels[timeUnit]}`,
+      gas: `Gas (${gasUnit}) - ${unitLabels[timeUnit]}`,
+      distance: `Distance (${distanceUnit}) - ${unitLabels[timeUnit]}`,
     };
 
     return fieldLabels[field];
   };
+
+  // Build transport options from backend supported modes (fallback to local list)
+  const transportOptions = useMemo(() => {
+    const modeLabels: Record<string, string> = {
+      car: "Car",
+      bus: "Bus",
+      train: "Train",
+      tram: "Tram",
+      bicycle: "Bicycle",
+      walking: "Walking",
+    };
+    const modes = supported?.transport?.modes;
+    if (!modes || modes.length === 0) return transportOptionsFallback;
+    return modes.map((m) => ({ value: m, label: modeLabels[m] || m, emissionFactor: 0 }));
+  }, [supported]);
 
   const getPlaceholder = (field: "electricity" | "gas" | "distance") => {
     const placeholders = {
@@ -149,10 +207,15 @@ export default function CarbonFootprintCalculator({
             }
           : undefined;
 
+      type SupportedMode = "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+      const supportedModes = supported?.transport?.modes as SupportedMode[] | undefined;
+
       const transportPayload =
         formData.transportMode && formData.distance
           ? {
-              mode: transportModeMap[formData.transportMode] ?? "car",
+              mode: (supportedModes?.includes(formData.transportMode as SupportedMode)
+                ? (formData.transportMode as SupportedMode)
+                : (transportModeMap[formData.transportMode] ?? "car")) as SupportedMode,
               distance: Number(formData.distance),
               timeUnit: (transportTimeframe as "day" | "week" | "month" | "year") ?? "day",
               frequency: 1,
@@ -431,6 +494,39 @@ export default function CarbonFootprintCalculator({
                       <div className="text-sm text-purple-500">Transport</div>
                     </div>
                   </div>
+                </div>
+
+                {/* Factors Panel */}
+                <div className="bg-white rounded-lg p-4 border border-green-200 mt-4">
+                  <h4 className="text-lg font-semibold text-green-800 mb-3">Emissions Factors</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-800">
+                    <div className="bg-green-50 rounded-md p-3 border border-green-200">
+                      <div className="font-medium mb-1">Electricity</div>
+                      <div>
+                        {factors?.electricity != null
+                          ? `${factors.electricity} ${factors?.units?.electricity || "kg CO₂-e/kWh"}`
+                          : "-"}
+                      </div>
+                    </div>
+                    <div className="bg-green-50 rounded-md p-3 border border-green-200">
+                      <div className="font-medium mb-1">Gas</div>
+                      <div>
+                        {factors?.gas != null
+                          ? `${factors.gas} ${factors?.units?.gas || "kg CO₂-e/kWh-eq"}`
+                          : "-"}
+                      </div>
+                    </div>
+                    <div className="bg-green-50 rounded-md p-3 border border-green-200">
+                      <div className="font-medium mb-1">Transport Modes</div>
+                      <div className="text-green-700">
+                        {supported?.transport?.modes?.join(", ") ||
+                          transportOptionsFallback.map((o) => o.label).join(", ")}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-green-600 mt-2">
+                    Factors shown are fetched for {factors?.state || "selected state"}.
+                  </p>
                 </div>
               </div>
             )}

@@ -393,15 +393,69 @@ function getElectricityEmissionsFactor(state: string): number {
   return EMISSIONS_FACTORS.electricity[state as keyof typeof EMISSIONS_FACTORS.electricity] || 0.75;
 }
 
-// Calculate emissions from energy usage
-function calculateEnergyEmissions(energy: EnergyData, state: string) {
+// DB-backed factors helpers
+async function getDbElectricityFactorKgPerKwh(state: string): Promise<number | null> {
+  try {
+    const q = `
+      SELECT direct_emission_factor_kg_per_kwh
+      FROM electricity_factor_by_state
+      WHERE state_id = $1
+      ORDER BY year DESC
+      LIMIT 1
+    `;
+    const r = await pool.query(q, [state]);
+    if (r.rows.length > 0) {
+      const v = r.rows[0].direct_emission_factor_kg_per_kwh;
+      return typeof v === "number" ? v : Number(v);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function getDbGasFactorKgPerGJ(state: string): Promise<number | null> {
+  try {
+    const q = `
+      SELECT AVG(kg_co2e_per_gj) AS avg_kg_per_gj
+      FROM gas_factor_by_state
+      WHERE state_id = $1
+    `;
+    const r = await pool.query(q, [state]);
+    if (r.rows.length > 0 && r.rows[0].avg_kg_per_gj != null) {
+      const v = r.rows[0].avg_kg_per_gj;
+      return typeof v === "number" ? v : Number(v);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+type FactorOverrides = {
+  electricityKgPerKwh?: number | null;
+  gasKgPerGJ?: number | null;
+};
+
+// Calculate emissions from energy usage (optionally with DB-backed factors)
+function calculateEnergyEmissions(energy: EnergyData, state: string, overrides?: FactorOverrides) {
   const annualElectricity = energy.electricity
     ? convertToAnnual(energy.electricity, energy.timeUnit)
     : 0;
-  const annualGas = energy.gas ? convertToAnnual(energy.gas, energy.timeUnit) : 0;
+  const annualGasMJ = energy.gas ? convertToAnnual(energy.gas, energy.timeUnit) : 0;
 
-  const electricityEmissions = annualElectricity * getElectricityEmissionsFactor(state);
-  const gasEmissions = annualGas * EMISSIONS_FACTORS.gas;
+  const elecFactor = overrides?.electricityKgPerKwh ?? getElectricityEmissionsFactor(state);
+  const electricityEmissions = annualElectricity * elecFactor;
+
+  let gasEmissions = 0;
+  if (overrides?.gasKgPerGJ != null) {
+    // Convert MJ to GJ, then multiply by kg/GJ
+    const annualGasGJ = annualGasMJ / 1000;
+    gasEmissions = annualGasGJ * overrides.gasKgPerGJ;
+  } else {
+    // Fallback to legacy constant assuming kWh equivalent
+    gasEmissions = annualGasMJ * EMISSIONS_FACTORS.gas; // EMISSIONS_FACTORS.gas interpreted per kWh-eq
+  }
 
   return {
     electricity: electricityEmissions,
@@ -425,7 +479,7 @@ function calculateTransportEmissions(transport: TransportData) {
 }
 
 // POST /api/emissions/calculate
-app.post("/api/emissions/calculate", (req: Request, res: Response) => {
+app.post("/api/emissions/calculate", async (req: Request, res: Response) => {
   try {
     const requestData: EmissionsCalculationRequest = req.body;
 
@@ -457,9 +511,23 @@ app.post("/api/emissions/calculate", (req: Request, res: Response) => {
     let totalEmissions = 0;
     const breakdown: any = {};
 
+    // Load DB-backed factors if available
+    const [dbElec, dbGas] = await Promise.all([
+      getDbElectricityFactorKgPerKwh(requestData.state),
+      getDbGasFactorKgPerGJ(requestData.state),
+    ]);
+    const overrides: FactorOverrides = {
+      electricityKgPerKwh: dbElec ?? undefined,
+      gasKgPerGJ: dbGas ?? undefined,
+    };
+
     // Calculate energy emissions if provided
     if (requestData.energy) {
-      const energyEmissions = calculateEnergyEmissions(requestData.energy, requestData.state);
+      const energyEmissions = calculateEnergyEmissions(
+        requestData.energy,
+        requestData.state,
+        overrides,
+      );
       breakdown.energy = energyEmissions;
       totalEmissions += energyEmissions.total;
     }
@@ -498,9 +566,9 @@ app.post("/api/emissions/calculate", (req: Request, res: Response) => {
 });
 
 // GET /api/emissions/factors
-app.get("/api/emissions/factors", (req: Request, res: Response) => {
+app.get("/api/emissions/factors", async (req: Request, res: Response) => {
   try {
-    const state = req.query.state as string;
+    const state = (req.query.state as string) || "";
 
     if (!state) {
       return res.status(400).json({
@@ -518,14 +586,20 @@ app.get("/api/emissions/factors", (req: Request, res: Response) => {
       });
     }
 
+    const [dbElec, dbGas] = await Promise.all([
+      getDbElectricityFactorKgPerKwh(state),
+      getDbGasFactorKgPerGJ(state),
+    ]);
+
     const factors = {
       state,
-      electricity: getElectricityEmissionsFactor(state),
-      gas: EMISSIONS_FACTORS.gas,
+      electricity: dbElec ?? getElectricityEmissionsFactor(state),
+      // For gas, expose DB native unit kg/GJ if available; keep legacy unit label otherwise
+      gas: dbGas ?? EMISSIONS_FACTORS.gas,
       transport: EMISSIONS_FACTORS.transport,
       units: {
         electricity: "kg CO2-e per kWh",
-        gas: "kg CO2-e per kWh equivalent",
+        gas: dbGas != null ? "kg CO2-e per GJ" : "kg CO2-e per kWh equivalent",
         transport: "kg CO2-e per km",
       },
     };
