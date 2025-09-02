@@ -21,17 +21,26 @@ export default function GlobalStateSelector() {
 
   // Fetch states from API
   useEffect(() => {
+    // Avoid running in non-browser environments (e.g., Node test teardown)
+    if (typeof window === "undefined") {
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
     const fetchStates = async () => {
       try {
         setIsLoading(true);
         setError(null);
         const statesData = await ApiService.getStates();
+        if (!isMounted) return;
         setStates(statesData);
 
         // Don't set default state here to avoid SSR hydration issues
         // The StateContext will handle the initial state
       } catch (err) {
         console.error("Error fetching states:", err);
+        if (!isMounted) return;
         setError("Failed to load states");
         // Fallback to hardcoded states (only those with energy data)
         setStates([
@@ -58,11 +67,15 @@ export default function GlobalStateSelector() {
           { id: "TAS", name: "Tasmania", abbreviation: "TAS", displayName: "Tasmania (TAS)" },
         ]);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchStates();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedState, setSelectedState]);
 
   // Handle click outside to close dropdown
@@ -75,14 +88,16 @@ export default function GlobalStateSelector() {
       }
     };
 
-    if (isExpanded) {
+    if (isExpanded && typeof document !== "undefined") {
       console.log("Adding click outside listener");
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       console.log("Removing click outside listener");
-      document.removeEventListener("mousedown", handleClickOutside);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("mousedown", handleClickOutside);
+      }
     };
   }, [isExpanded]);
 
