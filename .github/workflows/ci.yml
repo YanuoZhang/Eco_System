@@ -53,14 +53,14 @@ jobs:
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/01_schema.sql
           (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_file="Emissions_by_state.csv" -f ../02_load_emissions.sql)
           (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../03_load_population.sql)
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/04_load_generation.sql
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../04_load_generation.sql)
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/05_load_state_initiatives.sql
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/06_load_electricity_factors.sql
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/07_load_household_energy.sql
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/08_load_fuel_economy.sql
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/09_load_gas_factors.sql
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/10_load_total_dwellings.sql
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/11_load_transport_fuels_factors.sql
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../06_load_electricity_factors.sql)
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../07_load_household_energy.sql)
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../08_load_fuel_economy.sql)
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../09_load_gas_factors.sql)
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../10_load_total_dwellings.sql)
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../11_load_transport_fuels_factors.sql)
           # Optional: 12_visual_queries.sql is for visualization examples and not required
 
       - name: Verify DB
