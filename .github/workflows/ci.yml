@@ -52,7 +52,7 @@ jobs:
           if [ -f "$DATA_DIR/Emissions_by_state.csv" ]; then ls -la "$DATA_DIR/Emissions_by_state.csv" | cat; else echo "Emissions_by_state.csv NOT FOUND in $DATA_DIR"; fi
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/01_schema.sql
           (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_file="Emissions_by_state.csv" -f ../02_load_emissions.sql)
-          psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/03_load_population.sql
+          (cd ecopath-database/data && psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ../03_load_population.sql)
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/04_load_generation.sql
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/05_load_state_initiatives.sql
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/06_load_electricity_factors.sql

@@ -35,7 +35,7 @@ CREATE TABLE temp_population_norm (
 
 -- ========== NSW ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/NSW_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'NSW_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'NSW'::TEXT AS state_id,
@@ -65,7 +65,7 @@ SET population = EXCLUDED.population;
 
 -- ========== VIC ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/VIC_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'VIC_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'VIC'::TEXT AS state_id,
@@ -96,7 +96,7 @@ SET population = EXCLUDED.population;
 
 -- ========== QLD ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/QLD_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'QLD_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'QLD'::TEXT AS state_id,
@@ -127,7 +127,7 @@ SET population = EXCLUDED.population;
 
 -- ========== SA ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/SA_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'SA_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'SA'::TEXT AS state_id,
@@ -158,7 +158,7 @@ SET population = EXCLUDED.population;
 
 -- ========== WA ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/WA_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'WA_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'WA'::TEXT AS state_id,
@@ -189,7 +189,7 @@ SET population = EXCLUDED.population;
 
 -- ========== TAS ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/TAS_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'TAS_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'TAS'::TEXT AS state_id,
@@ -220,7 +220,7 @@ SET population = EXCLUDED.population;
 
 -- ========== NT ==========
 TRUNCATE temp_population_raw;
-\copy temp_population_raw(c1,c2,c3) FROM :'data_dir'/NT_population.csv CSV HEADER
+\copy temp_population_raw(c1,c2,c3) FROM 'NT_population.csv' CSV HEADER
 WITH norm AS (
   SELECT
     'NT'::TEXT AS state_id,
