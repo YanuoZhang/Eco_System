@@ -1,0 +1,55 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-backend:
+    # Optional: uncomment to require commit message marker
+    # if: contains(github.event.head_commit.message, '[backend]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # required so we can diff previous commit
+
+      - name: Check if backend folder changed
+        id: check_backend
+        run: |
+          BEFORE=${{ github.event.before }}
+          if [ -z "$BEFORE" ]; then
+            # Fallback to previous commit if before is not provided
+            BEFORE=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+          fi
+          if [ -n "$BEFORE" ] && git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -q '^ecopath-backend/'; then
+            echo "BACKEND_CHANGED=true" >> $GITHUB_ENV
+          else
+            echo "BACKEND_CHANGED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Skip if no backend changes
+        if: env.BACKEND_CHANGED == 'false'
+        run: echo "No backend changes detected. Skipping deploy." && exit 0
+
+      - name: Setup SSH key
+        if: env.BACKEND_CHANGED == 'true'
+        run: |
+          echo "Setting up SSH key"
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+      - name: Deploy to EC2 via SSH
+        if: env.BACKEND_CHANGED == 'true'
+        run: |
+          echo "Deploying backend to EC2..."
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/Eco_System/ecopath-backend
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart ecopath-api || pm2 start dist/index.js --name ecopath-api
+          EOF
