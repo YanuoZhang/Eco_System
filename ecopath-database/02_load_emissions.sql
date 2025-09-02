@@ -18,7 +18,9 @@ CREATE TABLE emission_raw (
   "WA (Mt)" NUMERIC
 );
 
-\copy emission_raw FROM :'data_dir'/Emissions_by_state.csv CSV HEADER;
+-- build CSV absolute path from data_dir
+\set emissions_csv :'data_dir' '/Emissions_by_state.csv'
+\copy emission_raw FROM :'emissions_csv' CSV HEADER;
 
 
 INSERT INTO emission_total (state_id, year, emissions_mt)

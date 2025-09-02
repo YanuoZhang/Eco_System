@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ApiService } from "@/services/api";
+import { useStateContext } from "@/contexts/StateContext";
 import TimeUnitSelector, { TimeUnit } from "./TimeUnitSelector";
 
 interface FormData {
@@ -44,6 +46,7 @@ export default function CarbonFootprintCalculator({
   onNext,
   onPrev,
 }: CarbonFootprintCalculatorProps) {
+  const { selectedState } = useStateContext();
   const [mounted, setMounted] = useState(false);
   const [timeUnit, setTimeUnit] = useState<TimeUnit["value"]>("month");
   const [transportTimeframe, setTransportTimeframe] = useState<
@@ -121,41 +124,61 @@ export default function CarbonFootprintCalculator({
     setError(null);
 
     try {
-      // 模拟API调用
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // 将前端选择映射到后端 API 所需格式
+      const stateCodeMatch = selectedState.match(/\((.*?)\)/);
+      const stateCode = stateCodeMatch ? stateCodeMatch[1] : "VIC";
 
-      // 获取时间单位乘数
-      const timeUnits = [
-        { value: "day", label: "Day", multiplier: 365 },
-        { value: "week", label: "Week", multiplier: 52 },
-        { value: "month", label: "Month", multiplier: 12 },
-        { value: "quarter", label: "Quarter", multiplier: 4 },
-      ];
-      const timeUnitData = timeUnits.find((unit) => unit.value === timeUnit);
-      const multiplier = timeUnitData?.multiplier || 12;
+      const transportModeMap: Record<
+        string,
+        "car" | "bus" | "train" | "tram" | "bicycle" | "walking"
+      > = {
+        "car-petrol": "car",
+        "car-diesel": "car",
+        "car-hybrid": "car",
+        "car-electric": "car",
+        "public-transport": "bus",
+        "bike-walk": "bicycle",
+      };
 
-      // 计算排放量 (kg CO2/year)
-      const electricityEmission = parseFloat(formData.electricity || "0") * 0.82 * multiplier;
-      const gasEmission = parseFloat(formData.gas || "0") * 1.9 * multiplier;
+      const energyPayload =
+        formData.electricity || formData.gas
+          ? {
+              electricity: formData.electricity ? Number(formData.electricity) : undefined,
+              gas: formData.gas ? Number(formData.gas) : undefined,
+              timeUnit: (timeUnit as "month" | "quarter" | "year") ?? "month",
+            }
+          : undefined;
 
-      const selectedTransport = transportOptions.find((t) => t.value === formData.transportMode);
-      const transportMultiplier =
-        transportTimeframes.find((t) => t.value === transportTimeframe)?.multiplier || 365;
-      const transportEmission =
-        selectedTransport && formData.distance
-          ? parseFloat(formData.distance) * selectedTransport.emissionFactor * transportMultiplier
-          : 0;
+      const transportPayload =
+        formData.transportMode && formData.distance
+          ? {
+              mode: transportModeMap[formData.transportMode] ?? "car",
+              distance: Number(formData.distance),
+              timeUnit: (transportTimeframe as "day" | "week" | "month" | "year") ?? "day",
+              frequency: 1,
+            }
+          : undefined;
 
-      const totalEmissions = (electricityEmission + gasEmission + transportEmission) / 1000; // 转换为吨
-      const australianAverage = 16.2; // 澳洲人均年排放量
-      const comparison = ((totalEmissions - australianAverage) / australianAverage) * 100;
+      const resp = await ApiService.calculateEmissions({
+        state: stateCode,
+        energy: energyPayload,
+        transport: transportPayload,
+      });
+
+      const totalTonnes = resp.totalEmissions / 1000; // 后端单位为 kg，前端以吨展示
+      const australianAverage = 16.2;
+      const comparison = ((totalTonnes - australianAverage) / australianAverage) * 100;
 
       setResult({
-        totalEmissions: Math.round(totalEmissions * 10) / 10,
+        totalEmissions: Math.round(totalTonnes * 10) / 10,
         breakdown: {
-          electricity: Math.round(electricityEmission / 10) / 100,
-          gas: Math.round(gasEmission / 10) / 100,
-          transport: Math.round(transportEmission / 10) / 100,
+          electricity: resp.breakdown?.energy?.total
+            ? Math.round(resp.breakdown.energy.total) / 1000
+            : 0,
+          gas: resp.breakdown?.energy?.gas ? Math.round(resp.breakdown.energy.gas) / 1000 : 0,
+          transport: resp.breakdown?.transport?.total
+            ? Math.round(resp.breakdown.transport.total) / 1000
+            : 0,
         },
         comparison: Math.round(comparison),
       });
