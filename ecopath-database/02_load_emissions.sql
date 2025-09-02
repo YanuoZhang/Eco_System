@@ -22,11 +22,13 @@ CREATE TABLE emission_raw (
 -- Prefer explicit data_file; fall back to data_dir for backward compatibility
 \if :{?data_file}
 \echo Loading emissions from data_file: :data_file
-\copy emission_raw FROM :'data_file' WITH CSV HEADER
+\set data_cmd 'cat ' :data_file
 \else
 \echo Falling back to data_dir (should be full file path): :data_dir
-\copy emission_raw FROM :'data_dir' WITH CSV HEADER
+\set data_cmd 'cat ' :data_dir
 \endif
+\echo Using PROGRAM: :data_cmd
+\copy emission_raw FROM PROGRAM :'data_cmd' WITH CSV HEADER
 
 
 INSERT INTO emission_total (state_id, year, emissions_mt)
