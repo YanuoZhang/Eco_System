@@ -45,7 +45,7 @@ jobs:
       - name: Initialize database with SQL
         run: |
           export PGPASSWORD="$DB_PASSWORD"
-          DATA_DIR="$(pwd)/ecopath-database/data"
+          DATA_DIR="$GITHUB_WORKSPACE/ecopath-database/data"
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f ecopath-database/01_schema.sql
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR/Emissions_by_state.csv" -f ecopath-database/02_load_emissions.sql
           psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -v data_dir="$DATA_DIR" -f ecopath-database/03_load_population.sql
