@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import HeroSection from "@/components/HeroSection";
 import JourneyWelcome from "@/components/JourneyWelcome";
 import DataInsight from "@/components/DataInsight";
-
+import ProgressTracker from "@/components/ProgressTracker";
 import GlobalStateSelector from "@/components/GlobalStateSelector";
 import CarbonFootprintCalculator from "@/components/CarbonFootprintCalculator";
 import { StateProvider } from "@/contexts/StateContext";
@@ -45,6 +45,12 @@ function HomeContent() {
       title: "Calculate Your Footprint",
       icon: "🧮",
       description: "Measure your environmental impact",
+    },
+    {
+      id: 4,
+      title: "Track Your Progress",
+      icon: "📈",
+      description: "Monitor improvements over time",
     },
   ];
 
@@ -90,15 +96,11 @@ function HomeContent() {
       case 1:
         return <JourneyWelcome onNext={nextStep} />;
       case 2:
-        return (
-          <DataInsight
-            onNext={() => setCurrentStep(3)}
-            onPrev={prevStep}
-            onBackToHomepage={() => setCurrentStep(1)}
-          />
-        );
+        return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} />;
       case 3:
-        return <CarbonFootprintCalculator onNext={() => setCurrentStep(1)} onPrev={prevStep} />;
+        return <CarbonFootprintCalculator onNext={() => setCurrentStep(4)} onPrev={prevStep} />;
+      case 4:
+        return <ProgressTracker onNext={() => setCurrentStep(1)} onPrev={prevStep} />;
       default:
         return null;
     }

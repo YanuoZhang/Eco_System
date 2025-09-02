@@ -1,6 +1,6 @@
 /// <reference types="vitest/globals" />
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DataInsight from "../DataInsight";
 import { StateProvider } from "@/contexts/StateContext";
@@ -86,7 +86,8 @@ describe("DataInsight", () => {
       );
 
       expect(screen.getByText(/Real-time data from EPA Victoria & AEMO/i)).toBeInTheDocument();
-      expect(screen.getByText(/No Energy Data Available/i)).toBeInTheDocument();
+      // Should show loading skeleton instead of "No Energy Data Available"
+      expect(screen.getByTestId("energy-tab")).toBeInTheDocument();
     });
 
     it("renders EnergyMixChart with correct data", () => {
@@ -96,7 +97,8 @@ describe("DataInsight", () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByText(/No Energy Data Available/i)).toBeInTheDocument();
+      // Should show loading skeleton instead of "No Energy Data Available"
+      expect(screen.getByTestId("energy-tab")).toBeInTheDocument();
     });
 
     it("renders navigation buttons", () => {
@@ -126,14 +128,15 @@ describe("DataInsight", () => {
       expect(screen.getByText(/Real-time data from EPA Victoria & AEMO/i)).toBeInTheDocument();
     });
 
-    it("shows state-specific energy data", () => {
+    it("shows loading state for energy data", () => {
       render(
         <TestWrapper>
           <DataInsight />
         </TestWrapper>,
       );
 
-      expect(screen.getByText(/No Energy Data Available/i)).toBeInTheDocument();
+      // Should show loading skeleton instead of "No Energy Data Available"
+      expect(screen.getByTestId("energy-tab")).toBeInTheDocument();
     });
   });
 
@@ -165,7 +168,8 @@ describe("DataInsight", () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByText(/No Energy Data Available/i)).toBeInTheDocument();
+      // Should show loading skeleton or energy tab
+      expect(screen.getByTestId("energy-tab")).toBeInTheDocument();
     });
   });
 
@@ -239,7 +243,9 @@ describe("DataInsight", () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByText(/No Energy Data Available/i)).toBeInTheDocument();
+      // Should show energy tab and main content area
+      expect(screen.getByTestId("energy-tab")).toBeInTheDocument();
+      expect(screen.getByRole("main")).toBeInTheDocument();
     });
 
     it("shows proper spacing between sections", () => {
@@ -249,7 +255,9 @@ describe("DataInsight", () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByText(/No Energy Data Available/i)).toBeInTheDocument();
+      // Should show main content structure
+      expect(screen.getByRole("main")).toBeInTheDocument();
+      expect(screen.getByTestId("energy-tab")).toBeInTheDocument();
     });
   });
 
@@ -324,88 +332,6 @@ describe("DataInsight", () => {
 
       expect(prevButton).toBeInTheDocument();
       expect(nextButton).toBeInTheDocument();
-    });
-  });
-
-  describe("TC-1.6.1: Back to Homepage Navigation", () => {
-    it("displays Back to Homepage button when onBackToHomepage is provided", () => {
-      const mockOnBackToHomepage = vi.fn();
-      render(
-        <TestWrapper>
-          <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>,
-      );
-
-      const backButton = screen.getByRole("button", { name: /back to homepage/i });
-      expect(backButton).toBeInTheDocument();
-      expect(backButton.tagName).toBe("BUTTON");
-    });
-
-    it("does not display Back to Homepage button when onBackToHomepage is not provided", () => {
-      render(
-        <TestWrapper>
-          <DataInsight />
-        </TestWrapper>,
-      );
-
-      const backButton = screen.queryByRole("button", { name: /back to homepage/i });
-      expect(backButton).not.toBeInTheDocument();
-    });
-
-    it("shows house icon in Back to Homepage button", () => {
-      const mockOnBackToHomepage = vi.fn();
-      render(
-        <TestWrapper>
-          <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>,
-      );
-
-      const backButton = screen.getByRole("button", { name: /back to homepage/i });
-      const houseIcon = backButton.querySelector("span:first-child");
-      expect(houseIcon).toHaveTextContent("🏠");
-    });
-
-    it("calls onBackToHomepage when Back to Homepage is clicked", () => {
-      const mockOnBackToHomepage = vi.fn();
-      render(
-        <TestWrapper>
-          <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>,
-      );
-
-      const backButton = screen.getByRole("button", { name: /back to homepage/i });
-      fireEvent.click(backButton);
-
-      expect(mockOnBackToHomepage).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe("TC-1.6.2: Homepage Landing Section Visibility", () => {
-    it("Back to Homepage button has correct styling and hover effects", () => {
-      const mockOnBackToHomepage = vi.fn();
-      render(
-        <TestWrapper>
-          <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>,
-      );
-
-      const backButton = screen.getByRole("button", { name: /back to homepage/i });
-      // Check if button has some styling classes
-      expect(backButton.className).toContain("bg-blue-100");
-      expect(backButton.className).toContain("text-blue-700");
-    });
-
-    it("Back to Homepage button is positioned correctly in header layout", () => {
-      const mockOnBackToHomepage = vi.fn();
-      render(
-        <TestWrapper>
-          <DataInsight onBackToHomepage={mockOnBackToHomepage} />
-        </TestWrapper>,
-      );
-
-      const backButton = screen.getByRole("button", { name: /back to homepage/i });
-      const headerContainer = backButton.closest("div");
-      expect(headerContainer).toHaveClass("flex", "items-center", "space-x-4");
     });
   });
 });

@@ -34,12 +34,21 @@ const transportOptions = [
   { value: "bike-walk", label: "Cycling/Walking", emissionFactor: 0.01 },
 ];
 
+const transportTimeframes = [
+  { value: "day", label: "Daily", multiplier: 365 },
+  { value: "month", label: "Monthly", multiplier: 12 },
+  { value: "quarter", label: "Yearly", multiplier: 1 },
+];
+
 export default function CarbonFootprintCalculator({
   onNext,
   onPrev,
 }: CarbonFootprintCalculatorProps) {
   const [mounted, setMounted] = useState(false);
   const [timeUnit, setTimeUnit] = useState<TimeUnit["value"]>("month");
+  const [transportTimeframe, setTransportTimeframe] = useState<
+    "day" | "week" | "month" | "quarter"
+  >("day");
   const [formData, setFormData] = useState<FormData>({
     electricity: "",
     gas: "",
@@ -130,9 +139,11 @@ export default function CarbonFootprintCalculator({
       const gasEmission = parseFloat(formData.gas || "0") * 1.9 * multiplier;
 
       const selectedTransport = transportOptions.find((t) => t.value === formData.transportMode);
+      const transportMultiplier =
+        transportTimeframes.find((t) => t.value === transportTimeframe)?.multiplier || 365;
       const transportEmission =
         selectedTransport && formData.distance
-          ? parseFloat(formData.distance) * selectedTransport.emissionFactor * multiplier
+          ? parseFloat(formData.distance) * selectedTransport.emissionFactor * transportMultiplier
           : 0;
 
       const totalEmissions = (electricityEmission + gasEmission + transportEmission) / 1000; // 转换为吨
@@ -217,7 +228,8 @@ export default function CarbonFootprintCalculator({
                 <TimeUnitSelector
                   selectedUnit={timeUnit}
                   onUnitChange={setTimeUnit}
-                  dataTestId="time-unit-select"
+                  dataTestId="energy-time-unit-select"
+                  type="energy"
                 />
               </div>
 
@@ -261,10 +273,19 @@ export default function CarbonFootprintCalculator({
 
               {/* Transportation */}
               <div>
-                <h3 className="text-xl font-semibold text-green-800 flex items-center space-x-2 mb-6">
-                  <span className="text-lg">🚗</span>
-                  <span>Transportation</span>
-                </h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-green-800 flex items-center space-x-2">
+                    <span className="text-lg">🚗</span>
+                    <span>Transportation</span>
+                  </h3>
+                  {/* Transport Timeframe Selector */}
+                  <TimeUnitSelector
+                    selectedUnit={transportTimeframe}
+                    onUnitChange={setTransportTimeframe}
+                    dataTestId="transport-time-unit-select"
+                    type="transport"
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-green-700 mb-2">
@@ -286,24 +307,23 @@ export default function CarbonFootprintCalculator({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-green-700 mb-2">
-                      {getFieldLabel("distance")}
+                      Distance (km) -{" "}
+                      {transportTimeframes.find((t) => t.value === transportTimeframe)?.label}
                     </label>
                     <input
                       type="number"
                       value={formData.distance}
                       onChange={(e) => handleInputChange("distance", e.target.value)}
-                      placeholder={getPlaceholder("distance")}
+                      placeholder="e.g., 25"
                       className="w-full p-4 bg-white text-green-800 rounded-lg border border-green-300 focus:border-teal-500 focus:outline-none"
                       data-testid="distance-input"
                     />
                     <p className="text-xs text-green-600 mt-1">
-                      {timeUnit === "day"
+                      {transportTimeframe === "day"
                         ? "Round trip distance"
-                        : timeUnit === "week"
-                          ? "Total weekly distance"
-                          : timeUnit === "month"
-                            ? "Total monthly distance"
-                            : "Total quarterly distance"}
+                        : transportTimeframe === "month"
+                          ? "Total monthly distance"
+                          : "Total yearly distance"}
                     </p>
                   </div>
                 </div>
@@ -422,7 +442,7 @@ export default function CarbonFootprintCalculator({
                 onClick={onNext}
                 className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 cursor-pointer whitespace-nowrap shadow-lg"
               >
-                <span>Complete Journey</span>
+                <span>Next Journey</span>
                 <span>→</span>
               </button>
             )}
