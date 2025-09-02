@@ -21,7 +21,7 @@ CREATE TABLE emission_raw (
 -- Require explicit data_file passed by CI; fail fast if not provided
 \if :{?data_file}
 \echo Loading emissions from data_file: :data_file
-\copy emission_raw FROM :data_file WITH (FORMAT csv, HEADER true)
+\copy emission_raw FROM :'data_file' WITH (FORMAT csv, HEADER true)
 \else
 \error 'psql variable data_file is required and must be an absolute CSV path'
 \endif
