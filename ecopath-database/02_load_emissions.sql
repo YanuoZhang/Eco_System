@@ -18,8 +18,9 @@ CREATE TABLE emission_raw (
   "WA (Mt)" NUMERIC
 );
 
--- \copy emission_raw FROM :'data_dir'/Emissions_by_state.csv CSV HEADER;
-\copy emission_raw FROM 'data/Emissions_by_state.csv' CSV HEADER;
+-- Load CSV from current working directory (CI cd into ecopath-database/data before invoking)
+\echo Loading emissions from file in current dir: Emissions_by_state.csv
+\copy emission_raw FROM 'Emissions_by_state.csv' WITH (FORMAT csv, HEADER true)
 
 
 INSERT INTO emission_total (state_id, year, emissions_mt)

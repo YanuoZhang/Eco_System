@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ApiService, ClimateTargetData } from "@/services/api";
 
 export interface ClimateTarget {
   planName: string;
@@ -72,21 +73,48 @@ export default function ClimateTargetSidebar({
   stateName,
   isLoading = false,
 }: ClimateTargetSidebarProps) {
-  const [climateTarget, setClimateTarget] = useState<ClimateTarget | null>(null);
+  const [climateTarget, setClimateTarget] = useState<ClimateTargetData | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (stateName) {
       setIsLoadingData(true);
+      setError(null);
 
-      // Simulate API call delay
-      const timer = setTimeout(() => {
-        const target = MOCK_CLIMATE_TARGETS[stateName] || MOCK_CLIMATE_TARGETS["Victoria (VIC)"];
-        setClimateTarget(target);
-        setIsLoadingData(false);
-      }, 500);
+      // Extract state code (e.g., "Victoria (VIC)" -> "VIC")
+      const stateCode = stateName.match(/\(([^)]+)\)/)?.[1] || stateName.split(" ")[0];
 
-      return () => clearTimeout(timer);
+      const fetchClimateTargets = async () => {
+        try {
+          const data = await ApiService.getClimateTargets(stateCode);
+          setClimateTarget(data);
+        } catch (err) {
+          console.error("Error fetching climate targets data:", err);
+          setError("Failed to load climate targets data");
+          // Only fallback to mock data for known states
+          if (MOCK_CLIMATE_TARGETS[stateName]) {
+            const mockTarget = MOCK_CLIMATE_TARGETS[stateName];
+            setClimateTarget({
+              targetYear: mockTarget.targetYear,
+              baselineYear: 2005,
+              targetValuePct: 50,
+              planName: mockTarget.planName,
+              progress: mockTarget.progress,
+              progressDescription: `Achieved: ${mockTarget.progress}%`,
+              latestEmissions: null,
+              notes: mockTarget.description || "",
+            });
+          } else {
+            // For unknown states, set to null to show no data state
+            setClimateTarget(null);
+          }
+        } finally {
+          setIsLoadingData(false);
+        }
+      };
+
+      fetchClimateTargets();
     }
   }, [stateName]);
 
@@ -144,10 +172,10 @@ export default function ClimateTargetSidebar({
             <h3 className="text-lg font-semibold text-green-800">Reduction Goals</h3>
           </div>
 
-          {/* 2030 Target */}
+          {/* Target */}
           <div className="flex items-center justify-between">
-            <span className="text-green-800 font-medium">2030 Target</span>
-            <span className="text-green-600 font-semibold">-45%</span>
+            <span className="text-green-800 font-medium">{climateTarget.targetYear} Target</span>
+            <span className="text-green-600 font-semibold">-{climateTarget.targetValuePct}%</span>
           </div>
 
           {/* Current Progress */}
@@ -155,7 +183,7 @@ export default function ClimateTargetSidebar({
             <div className="flex items-center justify-between">
               <span className="text-green-800 font-medium">Current Progress</span>
               <span data-testid="progress-text" className="text-green-600 font-semibold">
-                -{climateTarget.progress}%
+                {climateTarget.progressDescription}
               </span>
             </div>
 
@@ -167,10 +195,12 @@ export default function ClimateTargetSidebar({
             >
               <div
                 className="h-3 rounded-full bg-green-500 transition-all duration-500"
-                style={{ width: `${Math.min(climateTarget.progress, 100)}%` }}
+                style={{
+                  width: `${Math.min((climateTarget.progress / climateTarget.targetValuePct) * 100, 100)}%`,
+                }}
                 aria-valuenow={climateTarget.progress}
                 aria-valuemin={0}
-                aria-valuemax={100}
+                aria-valuemax={climateTarget.targetValuePct}
               ></div>
             </div>
           </div>
@@ -220,7 +250,7 @@ export default function ClimateTargetSidebar({
           <div className="text-yellow-800 font-semibold" data-testid="target-year">
             Target: {climateTarget.targetYear}
           </div>
-          <div className="text-yellow-600 text-sm mt-1">{climateTarget.description}</div>
+          <div className="text-yellow-600 text-sm mt-1">{climateTarget.notes}</div>
         </div>
       </div>
     </div>

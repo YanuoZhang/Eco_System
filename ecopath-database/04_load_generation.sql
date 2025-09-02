@@ -21,7 +21,7 @@ CREATE TABLE generation_mix_raw_text (
 
 -- ========== NSW ==========
 TRUNCATE generation_mix_raw_text;
-\copy generation_mix_raw_text FROM 'data/Generation_NSW.csv' CSV HEADER
+\copy generation_mix_raw_text FROM 'Generation_NSW.csv' CSV HEADER;
 INSERT INTO generation_mix (state_id, dmonth, energy_type, generation_gwh)
 SELECT 'NSW',
        to_date(dmonth_txt, 'DD/MM/YYYY'),
@@ -43,7 +43,7 @@ ON CONFLICT (state_id, dmonth, energy_type) DO UPDATE SET generation_gwh = EXCLU
 
 -- ========== QLD ==========
 TRUNCATE generation_mix_raw_text;
-\copy generation_mix_raw_text FROM 'data/Generation_QLD.csv' CSV HEADER
+\copy generation_mix_raw_text FROM 'Generation_QLD.csv' CSV HEADER;
 INSERT INTO generation_mix (state_id, dmonth, energy_type, generation_gwh)
 SELECT 'QLD',
        to_date(dmonth_txt, 'DD/MM/YYYY'),
@@ -65,7 +65,7 @@ ON CONFLICT (state_id, dmonth, energy_type) DO UPDATE SET generation_gwh = EXCLU
 
 -- ========== SA ==========
 TRUNCATE generation_mix_raw_text;
-\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4,c5) FROM 'data/Generation_SA.csv' CSV HEADER
+\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4,c5) FROM 'Generation_SA.csv' CSV HEADER;
 INSERT INTO generation_mix (state_id, dmonth, energy_type, generation_gwh)
 SELECT 'SA',
        to_date(dmonth_txt,'DD/MM/YYYY'),
@@ -85,7 +85,7 @@ DO UPDATE SET generation_gwh = EXCLUDED.generation_gwh;
 
 -- ========== WA ==========
 TRUNCATE generation_mix_raw_text;
-\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4,c5,c6,c7,c8) FROM 'data/Generation_WA.csv' CSV HEADER
+\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4,c5,c6,c7,c8) FROM 'Generation_WA.csv' CSV HEADER;
 INSERT INTO generation_mix (state_id, dmonth, energy_type, generation_gwh)
 SELECT 'WA',
        to_date(dmonth_txt,'DD/MM/YYYY'),
@@ -108,7 +108,7 @@ DO UPDATE SET generation_gwh = EXCLUDED.generation_gwh;
 
 -- ========== TAS ==========
 TRUNCATE generation_mix_raw_text;
-\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4) FROM 'data/Generation_TAS.csv' CSV HEADER
+\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4) FROM 'Generation_TAS.csv' CSV HEADER;
 INSERT INTO generation_mix (state_id, dmonth, energy_type, generation_gwh)
 SELECT 'TAS',
        to_date(dmonth_txt,'DD/MM/YYYY'),
@@ -127,7 +127,7 @@ DO UPDATE SET generation_gwh = EXCLUDED.generation_gwh;
 
 -- ========== VIC ==========
 TRUNCATE generation_mix_raw_text;
-\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4,c5,c6) FROM 'data/Generation_VIC.csv' CSV HEADER
+\copy generation_mix_raw_text(dmonth_txt,state_txt,c1,c2,c3,c4,c5,c6) FROM 'Generation_VIC.csv' CSV HEADER;
 INSERT INTO generation_mix (state_id, dmonth, energy_type, generation_gwh)
 SELECT 'VIC',
        to_date(dmonth_txt,'DD/MM/YYYY'),

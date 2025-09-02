@@ -5,24 +5,27 @@ import { useRouter, useSearchParams } from "next/navigation";
 import HeroSection from "@/components/HeroSection";
 import JourneyWelcome from "@/components/JourneyWelcome";
 import DataInsight from "@/components/DataInsight";
-import FootprintCalculator from "@/components/FootprintCalculator";
+import ProgressTracker from "@/components/ProgressTracker";
 import GlobalStateSelector from "@/components/GlobalStateSelector";
+import CarbonFootprintCalculator from "@/components/CarbonFootprintCalculator";
 import { StateProvider } from "@/contexts/StateContext";
 
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
 
-  // Initialize currentStep from localStorage or URL params
-  const [currentStep, setCurrentStep] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedStep = localStorage.getItem("currentStep");
-      if (savedStep) {
-        return parseInt(savedStep);
-      }
+  // Initialize currentStep with default value for SSR consistency
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Handle hydration and load from localStorage
+  useEffect(() => {
+    setMounted(true);
+    const savedStep = localStorage.getItem("currentStep");
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep));
     }
-    return 1;
-  });
+  }, []);
 
   const steps = [
     {
@@ -42,6 +45,12 @@ function HomeContent() {
       title: "Calculate Your Footprint",
       icon: "🧮",
       description: "Measure your environmental impact",
+    },
+    {
+      id: 4,
+      title: "Track Your Progress",
+      icon: "📈",
+      description: "Monitor improvements over time",
     },
   ];
 
@@ -87,15 +96,11 @@ function HomeContent() {
       case 1:
         return <JourneyWelcome onNext={nextStep} />;
       case 2:
-        return (
-          <DataInsight
-            onNext={() => setCurrentStep(3)}
-            onPrev={prevStep}
-            onBackToHomepage={() => setCurrentStep(1)}
-          />
-        );
+        return <DataInsight onNext={() => setCurrentStep(3)} onPrev={prevStep} />;
       case 3:
-        return <FootprintCalculator onPrev={prevStep} onBackToHomepage={() => setCurrentStep(1)} />;
+        return <CarbonFootprintCalculator onNext={() => setCurrentStep(4)} onPrev={prevStep} />;
+      case 4:
+        return <ProgressTracker onNext={() => setCurrentStep(1)} onPrev={prevStep} />;
       default:
         return null;
     }
@@ -131,71 +136,88 @@ function HomeContent() {
 
             {/* Journey Steps */}
             <div className="flex flex-col md:flex-row md:justify-center md:items-center relative z-10 space-y-6 md:space-y-0 md:space-x-12">
-              {steps.map((step, index) => {
-                const isCurrent = index + 1 === currentStep;
-                const isCompleted = index + 1 < currentStep;
+              {!mounted
+                ? // Show loading state during hydration
+                  steps.map((step) => (
+                    <div key={step.id} className="flex md:flex-col items-center md:text-center">
+                      <div className="relative w-20 h-20 rounded-full flex items-center justify-center border-4 bg-gray-100 border-gray-300">
+                        <span className="text-3xl text-gray-400">{step.icon}</span>
+                      </div>
+                      <div className="text-center mt-4 max-w-32 ml-4 md:ml-0">
+                        <h3 className="font-semibold text-sm mb-1 text-gray-400">{step.title}</h3>
+                        <p className="text-xs leading-tight text-gray-400">{step.description}</p>
+                      </div>
+                    </div>
+                  ))
+                : steps.map((step, index) => {
+                    const isCurrent = index + 1 === currentStep;
+                    const isCompleted = index + 1 < currentStep;
 
-                return (
-                  <div key={step.id} className="flex md:flex-col items-center md:text-center">
-                    {/* Step Icon */}
-                    <div
-                      className={`relative w-20 h-20 rounded-full flex items-center justify-center border-4 transition-all duration-500 transform ${
-                        isCurrent
-                          ? "bg-gradient-to-br from-green-400 to-blue-400 border-white shadow-lg scale-110 animate-pulse"
-                          : isCompleted
-                            ? "bg-gradient-to-br from-green-500 to-emerald-500 border-emerald-200 shadow-md"
-                            : "bg-gray-100 border-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`text-3xl ${
-                          isCurrent ? "text-white" : isCompleted ? "text-white" : "text-gray-400"
-                        }`}
-                      >
-                        {step.icon}
-                      </span>
+                    return (
+                      <div key={step.id} className="flex md:flex-col items-center md:text-center">
+                        {/* Step Icon */}
+                        <div
+                          className={`relative w-20 h-20 rounded-full flex items-center justify-center border-4 transition-all duration-500 transform ${
+                            isCurrent
+                              ? "bg-gradient-to-br from-green-400 to-blue-400 border-white shadow-lg scale-110 animate-pulse"
+                              : isCompleted
+                                ? "bg-gradient-to-br from-green-500 to-emerald-500 border-emerald-200 shadow-md"
+                                : "bg-gray-100 border-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`text-3xl ${
+                              isCurrent
+                                ? "text-white"
+                                : isCompleted
+                                  ? "text-white"
+                                  : "text-gray-400"
+                            }`}
+                          >
+                            {step.icon}
+                          </span>
 
-                      {/* Completion Mark */}
-                      {isCompleted && (
-                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                          <span className="text-xs text-white">✓</span>
+                          {/* Completion Mark */}
+                          {isCompleted && (
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                              <span className="text-xs text-white">✓</span>
+                            </div>
+                          )}
+
+                          {/* Current Step Glow */}
+                          {isCurrent && (
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400 to-blue-400 opacity-30 animate-ping"></div>
+                          )}
                         </div>
-                      )}
 
-                      {/* Current Step Glow */}
-                      {isCurrent && (
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400 to-blue-400 opacity-30 animate-ping"></div>
-                      )}
-                    </div>
-
-                    {/* Step Info */}
-                    <div className="text-center mt-4 max-w-32 ml-4 md:ml-0">
-                      <h3
-                        className={`font-semibold text-sm mb-1 ${
-                          isCurrent
-                            ? "text-green-700"
-                            : isCompleted
-                              ? "text-emerald-600"
-                              : "text-gray-400"
-                        }`}
-                      >
-                        {step.title}
-                      </h3>
-                      <p
-                        className={`text-xs leading-tight ${
-                          isCurrent
-                            ? "text-green-600"
-                            : isCompleted
-                              ? "text-emerald-500"
-                              : "text-gray-400"
-                        }`}
-                      >
-                        {step.description}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                        {/* Step Info */}
+                        <div className="text-center mt-4 max-w-32 ml-4 md:ml-0">
+                          <h3
+                            className={`font-semibold text-sm mb-1 ${
+                              isCurrent
+                                ? "text-green-700"
+                                : isCompleted
+                                  ? "text-emerald-600"
+                                  : "text-gray-400"
+                            }`}
+                          >
+                            {step.title}
+                          </h3>
+                          <p
+                            className={`text-xs leading-tight ${
+                              isCurrent
+                                ? "text-green-600"
+                                : isCompleted
+                                  ? "text-emerald-500"
+                                  : "text-gray-400"
+                            }`}
+                          >
+                            {step.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
             </div>
 
             {/* Current Step Status */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import EnergyMixChart, { EnergyMix } from "./EnergyMixChart";
 import EmissionsChart, { EmissionData } from "./EmissionsChart";
 import ClimateTargetSidebar from "./ClimateTargetSidebar";
@@ -9,180 +9,26 @@ import DataSources from "./DataSources";
 import { useStateContext } from "@/contexts/StateContext";
 import { ApiService } from "@/services/api";
 
-// Mock data for different states - in real app this would come from API
-const STATE_ENERGY_DATA: Record<string, EnergyMix[]> = {
-  "Victoria (VIC)": [
-    { source: "Coal", percentage: 45.2, generation: "8,450 MW", trend: -8.5 },
-    { source: "Natural Gas", percentage: 18.3, generation: "3,420 MW", trend: -2.1 },
-    { source: "Wind", percentage: 22.8, generation: "4,250 MW", trend: 15.2 },
-    { source: "Solar", percentage: 8.9, generation: "1,660 MW", trend: 28.7 },
-    { source: "Hydro", percentage: 4.8, generation: "895 MW", trend: 1.2 },
-  ],
-  "New South Wales (NSW)": [
-    { source: "Coal", percentage: 52.1, generation: "12,300 MW", trend: -5.2 },
-    { source: "Natural Gas", percentage: 15.8, generation: "3,750 MW", trend: -1.8 },
-    { source: "Wind", percentage: 18.5, generation: "4,100 MW", trend: 12.5 },
-    { source: "Solar", percentage: 9.2, generation: "2,180 MW", trend: 25.3 },
-    { source: "Hydro", percentage: 4.4, generation: "1,200 MW", trend: 0.8 },
-  ],
-  "Queensland (QLD)": [
-    { source: "Coal", percentage: 58.7, generation: "15,200 MW", trend: -3.1 },
-    { source: "Natural Gas", percentage: 22.3, generation: "5,800 MW", trend: 2.5 },
-    { source: "Solar", percentage: 12.8, generation: "3,300 MW", trend: 32.1 },
-    { source: "Hydro", percentage: 4.2, generation: "1,100 MW", trend: 0.5 },
-    { source: "Wind", percentage: 2.0, generation: "520 MW", trend: 8.7 },
-  ],
-  "Western Australia (WA)": [
-    { source: "Natural Gas", percentage: 48.5, generation: "8,900 MW", trend: 1.2 },
-    { source: "Coal", percentage: 25.2, generation: "4,600 MW", trend: -4.8 },
-    { source: "Solar", percentage: 15.8, generation: "2,900 MW", trend: 28.9 },
-    { source: "Wind", percentage: 8.5, generation: "1,560 MW", trend: 18.3 },
-    { source: "Hydro", percentage: 2.0, generation: "370 MW", trend: 0.2 },
-  ],
-  "South Australia (SA)": [
-    { source: "Wind", percentage: 42.3, generation: "2,800 MW", trend: 22.1 },
-    { source: "Solar", percentage: 28.7, generation: "1,900 MW", trend: 35.2 },
-    { source: "Natural Gas", percentage: 18.5, generation: "1,220 MW", trend: -2.8 },
-    { source: "Battery Storage", percentage: 8.2, generation: "540 MW", trend: 45.6 },
-    { source: "Other", percentage: 2.3, generation: "150 MW", trend: 1.2 },
-  ],
-  "Tasmania (TAS)": [
-    { source: "Hydro", percentage: 78.5, generation: "2,800 MW", trend: 0.5 },
-    { source: "Wind", percentage: 15.2, generation: "540 MW", trend: 12.8 },
-    { source: "Natural Gas", percentage: 4.8, generation: "170 MW", trend: -1.2 },
-    { source: "Solar", percentage: 1.5, generation: "53 MW", trend: 18.9 },
-  ],
-  "Australian Capital Territory (ACT)": [
-    { source: "Solar", percentage: 45.2, generation: "320 MW", trend: 28.7 },
-    { source: "Wind", percentage: 38.8, generation: "275 MW", trend: 22.3 },
-    { source: "Natural Gas", percentage: 12.5, generation: "88 MW", trend: -3.2 },
-    { source: "Battery Storage", percentage: 3.5, generation: "25 MW", trend: 52.1 },
-  ],
-  "Northern Territory (NT)": [
-    { source: "Natural Gas", percentage: 65.8, generation: "1,200 MW", trend: 2.8 },
-    { source: "Solar", percentage: 22.3, generation: "410 MW", trend: 38.5 },
-    { source: "Diesel", percentage: 8.9, generation: "160 MW", trend: -5.2 },
-    { source: "Wind", percentage: 3.0, generation: "55 MW", trend: 15.7 },
-  ],
-};
-
-// Mock emissions data for different states
-const STATE_EMISSIONS_DATA: Record<string, EmissionData[]> = {
-  "Victoria (VIC)": [
-    { year: 2014, value: 48.2 },
-    { year: 2015, value: 47.8 },
-    { year: 2016, value: 47.1 },
-    { year: 2017, value: 46.5 },
-    { year: 2018, value: 45.9 },
-    { year: 2019, value: 45.2 },
-    { year: 2020, value: 44.1 },
-    { year: 2021, value: 43.5 },
-    { year: 2022, value: 43.1 },
-    { year: 2023, value: 42.7 },
-  ],
-  "New South Wales (NSW)": [
-    { year: 2014, value: 52.8 },
-    { year: 2015, value: 52.1 },
-    { year: 2016, value: 51.5 },
-    { year: 2017, value: 50.9 },
-    { year: 2018, value: 50.2 },
-    { year: 2019, value: 49.8 },
-    { year: 2020, value: 48.9 },
-    { year: 2021, value: 48.3 },
-    { year: 2022, value: 47.8 },
-    { year: 2023, value: 47.2 },
-  ],
-  "Queensland (QLD)": [
-    { year: 2014, value: 58.9 },
-    { year: 2015, value: 58.2 },
-    { year: 2016, value: 57.8 },
-    { year: 2017, value: 57.1 },
-    { year: 2018, value: 56.5 },
-    { year: 2019, value: 55.9 },
-    { year: 2020, value: 55.2 },
-    { year: 2021, value: 54.8 },
-    { year: 2022, value: 54.1 },
-    { year: 2023, value: 53.7 },
-  ],
-  "Western Australia (WA)": [
-    { year: 2014, value: 35.2 },
-    { year: 2015, value: 34.8 },
-    { year: 2016, value: 34.1 },
-    { year: 2017, value: 33.5 },
-    { year: 2018, value: 32.9 },
-    { year: 2019, value: 32.2 },
-    { year: 2020, value: 31.8 },
-    { year: 2021, value: 31.1 },
-    { year: 2022, value: 30.5 },
-    { year: 2023, value: 29.9 },
-  ],
-  "South Australia (SA)": [
-    { year: 2014, value: 28.5 },
-    { year: 2015, value: 27.9 },
-    { year: 2016, value: 27.2 },
-    { year: 2017, value: 26.8 },
-    { year: 2018, value: 26.1 },
-    { year: 2019, value: 25.5 },
-    { year: 2020, value: 24.9 },
-    { year: 2021, value: 24.2 },
-    { year: 2022, value: 23.8 },
-    { year: 2023, value: 23.1 },
-  ],
-  "Tasmania (TAS)": [
-    { year: 2014, value: 12.8 },
-    { year: 2015, value: 12.5 },
-    { year: 2016, value: 12.1 },
-    { year: 2017, value: 11.8 },
-    { year: 2018, value: 11.5 },
-    { year: 2019, value: 11.2 },
-    { year: 2020, value: 10.9 },
-    { year: 2021, value: 10.5 },
-    { year: 2022, value: 10.2 },
-    { year: 2023, value: 9.8 },
-  ],
-  "Australian Capital Territory (ACT)": [
-    { year: 2014, value: 2.8 },
-    { year: 2015, value: 2.5 },
-    { year: 2016, value: 2.1 },
-    { year: 2017, value: 1.8 },
-    { year: 2018, value: 1.5 },
-    { year: 2019, value: 1.2 },
-    { year: 2020, value: 0.9 },
-    { year: 2021, value: 0.5 },
-    { year: 2022, value: 0.2 },
-    { year: 2023, value: 0.1 },
-  ],
-  "Northern Territory (NT)": [
-    { year: 2014, value: 8.9 },
-    { year: 2015, value: 8.5 },
-    { year: 2016, value: 8.1 },
-    { year: 2017, value: 7.8 },
-    { year: 2018, value: 7.5 },
-    { year: 2019, value: 7.2 },
-    { year: 2020, value: 6.9 },
-    { year: 2021, value: 6.5 },
-    { year: 2022, value: 6.2 },
-    { year: 2023, value: 5.8 },
-  ],
-};
-
 interface DataInsightProps {
   onNext?: () => void;
   onPrev?: () => void;
-  onBackToHomepage?: () => void;
 }
 
-export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataInsightProps) {
+export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
   const { selectedState } = useStateContext();
   const [activeTab, setActiveTab] = useState<"energy" | "emissions">("energy");
   const [energyMixData, setEnergyMixData] = useState<EnergyMix[]>([]);
   const [emissionsData, setEmissionsData] = useState<EmissionData[]>([]);
+
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Fetch energy mix data from backend API
-  const fetchEnergyMixData = async (state: string) => {
+  const fetchEnergyMixData = useCallback(async (state: string, retryAttempt = 0) => {
     try {
       setLoading(true);
+      setError(null);
 
       // Extract state code (e.g., "Victoria (VIC)" -> "VIC")
       const stateCode = state.match(/\(([^)]+)\)/)?.[1] || state.split(" ")[0];
@@ -193,24 +39,36 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
       const transformedData: EnergyMix[] = apiData.map((item) => ({
         source: item.source.charAt(0).toUpperCase() + item.source.slice(1), // Capitalize first letter
         percentage: item.percentage,
-        generation: `${item.generation} MW`,
-        trend: Math.random() * 20 - 10, // Mock trend data for now
+        generation: `${item.generation} GWh`,
       }));
 
       setEnergyMixData(transformedData);
-    } catch (err) {
+      setRetryCount(0); // Reset retry count on success
+    } catch (err: unknown) {
       console.error("Error fetching energy mix data:", err);
-      // Fallback to mock data
-      setEnergyMixData(STATE_ENERGY_DATA[state] || []);
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch energy mix data";
+
+      if (retryAttempt < 3) {
+        // Retry with exponential backoff
+        const delay = Math.pow(2, retryAttempt) * 1000;
+        setTimeout(() => {
+          fetchEnergyMixData(state, retryAttempt + 1);
+        }, delay);
+        setRetryCount(retryAttempt + 1);
+      } else {
+        setError(errorMessage);
+        setEnergyMixData([]); // Set empty array to show "no data" state
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch emissions data from backend API
-  const fetchEmissionsData = async (state: string) => {
+  const fetchEmissionsData = useCallback(async (state: string, retryAttempt = 0) => {
     try {
       setLoading(true);
+      setError(null);
 
       const stateCode = state.match(/\(([^)]+)\)/)?.[1] || state.split(" ")[0];
       const apiData = await ApiService.getEmissions(stateCode);
@@ -218,16 +76,38 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
       // Transform API data to match EmissionsChart interface
       const transformedData: EmissionData[] = apiData.data.map((item) => ({
         year: item.year,
-        value: item.value,
+        value: typeof item.value === "string" ? parseFloat(item.value) : item.value,
       }));
 
       setEmissionsData(transformedData);
-    } catch (err) {
+      setRetryCount(0); // Reset retry count on success
+    } catch (err: unknown) {
       console.error("Error fetching emissions data:", err);
-      // Fallback to mock data
-      setEmissionsData(STATE_EMISSIONS_DATA[state] || []);
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch emissions data";
+
+      if (retryAttempt < 3) {
+        // Retry with exponential backoff
+        const delay = Math.pow(2, retryAttempt) * 1000;
+        setTimeout(() => {
+          fetchEmissionsData(state, retryAttempt + 1);
+        }, delay);
+        setRetryCount(retryAttempt + 1);
+      } else {
+        setError(errorMessage);
+        setEmissionsData([]); // Set empty array to show "no data" state
+      }
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Retry function for manual retry
+  const handleRetry = () => {
+    if (selectedState) {
+      setError(null);
+      setRetryCount(0);
+      fetchEnergyMixData(selectedState);
+      fetchEmissionsData(selectedState);
     }
   };
 
@@ -237,7 +117,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
       fetchEnergyMixData(selectedState);
       fetchEmissionsData(selectedState);
     }
-  }, [selectedState]);
+  }, [selectedState, fetchEnergyMixData, fetchEmissionsData]);
 
   const tabs = [
     { id: "energy", label: "Energy Mix", icon: "⚡" },
@@ -255,7 +135,6 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
         description={`Comprehensive environmental data analysis for ${selectedState.split(" ")[0]}`}
         icon="📊"
         gradientColors="from-green-500 to-blue-500"
-        onBackToHomepage={onBackToHomepage}
         showToolBadge={true}
         toolBadgeText="Analytics Tool"
         toolBadgeDescription="State-wide environmental insights"
@@ -292,8 +171,38 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                   {selectedState} Environmental Data
                 </h3>
                 <p className="text-green-600">Real-time data from EPA Victoria & AEMO</p>
+                {error && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-red-500">⚠️</span>
+                        <span className="text-red-700 text-sm">{error}</span>
+                      </div>
+                      <button
+                        onClick={handleRetry}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {loading && retryCount > 0 && (
+                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-yellow-500">🔄</span>
+                      <span className="text-yellow-700 text-sm">
+                        Retrying... (Attempt {retryCount}/3)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  loading ? "bg-blue-400 animate-pulse" : error ? "bg-red-400" : "bg-green-400"
+                }`}
+              ></div>
             </div>
 
             {/* Tab Navigation */}
@@ -319,67 +228,44 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
 
             {/* Tab Content */}
             {activeTab === "energy" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Energy Mix Chart - Left Column */}
-                <div className="lg:col-span-2">
+              <div>
+                {loading && energyMixData.length === 0 ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                    <div className="animate-pulse">
+                      <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                      <div className="space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/6"></div>
+                      </div>
+                      <div className="mt-6 h-64 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ) : energyMixData.length > 0 ? (
                   <EnergyMixChart
                     data={energyMixData}
                     title={`${selectedState.split(" ")[0]} Energy Generation Mix`}
                   />
-                </div>
-
-                {/* Right Column - Side Panels */}
-                <div className="space-y-6">
-                  {/* Renewable Growth */}
-                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-                    <h5 className="font-medium text-green-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">🌱</span>
-                      Renewable Growth
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Wind Power</span>
-                        <span className="text-green-600 font-medium">+15.2%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Solar Power</span>
-                        <span className="text-green-600 font-medium">+28.7%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Total Renewables</span>
-                        <span className="text-green-600 font-medium">
-                          {energyMixData
-                            .filter((item) => ["Wind", "Solar", "Hydro"].includes(item.source))
-                            .reduce((sum, item) => sum + item.percentage, 0)
-                            .toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <div className="text-gray-400 text-6xl mb-4">⚡</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Energy Data Available
+                    </h3>
+                    <p className="text-gray-600">
+                      Energy generation data is not available for {selectedState.split(" ")[0]}.
+                    </p>
+                    {error && (
+                      <button
+                        onClick={handleRetry}
+                        className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    )}
                   </div>
-
-                  {/* Storage & Grid */}
-                  <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-                    <h5 className="font-medium text-purple-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">🔋</span>
-                      Storage & Grid
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Battery storage</span>
-                        <span className="text-purple-600 font-medium">850 MW</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Pumped hydro</span>
-                        <span className="text-purple-600 font-medium">1,500 MW</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Grid stability</span>
-                        <span className="text-purple-600 font-medium">99.8% reliability</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -387,10 +273,37 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Emissions Chart - Left Column */}
                 <div className="lg:col-span-2">
-                  <EmissionsChart
-                    data={emissionsData}
-                    title={`${selectedState.split(" ")[0]} Greenhouse Gas Emissions`}
-                  />
+                  {loading && emissionsData.length === 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                      <div className="animate-pulse">
+                        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+                        <div className="h-64 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  ) : emissionsData.length > 0 ? (
+                    <EmissionsChart
+                      data={emissionsData}
+                      title={`${selectedState.split(" ")[0]} Greenhouse Gas Emissions`}
+                    />
+                  ) : (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                      <div className="text-gray-400 text-6xl mb-4">🌱</div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No Emissions Data Available
+                      </h3>
+                      <p className="text-gray-600">
+                        Emissions data is not available for {selectedState.split(" ")[0]}.
+                      </p>
+                      {error && (
+                        <button
+                          onClick={handleRetry}
+                          className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                          Try Again
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Climate Targets Sidebar - Right Column */}
@@ -398,11 +311,8 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
                   <ClimateTargetSidebar
                     stateName={selectedState}
                     isLoading={loading}
-                    error={null}
-                    onRetry={() => {
-                      // Handle retry logic if needed
-                      console.log("Retrying climate data load...");
-                    }}
+                    error={error}
+                    onRetry={handleRetry}
                   />
                 </div>
               </div>

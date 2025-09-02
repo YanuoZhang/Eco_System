@@ -35,13 +35,22 @@ export default function HeroSection({ onStartJourney }: HeroSectionProps) {
           calculate carbon footprints, track progress and develop sustainable development plans.
         </p>
 
-        {/* CTA Button */}
-        <button
-          onClick={onStartJourney}
-          className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-2xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          Start Environmental Journey
-        </button>
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <button
+            onClick={onStartJourney}
+            className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-2xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            Start Environmental Journey
+          </button>
+
+          <button
+            onClick={onStartJourney}
+            className="bg-white/80 backdrop-blur-sm hover:bg-white text-green-700 font-bold py-4 px-8 rounded-2xl text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border border-green-200"
+          >
+            🧮 Carbon Calculator
+          </button>
+        </div>
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
