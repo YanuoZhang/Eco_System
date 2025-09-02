@@ -18,13 +18,9 @@ CREATE TABLE emission_raw (
   "WA (Mt)" NUMERIC
 );
 
--- Require explicit data_file passed by CI; fail fast if not provided
-\if :{?data_file}
-\echo Loading emissions from data_file: :data_file
-\copy emission_raw FROM :'data_file' WITH (FORMAT csv, HEADER true)
-\else
-\error 'psql variable data_file is required and must be an absolute CSV path'
-\endif
+-- Load CSV from current working directory (CI cd into ecopath-database/data before invoking)
+\echo Loading emissions from file in current dir: Emissions_by_state.csv
+\copy emission_raw FROM 'Emissions_by_state.csv' WITH (FORMAT csv, HEADER true)
 
 
 INSERT INTO emission_total (state_id, year, emissions_mt)
