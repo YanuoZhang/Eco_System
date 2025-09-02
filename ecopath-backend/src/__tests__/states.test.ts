@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../index";
-import { pool, testConnection } from "../config/database";
+import { pool } from "../config/database";
 
 describe("States API", () => {
   beforeAll(async () => {
@@ -19,10 +19,6 @@ describe("States API", () => {
 
   describe("GET /api/states", () => {
     it("should return all available states", async () => {
-      if (!(await testConnection())) {
-        console.warn("Skipping test: DB not available");
-        return;
-      }
       const response = await request(app).get("/api/states").expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
@@ -45,10 +41,6 @@ describe("States API", () => {
     });
 
     it("should return states in alphabetical order", async () => {
-      if (!(await testConnection())) {
-        console.warn("Skipping test: DB not available");
-        return;
-      }
       const response = await request(app).get("/api/states").expect(200);
 
       const stateNames = response.body.map((state: any) => state.name);
@@ -58,10 +50,6 @@ describe("States API", () => {
     });
 
     it("should not include aggregate states", async () => {
-      if (!(await testConnection())) {
-        console.warn("Skipping test: DB not available");
-        return;
-      }
       const response = await request(app).get("/api/states").expect(200);
 
       // Should not include Australia (AUS) aggregate
@@ -70,10 +58,6 @@ describe("States API", () => {
     });
 
     it("should include all major Australian states and territories", async () => {
-      if (!(await testConnection())) {
-        console.warn("Skipping test: DB not available");
-        return;
-      }
       const response = await request(app).get("/api/states").expect(200);
 
       const stateIds = response.body.map((state: any) => state.id);
@@ -86,10 +70,6 @@ describe("States API", () => {
     });
 
     it("should have consistent data structure", async () => {
-      if (!(await testConnection())) {
-        console.warn("Skipping test: DB not available");
-        return;
-      }
       const response = await request(app).get("/api/states").expect(200);
 
       response.body.forEach((state: any) => {

@@ -205,6 +205,13 @@ app.get("/api/climate-targets", async (req: Request, res: Response) => {
       WHERE state_id = $1 AND year = $2
     `;
 
+    // Helper to coerce DB value to number, stripping any non-numeric chars like "%"
+    const toNumber = (value: unknown): number => {
+      if (typeof value === "number") return value;
+      const n = parseFloat(String(value).replace(/[^0-9+\-.]/g, ""));
+      return Number.isFinite(n) ? n : 0;
+    };
+
     const targets = targetsResult.rows.map((target) => {
       let progress = 0;
       let progressDescription = "No baseline data available";
@@ -229,7 +236,7 @@ app.get("/api/climate-targets", async (req: Request, res: Response) => {
             return {
               targetYear: target.target_year,
               baselineYear: target.baseline_year,
-              targetValuePct: Number(target.target_value_pct),
+              targetValuePct: toNumber(target.target_value_pct),
               planName: `${target.state_name} ${target.target_year} Climate Target`,
               progress: progress,
               progressDescription: progressDescription,
@@ -246,7 +253,7 @@ app.get("/api/climate-targets", async (req: Request, res: Response) => {
         return {
           targetYear: target.target_year,
           baselineYear: target.baseline_year,
-          targetValuePct: Number(target.target_value_pct),
+          targetValuePct: toNumber(target.target_value_pct),
           planName: `${target.state_name} ${target.target_year} Climate Target`,
           progress: 0,
           progressDescription: "No emissions data available",
