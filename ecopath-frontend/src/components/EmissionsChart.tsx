@@ -37,10 +37,10 @@ export default function EmissionsChart({
   if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-        <div className="text-center py-12">
+        <div data-testid="empty-state" className="text-center py-12">
           <div className="text-6xl mb-4">📊</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-          <p className="text-gray-500">
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Data Available</h3>
+          <p className="text-gray-600">
             Emissions data is not available for the selected state and time period.
           </p>
         </div>
@@ -76,29 +76,13 @@ export default function EmissionsChart({
     return null;
   };
 
-  // Show empty state if no data
-  if (!data || data.length === 0) {
-    return (
-      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-        {/* No Data State */}
-        <div data-testid="empty-state" className="text-center py-12">
-          <div className="text-6xl mb-4">📊</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Data Available</h3>
-          <p className="text-gray-600">
-            Emissions data is not available for the selected state and time period.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
       {/* Chart Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
-          {latestData && (
+          {latestData && latestData.value !== undefined && (
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Latest:</span>
               <span

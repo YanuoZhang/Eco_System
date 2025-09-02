@@ -104,7 +104,7 @@ describe("EnergyMixChart", () => {
       await waitFor(() => {
         // Find tooltip by looking for the tooltip container
         const tooltip = document.querySelector(
-          ".absolute.z-50.bg-white.p-4.border.border-gray-200.rounded-lg.shadow-xl",
+          ".absolute.z-50.bg-white.p-3.sm\\:p-4.border.border-gray-200.rounded-lg.shadow-xl",
         );
         expect(tooltip).toBeInTheDocument();
 
@@ -127,7 +127,7 @@ describe("EnergyMixChart", () => {
       await waitFor(() => {
         // Find tooltip by looking for the tooltip container
         const tooltip = document.querySelector(
-          ".absolute.z-50.bg-white.p-4.border.border-gray-200.rounded-lg.shadow-xl",
+          ".absolute.z-50.bg-white.p-3.sm\\:p-4.border.border-gray-200.rounded-lg.shadow-xl",
         );
         expect(tooltip).toBeInTheDocument();
 
@@ -150,7 +150,7 @@ describe("EnergyMixChart", () => {
       // Wait for tooltip to appear
       await waitFor(() => {
         const tooltip = document.querySelector(
-          ".absolute.z-50.bg-white.p-4.border.border-gray-200.rounded-lg.shadow-xl",
+          ".absolute.z-50.bg-white.p-3.sm\\:p-4.border.border-gray-200.rounded-lg.shadow-xl",
         );
         expect(tooltip).toBeInTheDocument();
         expect(tooltip).toHaveTextContent("Coal");
@@ -162,7 +162,7 @@ describe("EnergyMixChart", () => {
       // Wait for tooltip to disappear
       await waitFor(() => {
         const tooltip = document.querySelector(
-          ".absolute.z-50.bg-white.p-4.border.border-gray-200.rounded-lg.shadow-xl",
+          ".absolute.z-50.bg-white.p-3.sm\\:p-4.border.border-gray-200.rounded-lg.shadow-xl",
         );
         expect(tooltip).not.toBeInTheDocument();
       });
@@ -181,7 +181,7 @@ describe("EnergyMixChart", () => {
       await waitFor(() => {
         // Find tooltip by looking for the tooltip container
         const tooltip = document.querySelector(
-          ".absolute.z-50.bg-white.p-4.border.border-gray-200.rounded-lg.shadow-xl",
+          ".absolute.z-50.bg-white.p-3.sm\\:p-4.border.border-gray-200.rounded-lg.shadow-xl",
         );
         expect(tooltip).toBeInTheDocument();
 
@@ -206,7 +206,7 @@ describe("EnergyMixChart", () => {
       await waitFor(() => {
         // Find tooltip by looking for the tooltip container
         const tooltip = document.querySelector(
-          ".absolute.z-50.bg-white.p-4.border.border-gray-200.rounded-lg.shadow-xl",
+          ".absolute.z-50.bg-white.p-3.sm\\:p-4.border.border-gray-200.rounded-lg.shadow-xl",
         );
         expect(tooltip).toBeInTheDocument();
 

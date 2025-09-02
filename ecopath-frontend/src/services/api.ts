@@ -18,6 +18,27 @@ export interface EmissionsData {
   }>;
 }
 
+export interface ClimateTargetData {
+  targetYear: number;
+  baselineYear: number;
+  targetValuePct: number;
+  planName: string;
+  progress: number;
+  progressDescription: string;
+  latestEmissions: {
+    year: number;
+    value: number;
+  } | null;
+  notes: string;
+}
+
+export interface StateData {
+  id: string;
+  name: string;
+  abbreviation: string;
+  displayName: string;
+}
+
 export class ApiService {
   static async getEnergyMix(state: string): Promise<EnergyMixData[]> {
     try {
@@ -63,6 +84,38 @@ export class ApiService {
       return data;
     } catch (error) {
       console.error("Error fetching environment data:", error);
+      throw error;
+    }
+  }
+
+  static async getClimateTargets(state: string): Promise<ClimateTargetData> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/climate-targets?state=${state}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching climate targets data:", error);
+      throw error;
+    }
+  }
+
+  static async getStates(): Promise<StateData[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/states`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching states data:", error);
       throw error;
     }
   }

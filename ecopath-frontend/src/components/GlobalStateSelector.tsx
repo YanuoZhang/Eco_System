@@ -2,10 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useStateContext } from "@/contexts/StateContext";
+import { ApiService, StateData } from "@/services/api";
 
 export default function GlobalStateSelector() {
   const { selectedState, setSelectedState } = useStateContext();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [states, setStates] = useState<StateData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleStateChange = (state: string) => {
@@ -14,6 +18,52 @@ export default function GlobalStateSelector() {
     setIsExpanded(false);
     console.log("State changed to:", state);
   };
+
+  // Fetch states from API
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const statesData = await ApiService.getStates();
+        setStates(statesData);
+
+        // Don't set default state here to avoid SSR hydration issues
+        // The StateContext will handle the initial state
+      } catch (err) {
+        console.error("Error fetching states:", err);
+        setError("Failed to load states");
+        // Fallback to hardcoded states (only those with energy data)
+        setStates([
+          { id: "VIC", name: "Victoria", abbreviation: "VIC", displayName: "Victoria (VIC)" },
+          {
+            id: "NSW",
+            name: "New South Wales",
+            abbreviation: "NSW",
+            displayName: "New South Wales (NSW)",
+          },
+          { id: "QLD", name: "Queensland", abbreviation: "QLD", displayName: "Queensland (QLD)" },
+          {
+            id: "WA",
+            name: "Western Australia",
+            abbreviation: "WA",
+            displayName: "Western Australia (WA)",
+          },
+          {
+            id: "SA",
+            name: "South Australia",
+            abbreviation: "SA",
+            displayName: "South Australia (SA)",
+          },
+          { id: "TAS", name: "Tasmania", abbreviation: "TAS", displayName: "Tasmania (TAS)" },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStates();
+  }, [selectedState, setSelectedState]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -71,38 +121,41 @@ export default function GlobalStateSelector() {
             </div>
 
             <div className="max-h-64 overflow-y-auto">
-              {[
-                "Victoria (VIC)",
-                "New South Wales (NSW)",
-                "Queensland (QLD)",
-                "Western Australia (WA)",
-                "South Australia (SA)",
-                "Tasmania (TAS)",
-                "Australian Capital Territory (ACT)",
-                "Northern Territory (NT)",
-              ].map((state) => (
-                <button
-                  key={state}
-                  data-testid={`state-option-${state.replace(/\s+/g, "-").replace(/[()]/g, "")}`}
-                  onClick={() => handleStateChange(state)}
-                  className={`w-full text-left px-4 py-3 hover:bg-green-50 transition-colors duration-200 ${
-                    selectedState === state
-                      ? "bg-green-100 text-green-800 border-r-2 border-green-500"
-                      : "text-gray-700 hover:text-green-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{state.split(" ")[0]}</span>
-                    <span className="text-sm text-gray-500">{state.split(" ")[1]}</span>
-                  </div>
-                  {selectedState === state && (
-                    <div className="flex items-center space-x-2 mt-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-xs text-green-600">Current selection</span>
+              {isLoading ? (
+                <div className="p-4 text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
+                  <p className="text-sm text-gray-600 mt-2">Loading states...</p>
+                </div>
+              ) : error ? (
+                <div className="p-4 text-center">
+                  <p className="text-sm text-red-600">{error}</p>
+                  <p className="text-xs text-gray-500 mt-1">Using fallback data</p>
+                </div>
+              ) : (
+                states.map((state) => (
+                  <button
+                    key={state.id}
+                    data-testid={`state-option-${state.id}`}
+                    onClick={() => handleStateChange(state.displayName)}
+                    className={`w-full text-left px-4 py-3 hover:bg-green-50 transition-colors duration-200 ${
+                      selectedState === state.displayName
+                        ? "bg-green-100 text-green-800 border-r-2 border-green-500"
+                        : "text-gray-700 hover:text-green-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{state.name}</span>
+                      <span className="text-sm text-gray-500">({state.abbreviation})</span>
                     </div>
-                  )}
-                </button>
-              ))}
+                    {selectedState === state.displayName && (
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs text-green-600">Current selection</span>
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
             </div>
 
             <div className="p-3 bg-gray-50 border-t border-gray-100">

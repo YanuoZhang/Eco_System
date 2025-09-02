@@ -12,57 +12,57 @@ import { ApiService } from "@/services/api";
 // Mock data for different states - in real app this would come from API
 const STATE_ENERGY_DATA: Record<string, EnergyMix[]> = {
   "Victoria (VIC)": [
-    { source: "Coal", percentage: 45.2, generation: "8,450 MW", trend: -8.5 },
-    { source: "Natural Gas", percentage: 18.3, generation: "3,420 MW", trend: -2.1 },
-    { source: "Wind", percentage: 22.8, generation: "4,250 MW", trend: 15.2 },
-    { source: "Solar", percentage: 8.9, generation: "1,660 MW", trend: 28.7 },
-    { source: "Hydro", percentage: 4.8, generation: "895 MW", trend: 1.2 },
+    { source: "Coal", percentage: 45.2, generation: "8,450 MW" },
+    { source: "Natural Gas", percentage: 18.3, generation: "3,420 MW" },
+    { source: "Wind", percentage: 22.8, generation: "4,250 MW" },
+    { source: "Solar", percentage: 8.9, generation: "1,660 MW" },
+    { source: "Hydro", percentage: 4.8, generation: "895 MW" },
   ],
   "New South Wales (NSW)": [
-    { source: "Coal", percentage: 52.1, generation: "12,300 MW", trend: -5.2 },
-    { source: "Natural Gas", percentage: 15.8, generation: "3,750 MW", trend: -1.8 },
-    { source: "Wind", percentage: 18.5, generation: "4,100 MW", trend: 12.5 },
-    { source: "Solar", percentage: 9.2, generation: "2,180 MW", trend: 25.3 },
-    { source: "Hydro", percentage: 4.4, generation: "1,200 MW", trend: 0.8 },
+    { source: "Coal", percentage: 52.1, generation: "12,300 MW" },
+    { source: "Natural Gas", percentage: 15.8, generation: "3,750 MW" },
+    { source: "Wind", percentage: 18.5, generation: "4,100 MW" },
+    { source: "Solar", percentage: 9.2, generation: "2,180 MW" },
+    { source: "Hydro", percentage: 4.4, generation: "1,200 MW" },
   ],
   "Queensland (QLD)": [
-    { source: "Coal", percentage: 58.7, generation: "15,200 MW", trend: -3.1 },
-    { source: "Natural Gas", percentage: 22.3, generation: "5,800 MW", trend: 2.5 },
-    { source: "Solar", percentage: 12.8, generation: "3,300 MW", trend: 32.1 },
-    { source: "Hydro", percentage: 4.2, generation: "1,100 MW", trend: 0.5 },
-    { source: "Wind", percentage: 2.0, generation: "520 MW", trend: 8.7 },
+    { source: "Coal", percentage: 58.7, generation: "15,200 MW" },
+    { source: "Natural Gas", percentage: 22.3, generation: "5,800 MW" },
+    { source: "Solar", percentage: 12.8, generation: "3,300 MW" },
+    { source: "Hydro", percentage: 4.2, generation: "1,100 MW" },
+    { source: "Wind", percentage: 2.0, generation: "520 MW" },
   ],
   "Western Australia (WA)": [
-    { source: "Natural Gas", percentage: 48.5, generation: "8,900 MW", trend: 1.2 },
-    { source: "Coal", percentage: 25.2, generation: "4,600 MW", trend: -4.8 },
-    { source: "Solar", percentage: 15.8, generation: "2,900 MW", trend: 28.9 },
-    { source: "Wind", percentage: 8.5, generation: "1,560 MW", trend: 18.3 },
-    { source: "Hydro", percentage: 2.0, generation: "370 MW", trend: 0.2 },
+    { source: "Natural Gas", percentage: 48.5, generation: "8,900 MW" },
+    { source: "Coal", percentage: 25.2, generation: "4,600 MW" },
+    { source: "Solar", percentage: 15.8, generation: "2,900 MW" },
+    { source: "Wind", percentage: 8.5, generation: "1,560 MW" },
+    { source: "Hydro", percentage: 2.0, generation: "370 MW" },
   ],
   "South Australia (SA)": [
-    { source: "Wind", percentage: 42.3, generation: "2,800 MW", trend: 22.1 },
-    { source: "Solar", percentage: 28.7, generation: "1,900 MW", trend: 35.2 },
-    { source: "Natural Gas", percentage: 18.5, generation: "1,220 MW", trend: -2.8 },
-    { source: "Battery Storage", percentage: 8.2, generation: "540 MW", trend: 45.6 },
-    { source: "Other", percentage: 2.3, generation: "150 MW", trend: 1.2 },
+    { source: "Wind", percentage: 42.3, generation: "2,800 MW" },
+    { source: "Solar", percentage: 28.7, generation: "1,900 MW" },
+    { source: "Natural Gas", percentage: 18.5, generation: "1,220 MW" },
+    { source: "Battery Storage", percentage: 8.2, generation: "540 MW" },
+    { source: "Other", percentage: 2.3, generation: "150 MW" },
   ],
   "Tasmania (TAS)": [
-    { source: "Hydro", percentage: 78.5, generation: "2,800 MW", trend: 0.5 },
-    { source: "Wind", percentage: 15.2, generation: "540 MW", trend: 12.8 },
-    { source: "Natural Gas", percentage: 4.8, generation: "170 MW", trend: -1.2 },
-    { source: "Solar", percentage: 1.5, generation: "53 MW", trend: 18.9 },
+    { source: "Hydro", percentage: 78.5, generation: "2,800 MW" },
+    { source: "Wind", percentage: 15.2, generation: "540 MW" },
+    { source: "Natural Gas", percentage: 4.8, generation: "170 MW" },
+    { source: "Solar", percentage: 1.5, generation: "53 MW" },
   ],
   "Australian Capital Territory (ACT)": [
-    { source: "Solar", percentage: 45.2, generation: "320 MW", trend: 28.7 },
-    { source: "Wind", percentage: 38.8, generation: "275 MW", trend: 22.3 },
-    { source: "Natural Gas", percentage: 12.5, generation: "88 MW", trend: -3.2 },
-    { source: "Battery Storage", percentage: 3.5, generation: "25 MW", trend: 52.1 },
+    { source: "Solar", percentage: 45.2, generation: "320 MW" },
+    { source: "Wind", percentage: 38.8, generation: "275 MW" },
+    { source: "Natural Gas", percentage: 12.5, generation: "88 MW" },
+    { source: "Battery Storage", percentage: 3.5, generation: "25 MW" },
   ],
   "Northern Territory (NT)": [
-    { source: "Natural Gas", percentage: 65.8, generation: "1,200 MW", trend: 2.8 },
-    { source: "Solar", percentage: 22.3, generation: "410 MW", trend: 38.5 },
-    { source: "Diesel", percentage: 8.9, generation: "160 MW", trend: -5.2 },
-    { source: "Wind", percentage: 3.0, generation: "55 MW", trend: 15.7 },
+    { source: "Natural Gas", percentage: 65.8, generation: "1,200 MW" },
+    { source: "Solar", percentage: 22.3, generation: "410 MW" },
+    { source: "Diesel", percentage: 8.9, generation: "160 MW" },
+    { source: "Wind", percentage: 3.0, generation: "55 MW" },
   ],
 };
 
@@ -177,6 +177,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
   const [activeTab, setActiveTab] = useState<"energy" | "emissions">("energy");
   const [energyMixData, setEnergyMixData] = useState<EnergyMix[]>([]);
   const [emissionsData, setEmissionsData] = useState<EmissionData[]>([]);
+
   const [loading, setLoading] = useState(false);
 
   // Fetch energy mix data from backend API
@@ -194,14 +195,20 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
         source: item.source.charAt(0).toUpperCase() + item.source.slice(1), // Capitalize first letter
         percentage: item.percentage,
         generation: `${item.generation} MW`,
-        trend: Math.random() * 20 - 10, // Mock trend data for now
       }));
 
       setEnergyMixData(transformedData);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error fetching energy mix data:", err);
-      // Fallback to mock data
-      setEnergyMixData(STATE_ENERGY_DATA[state] || []);
+
+      // Check if it's a 404 error (no data available)
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("404") || errorMessage.includes("No data")) {
+        setEnergyMixData([]); // Set empty array to show "no data" state
+      } else {
+        // Fallback to mock data for other errors
+        setEnergyMixData(STATE_ENERGY_DATA[state] || []);
+      }
     } finally {
       setLoading(false);
     }
@@ -218,7 +225,7 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
       // Transform API data to match EmissionsChart interface
       const transformedData: EmissionData[] = apiData.data.map((item) => ({
         year: item.year,
-        value: item.value,
+        value: typeof item.value === "string" ? parseFloat(item.value) : item.value,
       }));
 
       setEmissionsData(transformedData);
@@ -319,67 +326,23 @@ export default function DataInsight({ onNext, onPrev, onBackToHomepage }: DataIn
 
             {/* Tab Content */}
             {activeTab === "energy" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Energy Mix Chart - Left Column */}
-                <div className="lg:col-span-2">
+              <div>
+                {energyMixData.length > 0 ? (
                   <EnergyMixChart
                     data={energyMixData}
                     title={`${selectedState.split(" ")[0]} Energy Generation Mix`}
                   />
-                </div>
-
-                {/* Right Column - Side Panels */}
-                <div className="space-y-6">
-                  {/* Renewable Growth */}
-                  <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-                    <h5 className="font-medium text-green-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">🌱</span>
-                      Renewable Growth
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Wind Power</span>
-                        <span className="text-green-600 font-medium">+15.2%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Solar Power</span>
-                        <span className="text-green-600 font-medium">+28.7%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Total Renewables</span>
-                        <span className="text-green-600 font-medium">
-                          {energyMixData
-                            .filter((item) => ["Wind", "Solar", "Hydro"].includes(item.source))
-                            .reduce((sum, item) => sum + item.percentage, 0)
-                            .toFixed(1)}
-                          %
-                        </span>
-                      </div>
-                    </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <div className="text-gray-400 text-6xl mb-4">⚡</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No Energy Data Available
+                    </h3>
+                    <p className="text-gray-600">
+                      Energy generation data is not available for {selectedState.split(" ")[0]}.
+                    </p>
                   </div>
-
-                  {/* Storage & Grid */}
-                  <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-                    <h5 className="font-medium text-purple-800 mb-4 flex items-center">
-                      <span className="text-lg mr-2">🔋</span>
-                      Storage & Grid
-                    </h5>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Battery storage</span>
-                        <span className="text-purple-600 font-medium">850 MW</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Pumped hydro</span>
-                        <span className="text-purple-600 font-medium">1,500 MW</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700">Grid stability</span>
-                        <span className="text-purple-600 font-medium">99.8% reliability</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 

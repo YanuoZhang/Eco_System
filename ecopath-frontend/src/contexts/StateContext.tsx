@@ -9,8 +9,6 @@ const AUSTRALIAN_STATES = [
   "Western Australia (WA)",
   "South Australia (SA)",
   "Tasmania (TAS)",
-  "Australian Capital Territory (ACT)",
-  "Northern Territory (NT)",
 ];
 
 interface StateContextType {
@@ -27,23 +25,25 @@ interface StateProviderProps {
 }
 
 export function StateProvider({ children, initialState = "Victoria (VIC)" }: StateProviderProps) {
-  // Initialize selectedState from localStorage or default
-  const [selectedState, setSelectedState] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedState = localStorage.getItem("selectedState");
-      if (savedState && AUSTRALIAN_STATES.includes(savedState)) {
-        return savedState;
-      }
-    }
-    return initialState;
-  });
+  // Initialize selectedState with default value for SSR consistency
+  const [selectedState, setSelectedState] = useState(initialState);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Persist selectedState to localStorage whenever it changes
+  // Load from localStorage after hydration
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    setIsHydrated(true);
+    const savedState = localStorage.getItem("selectedState");
+    if (savedState && AUSTRALIAN_STATES.includes(savedState)) {
+      setSelectedState(savedState);
+    }
+  }, []);
+
+  // Persist selectedState to localStorage whenever it changes (only after hydration)
+  useEffect(() => {
+    if (isHydrated) {
       localStorage.setItem("selectedState", selectedState);
     }
-  }, [selectedState]);
+  }, [selectedState, isHydrated]);
 
   const value = {
     selectedState,
