@@ -20,11 +20,11 @@ CREATE TABLE emission_raw (
 
 -- if data_dir is a full file path, use it directly
 -- Prefer explicit data_file; fall back to data_dir for backward compatibility
-\if :"?data_file"
-\echo 'Loading emissions from data_file: ' :'data_file'
+\if :{?data_file}
+\echo Loading emissions from data_file: :data_file
 \copy emission_raw FROM :'data_file' WITH CSV HEADER
 \else
-\echo 'Falling back to data_dir (should be full file path): ' :'data_dir'
+\echo Falling back to data_dir (should be full file path): :data_dir
 \copy emission_raw FROM :'data_dir' WITH CSV HEADER
 \endif
 
