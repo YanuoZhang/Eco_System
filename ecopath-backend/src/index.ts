@@ -465,17 +465,52 @@ function calculateEnergyEmissions(energy: EnergyData, state: string, overrides?:
 }
 
 // Calculate emissions from transport
-function calculateTransportEmissions(transport: TransportData) {
+// Attempt to compute car emissions using DB fuel economy when available
+async function getDbCarKgPerKm(state: string): Promise<number | null> {
+  try {
+    // Use average across vehicle types for the state (liters/100km), convert to kg/km
+    const q = `
+      SELECT
+        AVG(NULLIF(petrol_l_per_100km, 0)) AS petrol_l_per_100km,
+        AVG(NULLIF(diesel_l_per_100km, 0)) AS diesel_l_per_100km
+      FROM fuel_economy_raw
+      WHERE year = 2024 AND state_id = $1
+    `;
+    const r = await pool.query(q, [state]);
+    if (r.rows.length === 0) return null;
+    const petrol = r.rows[0].petrol_l_per_100km as number | null;
+    const diesel = r.rows[0].diesel_l_per_100km as number | null;
+
+    // Standard CO2 factors (kg CO2-e per liter) as fallback constants
+    const KG_PER_L_PETROL = 2.31;
+    const KG_PER_L_DIESEL = 2.68;
+
+    const petrolKgPerKm = petrol != null ? (petrol / 100) * KG_PER_L_PETROL : null;
+    const dieselKgPerKm = diesel != null ? (diesel / 100) * KG_PER_L_DIESEL : null;
+
+    if (petrolKgPerKm == null && dieselKgPerKm == null) return null;
+    if (petrolKgPerKm != null && dieselKgPerKm != null) return (petrolKgPerKm + dieselKgPerKm) / 2;
+    return (petrolKgPerKm ?? dieselKgPerKm)!;
+  } catch {
+    return null;
+  }
+}
+
+async function calculateTransportEmissions(transport: TransportData, state: string) {
   const annualDistance = convertToAnnual(transport.distance, transport.timeUnit);
   const frequency = transport.frequency || 1;
   const totalAnnualDistance = annualDistance * frequency;
 
-  const modeEmissions = totalAnnualDistance * EMISSIONS_FACTORS.transport[transport.mode];
+  if (transport.mode === "car") {
+    const dbKgPerKm = await getDbCarKgPerKm(state);
+    if (dbKgPerKm != null) {
+      const modeEmissions = totalAnnualDistance * dbKgPerKm;
+      return { car: modeEmissions, total: modeEmissions } as const;
+    }
+  }
 
-  return {
-    [transport.mode]: modeEmissions,
-    total: modeEmissions,
-  };
+  const modeEmissions = totalAnnualDistance * EMISSIONS_FACTORS.transport[transport.mode];
+  return { [transport.mode]: modeEmissions, total: modeEmissions } as const;
 }
 
 // POST /api/emissions/calculate
@@ -523,6 +558,24 @@ app.post("/api/emissions/calculate", async (req: Request, res: Response) => {
 
     // Calculate energy emissions if provided
     if (requestData.energy) {
+      // Strict requirement: if user provided electricity, we must have DB electricity factor
+      if (requestData.energy.electricity != null && dbElec == null) {
+        return res.status(424).json({
+          error: "Missing data",
+          message: `No electricity emissions factor found in database for state '${requestData.state}'.`,
+          state: requestData.state,
+          missing: ["electricity_factor_by_state"],
+        });
+      }
+      // Strict requirement: if user provided gas, we must have DB gas factor
+      if (requestData.energy.gas != null && dbGas == null) {
+        return res.status(424).json({
+          error: "Missing data",
+          message: `No gas emissions factor found in database for state '${requestData.state}'.`,
+          state: requestData.state,
+          missing: ["gas_factor_by_state"],
+        });
+      }
       const energyEmissions = calculateEnergyEmissions(
         requestData.energy,
         requestData.state,
@@ -534,7 +587,32 @@ app.post("/api/emissions/calculate", async (req: Request, res: Response) => {
 
     // Calculate transport emissions if provided
     if (requestData.transport) {
-      const transportEmissions = calculateTransportEmissions(requestData.transport);
+      // Strict requirement for car mode: must have DB fuel economy
+      if (requestData.transport.mode === "car") {
+        const dbCar = await getDbCarKgPerKm(requestData.state);
+        if (dbCar == null) {
+          return res.status(424).json({
+            error: "Missing data",
+            message: `No fuel economy data found in database for state '${requestData.state}'.`,
+            state: requestData.state,
+            missing: ["fuel_economy_raw"],
+          });
+        }
+      } else if (["bus", "train", "tram"].includes(requestData.transport.mode)) {
+        // No assumptions: we don't convert fuel factors to km without explicit per-km data
+        // Return strict error indicating missing per-km emission factor for the mode
+        return res.status(424).json({
+          error: "Missing data",
+          message: `No per-kilometer emission factor available in database for transport mode '${requestData.transport.mode}'.`,
+          state: requestData.state,
+          mode: requestData.transport.mode,
+          missing: ["transport_mode_per_km_factor"],
+        });
+      }
+      const transportEmissions = await calculateTransportEmissions(
+        requestData.transport,
+        requestData.state,
+      );
       breakdown.transport = transportEmissions;
       totalEmissions += transportEmissions.total;
     }
