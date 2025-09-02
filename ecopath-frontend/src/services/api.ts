@@ -1,6 +1,9 @@
+// API base URL is injected at build time via NEXT_PUBLIC_API_BASE_URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5001";
-console.log("BASE URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+// console.log("BASE URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
 console.log("API URL:", API_BASE_URL);
+console.log("BASE URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+
 export interface EnergyMixData {
   source: string;
   percentage: number;
