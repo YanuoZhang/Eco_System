@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export interface ClimateTarget {
   planName: string;
@@ -18,83 +18,85 @@ interface ClimateTargetSidebarProps {
 
 // Mock climate targets data for different states
 const MOCK_CLIMATE_TARGETS: Record<string, ClimateTarget> = {
-  'Victoria (VIC)': {
-    planName: 'Victoria 2030 Net Zero Plan',
+  "Victoria (VIC)": {
+    planName: "Victoria 2030 Net Zero Plan",
     progress: 18,
     targetYear: 2030,
-    description: 'Ambitious plan to achieve net zero emissions by 2030'
+    description: "Ambitious plan to achieve net zero emissions by 2030",
   },
-  'New South Wales (NSW)': {
-    planName: 'NSW Net Zero Plan Stage 1',
+  "New South Wales (NSW)": {
+    planName: "NSW Net Zero Plan Stage 1",
     progress: 12,
     targetYear: 2050,
-    description: 'Comprehensive plan to reach net zero by 2050'
+    description: "Comprehensive plan to reach net zero by 2050",
   },
-  'Queensland (QLD)': {
-    planName: 'Queensland Climate Action Plan',
+  "Queensland (QLD)": {
+    planName: "Queensland Climate Action Plan",
     progress: 8,
     targetYear: 2050,
-    description: 'Progressive climate action with renewable energy focus'
+    description: "Progressive climate action with renewable energy focus",
   },
-  'Western Australia (WA)': {
-    planName: 'WA Climate Policy',
+  "Western Australia (WA)": {
+    planName: "WA Climate Policy",
     progress: 15,
     targetYear: 2050,
-    description: 'Balanced approach to climate action and economic growth'
+    description: "Balanced approach to climate action and economic growth",
   },
-  'South Australia (SA)': {
-    planName: 'SA Climate Change Action Plan',
+  "South Australia (SA)": {
+    planName: "SA Climate Change Action Plan",
     progress: 22,
     targetYear: 2050,
-    description: 'Leading renewable energy transition in Australia'
+    description: "Leading renewable energy transition in Australia",
   },
-  'Tasmania (TAS)': {
-    planName: 'Tasmania Climate Action Plan',
+  "Tasmania (TAS)": {
+    planName: "Tasmania Climate Action Plan",
     progress: 35,
     targetYear: 2030,
-    description: 'Already carbon negative, working towards enhanced sustainability'
+    description: "Already carbon negative, working towards enhanced sustainability",
   },
-  'Northern Territory (NT)': {
-    planName: 'NT Climate Change Response',
+  "Northern Territory (NT)": {
+    planName: "NT Climate Change Response",
     progress: 5,
     targetYear: 2050,
-    description: 'Developing comprehensive climate action framework'
+    description: "Developing comprehensive climate action framework",
   },
-  'Australian Capital Territory (ACT)': {
-    planName: 'ACT Climate Change Strategy',
+  "Australian Capital Territory (ACT)": {
+    planName: "ACT Climate Change Strategy",
     progress: 28,
     targetYear: 2045,
-    description: 'Ambitious target to achieve net zero by 2045'
-  }
+    description: "Ambitious target to achieve net zero by 2045",
+  },
 };
 
-export default function ClimateTargetSidebar({ 
-  stateName, 
-  isLoading = false, 
-  error = null, 
-  onRetry 
+export default function ClimateTargetSidebar({
+  stateName,
+  isLoading = false,
 }: ClimateTargetSidebarProps) {
   const [climateTarget, setClimateTarget] = useState<ClimateTarget | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   useEffect(() => {
-    if (stateName && !error) {
+    if (stateName) {
       setIsLoadingData(true);
+
       // Simulate API call delay
       const timer = setTimeout(() => {
-        const target = MOCK_CLIMATE_TARGETS[stateName] || MOCK_CLIMATE_TARGETS['Victoria (VIC)'];
+        const target = MOCK_CLIMATE_TARGETS[stateName] || MOCK_CLIMATE_TARGETS["Victoria (VIC)"];
         setClimateTarget(target);
         setIsLoadingData(false);
       }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [stateName, error]);
+  }, [stateName]);
 
   // Loading skeleton
   if (isLoading || isLoadingData) {
     return (
-      <div className="bg-green-50 rounded-lg p-6 border border-green-200 shadow-sm animate-pulse" data-testid="loading-skeleton">
+      <div
+        className="bg-green-50 rounded-lg p-6 border border-green-200 shadow-sm animate-pulse"
+        data-testid="loading-skeleton"
+      >
         <div className="space-y-4">
           <div className="h-4 bg-green-200 rounded w-3/4"></div>
           <div className="h-6 bg-green-200 rounded w-1/2"></div>
@@ -105,30 +107,6 @@ export default function ClimateTargetSidebar({
     );
   }
 
-  // Error state - should take precedence over loading
-  if (error) {
-    return (
-      <div data-testid="error-state" className="bg-red-50 rounded-lg p-6 border border-red-200 shadow-sm">
-        <div className="text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h3 className="text-lg font-medium text-red-800 mb-2">Failed to load climate target data</h3>
-          <p className="text-red-600 mb-4">{error}</p>
-          {onRetry && (
-            <button
-              data-testid="retry-button"
-              onClick={onRetry}
-              className="px-4 py-2 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors"
-            >
-              Retry
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-
-
   // No data state
   if (!climateTarget) {
     return (
@@ -136,22 +114,30 @@ export default function ClimateTargetSidebar({
         <div className="text-center">
           <div className="text-6xl mb-4">📊</div>
           <h3 className="text-lg font-medium text-green-800 mb-2">No Climate Data</h3>
-          <p className="text-green-600">Climate target information is not available for this state.</p>
+          <p className="text-green-600">
+            Climate target information is not available for this state.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div data-testid="climate-sidebar" className="space-y-6" aria-label="Climate Action Plan Information">
+    <div
+      data-testid="climate-sidebar"
+      className="space-y-6"
+      aria-label="Climate Action Plan Information"
+    >
       {/* Reduction Goals Card - Green Theme */}
       <div className="bg-green-50 rounded-lg p-6 border border-green-200 shadow-sm">
         <div className="space-y-4">
           {/* Plan Name */}
           <div className="text-center pb-2 border-b border-green-200">
-            <h4 data-testid="plan-name" className="text-lg font-semibold text-green-800">{climateTarget.planName}</h4>
+            <h4 data-testid="plan-name" className="text-lg font-semibold text-green-800">
+              {climateTarget.planName}
+            </h4>
           </div>
-          
+
           {/* Header */}
           <div className="flex items-center space-x-2">
             <span className="text-2xl">🏆</span>
@@ -168,12 +154,18 @@ export default function ClimateTargetSidebar({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-green-800 font-medium">Current Progress</span>
-              <span data-testid="progress-text" className="text-green-600 font-semibold">-{climateTarget.progress}%</span>
+              <span data-testid="progress-text" className="text-green-600 font-semibold">
+                -{climateTarget.progress}%
+              </span>
             </div>
-            
+
             {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-3" role="progressbar" data-testid="progress-bar">
-              <div 
+            <div
+              className="w-full bg-gray-200 rounded-full h-3"
+              role="progressbar"
+              data-testid="progress-bar"
+            >
+              <div
                 className="h-3 rounded-full bg-green-500 transition-all duration-500"
                 style={{ width: `${Math.min(climateTarget.progress, 100)}%` }}
                 aria-valuenow={climateTarget.progress}
@@ -197,15 +189,24 @@ export default function ClimateTargetSidebar({
           {/* Initiatives List */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" data-testid="initiative-bullet"></div>
+              <div
+                className="w-2 h-2 bg-blue-500 rounded-full"
+                data-testid="initiative-bullet"
+              ></div>
               <span className="text-blue-700">Renewable energy expansion</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" data-testid="initiative-bullet"></div>
+              <div
+                className="w-2 h-2 bg-blue-500 rounded-full"
+                data-testid="initiative-bullet"
+              ></div>
               <span className="text-blue-700">Electric vehicle rollout</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" data-testid="initiative-bullet"></div>
+              <div
+                className="w-2 h-2 bg-blue-500 rounded-full"
+                data-testid="initiative-bullet"
+              ></div>
               <span className="text-blue-700">Energy efficiency programs</span>
             </div>
           </div>
@@ -216,11 +217,12 @@ export default function ClimateTargetSidebar({
       <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 shadow-sm">
         <div className="text-center">
           <div className="text-2xl mb-2">🎯</div>
-          <div className="text-yellow-800 font-semibold" data-testid="target-year">Target: {climateTarget.targetYear}</div>
+          <div className="text-yellow-800 font-semibold" data-testid="target-year">
+            Target: {climateTarget.targetYear}
+          </div>
           <div className="text-yellow-600 text-sm mt-1">{climateTarget.description}</div>
         </div>
       </div>
-
     </div>
   );
 }

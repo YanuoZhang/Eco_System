@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 const AUSTRALIAN_STATES = [
-  'Victoria (VIC)',
-  'New South Wales (NSW)', 
-  'Queensland (QLD)', 
-  'Western Australia (WA)',
-  'South Australia (SA)', 
-  'Tasmania (TAS)', 
-  'Australian Capital Territory (ACT)', 
-  'Northern Territory (NT)'
+  "Victoria (VIC)",
+  "New South Wales (NSW)",
+  "Queensland (QLD)",
+  "Western Australia (WA)",
+  "South Australia (SA)",
+  "Tasmania (TAS)",
+  "Australian Capital Territory (ACT)",
+  "Northern Territory (NT)",
 ];
 
 interface StateContextType {
@@ -26,11 +26,11 @@ interface StateProviderProps {
   initialState?: string;
 }
 
-export function StateProvider({ children, initialState = 'Victoria (VIC)' }: StateProviderProps) {
+export function StateProvider({ children, initialState = "Victoria (VIC)" }: StateProviderProps) {
   // Initialize selectedState from localStorage or default
   const [selectedState, setSelectedState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedState = localStorage.getItem('selectedState');
+    if (typeof window !== "undefined") {
+      const savedState = localStorage.getItem("selectedState");
       if (savedState && AUSTRALIAN_STATES.includes(savedState)) {
         return savedState;
       }
@@ -40,8 +40,8 @@ export function StateProvider({ children, initialState = 'Victoria (VIC)' }: Sta
 
   // Persist selectedState to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedState', selectedState);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedState", selectedState);
     }
   }, [selectedState]);
 
@@ -51,17 +51,13 @@ export function StateProvider({ children, initialState = 'Victoria (VIC)' }: Sta
     availableStates: AUSTRALIAN_STATES,
   };
 
-  return (
-    <StateContext.Provider value={value}>
-      {children}
-    </StateContext.Provider>
-  );
+  return <StateContext.Provider value={value}>{children}</StateContext.Provider>;
 }
 
 export function useStateContext() {
   const context = useContext(StateContext);
   if (context === undefined) {
-    throw new Error('useStateContext must be used within a StateProvider');
+    throw new Error("useStateContext must be used within a StateProvider");
   }
   return context;
 }

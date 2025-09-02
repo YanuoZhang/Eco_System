@@ -6,7 +6,11 @@ import morgan from "morgan";
 // Mock energy mix data (copied from index.ts for testing)
 const energyMixByState: Record<
   string,
-  Array<{ source: "coal" | "gas" | "hydro" | "wind" | "solar"; percentage: number; generation: number }>
+  Array<{
+    source: "coal" | "gas" | "hydro" | "wind" | "solar";
+    percentage: number;
+    generation: number;
+  }>
 > = {
   VIC: [
     { source: "coal", percentage: 63, generation: 4200 },
@@ -86,7 +90,9 @@ function createTestApp() {
   app.get("/api/energy-mix", (req: Request, res: Response) => {
     const stateParam = String(req.query.state || "").toUpperCase();
     if (!stateParam) {
-      return res.status(400).json({ error: "Missing required query param 'state' (e.g., ?state=VIC)" });
+      return res
+        .status(400)
+        .json({ error: "Missing required query param 'state' (e.g., ?state=VIC)" });
     }
     const data = energyMixByState[stateParam];
     if (!data) {
@@ -119,14 +125,22 @@ function validateAgainstSchema(data: any, schema: any): { valid: boolean; errors
   return { valid: errors.length === 0, errors };
 }
 
-function validateObjectAgainstSchema(data: any, schema: any, path: string): { valid: boolean; errors: string[] } {
+function validateObjectAgainstSchema(
+  data: any,
+  schema: any,
+  path: string,
+): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   const currentPath = path ? `${path}.` : "";
 
   // Check required properties
   if (schema.required) {
     schema.required.forEach((requiredProp: string) => {
-      if (!(requiredProp in data) || data[requiredProp] === null || data[requiredProp] === undefined) {
+      if (
+        !(requiredProp in data) ||
+        data[requiredProp] === null ||
+        data[requiredProp] === undefined
+      ) {
         errors.push(`Missing required property: ${currentPath}${requiredProp}`);
       }
     });
@@ -149,7 +163,9 @@ function validateObjectAgainstSchema(data: any, schema: any, path: string): { va
 
         // Enum validation
         if (propSchema.enum && !propSchema.enum.includes(value)) {
-          errors.push(`Property ${propPath} should be one of [${propSchema.enum.join(", ")}], got ${value}`);
+          errors.push(
+            `Property ${propPath} should be one of [${propSchema.enum.join(", ")}], got ${value}`,
+          );
         }
 
         // Range validation

@@ -6,7 +6,11 @@ import morgan from "morgan";
 // Mock energy mix data (copied from index.ts for testing)
 const energyMixByState: Record<
   string,
-  Array<{ source: "coal" | "gas" | "hydro" | "wind" | "solar"; percentage: number; generation: number }>
+  Array<{
+    source: "coal" | "gas" | "hydro" | "wind" | "solar";
+    percentage: number;
+    generation: number;
+  }>
 > = {
   VIC: [
     { source: "coal", percentage: 63, generation: 4200 },
@@ -62,7 +66,9 @@ function createTestApp() {
   app.get("/api/energy-mix", (req: Request, res: Response) => {
     const stateParam = String(req.query.state || "").toUpperCase();
     if (!stateParam) {
-      return res.status(400).json({ error: "Missing required query param 'state' (e.g., ?state=VIC)" });
+      return res
+        .status(400)
+        .json({ error: "Missing required query param 'state' (e.g., ?state=VIC)" });
     }
     const data = energyMixByState[stateParam];
     if (!data) {
@@ -89,7 +95,7 @@ describe("GET /api/energy-mix", () => {
         expect(res.body).toHaveLength(5);
 
         // Validate each energy source
-        res.body.forEach((item: any, index: number) => {
+        res.body.forEach((item: any, _index: number) => {
           expect(item).toHaveProperty("source");
           expect(item).toHaveProperty("percentage");
           expect(item).toHaveProperty("generation");
@@ -120,7 +126,10 @@ describe("GET /api/energy-mix", () => {
         const app = createTestApp();
         const res = await request(app).get("/api/energy-mix").query({ state });
 
-        const totalPercentage = res.body.reduce((sum: number, item: any) => sum + item.percentage, 0);
+        const totalPercentage = res.body.reduce(
+          (sum: number, item: any) => sum + item.percentage,
+          0,
+        );
         const tolerance = 0.01; // Allow for small floating point errors
 
         expect(totalPercentage).toBeGreaterThanOrEqual(100 - tolerance);

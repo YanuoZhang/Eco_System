@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export interface EmissionData {
   year: number;
@@ -14,12 +22,15 @@ interface EmissionsChartProps {
 }
 
 const TIME_RANGES = [
-  { label: '5 Years', value: 5 },
-  { label: '10 Years', value: 10 },
-  { label: 'All Data', value: 0 }
+  { label: "5 Years", value: 5 },
+  { label: "10 Years", value: 10 },
+  { label: "All Data", value: 0 },
 ];
 
-export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions' }: EmissionsChartProps) {
+export default function EmissionsChart({
+  data,
+  title = "Greenhouse Gas Emissions",
+}: EmissionsChartProps) {
   const [selectedTimeRange, setSelectedTimeRange] = useState(10);
 
   // Handle no data case first
@@ -29,22 +40,26 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📊</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-          <p className="text-gray-500">Emissions data is not available for the selected state and time period.</p>
+          <p className="text-gray-500">
+            Emissions data is not available for the selected state and time period.
+          </p>
         </div>
       </div>
     );
   }
 
   // Filter data based on selected time range
-  const filteredData = selectedTimeRange > 0 
-    ? data.slice(-selectedTimeRange)
-    : data;
+  const filteredData = selectedTimeRange > 0 ? data.slice(-selectedTimeRange) : data;
 
   // Get latest available value
   const latestData = data.length > 0 ? data[data.length - 1] : null;
 
   // Custom tooltip format
-  const CustomTooltip = ({ active, payload, label }: {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
     active?: boolean;
     payload?: Array<{ value: number }>;
     label?: string;
@@ -69,7 +84,9 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
         <div data-testid="empty-state" className="text-center py-12">
           <div className="text-6xl mb-4">📊</div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">No Data Available</h3>
-          <p className="text-gray-600">Emissions data is not available for the selected state and time period.</p>
+          <p className="text-gray-600">
+            Emissions data is not available for the selected state and time period.
+          </p>
         </div>
       </div>
     );
@@ -84,7 +101,7 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
           {latestData && (
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Latest:</span>
-              <span 
+              <span
                 data-testid="latest-label"
                 className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full"
               >
@@ -104,7 +121,11 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
             className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             {TIME_RANGES.map((range) => (
-              <option key={range.value} value={range.value} data-testid={`range-${range.value === 0 ? 'all' : range.value + 'y'}`}>
+              <option
+                key={range.value}
+                value={range.value}
+                data-testid={`range-${range.value === 0 ? "all" : range.value + "y"}`}
+              >
                 {range.label}
               </option>
             ))}
@@ -125,23 +146,23 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis 
-              dataKey="year" 
+            <XAxis
+              dataKey="year"
               stroke="#6b7280"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
-            <YAxis 
+            <YAxis
               stroke="#6b7280"
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              label={{ 
-                value: 'Mt CO₂-e', 
-                angle: -90, 
-                position: 'insideLeft',
-                style: { textAnchor: 'middle', fill: '#6b7280', fontSize: 12 }
+              label={{
+                value: "Mt CO₂-e",
+                angle: -90,
+                position: "insideLeft",
+                style: { textAnchor: "middle", fill: "#6b7280", fontSize: 12 },
               }}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -150,8 +171,8 @@ export default function EmissionsChart({ data, title = 'Greenhouse Gas Emissions
               dataKey="value"
               stroke="#10b981"
               strokeWidth={3}
-              dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2, fill: '#ffffff' }}
+              dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 2, fill: "#ffffff" }}
             />
           </LineChart>
         </ResponsiveContainer>

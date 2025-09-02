@@ -9,11 +9,14 @@
     "build:stable": "next build",
     "start:stable": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "lint:check": "eslint && echo '✅ Lint check passed'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "pre-commit": "npm run lint:check && npm run format:check && npm run build"
   },
   "dependencies": {
     "next": "15.5.2",

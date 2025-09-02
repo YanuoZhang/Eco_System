@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useStateContext } from '@/contexts/StateContext';
+import { useState, useEffect, useRef } from "react";
+import { useStateContext } from "@/contexts/StateContext";
 
 export default function GlobalStateSelector() {
   const { selectedState, setSelectedState } = useStateContext();
@@ -9,30 +9,30 @@ export default function GlobalStateSelector() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleStateChange = (state: string) => {
-    console.log('State change requested:', state);
+    console.log("State change requested:", state);
     setSelectedState(state);
     setIsExpanded(false);
-    console.log('State changed to:', state);
+    console.log("State changed to:", state);
   };
 
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      console.log('Click outside detected, target:', event.target);
+      console.log("Click outside detected, target:", event.target);
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        console.log('Closing dropdown due to click outside');
+        console.log("Closing dropdown due to click outside");
         setIsExpanded(false);
       }
     };
 
     if (isExpanded) {
-      console.log('Adding click outside listener');
-      document.addEventListener('mousedown', handleClickOutside);
+      console.log("Adding click outside listener");
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      console.log('Removing click outside listener');
-      document.removeEventListener('mousedown', handleClickOutside);
+      console.log("Removing click outside listener");
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isExpanded]);
 
@@ -47,17 +47,15 @@ export default function GlobalStateSelector() {
         >
           <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
           <span className="text-green-800 font-medium text-sm truncate">
-            {selectedState.split(' ')[0]}
+            {selectedState.split(" ")[0]}
           </span>
-          <span className="text-green-600 text-xs">
-            {selectedState.split(' ')[1]}
-          </span>
-          <svg 
+          <span className="text-green-600 text-xs">{selectedState.split(" ")[1]}</span>
+          <svg
             className={`w-4 h-4 text-green-600 transition-transform duration-200 ${
-              isExpanded ? 'rotate-180' : ''
+              isExpanded ? "rotate-180" : ""
             }`}
-            fill="none" 
-            stroke="currentColor" 
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -71,22 +69,31 @@ export default function GlobalStateSelector() {
               <h3 className="text-sm font-semibold text-green-800">Select State</h3>
               <p className="text-xs text-green-600">Choose your location for environmental data</p>
             </div>
-            
+
             <div className="max-h-64 overflow-y-auto">
-              {['Victoria (VIC)', 'New South Wales (NSW)', 'Queensland (QLD)', 'Western Australia (WA)', 'South Australia (SA)', 'Tasmania (TAS)', 'Australian Capital Territory (ACT)', 'Northern Territory (NT)'].map((state) => (
+              {[
+                "Victoria (VIC)",
+                "New South Wales (NSW)",
+                "Queensland (QLD)",
+                "Western Australia (WA)",
+                "South Australia (SA)",
+                "Tasmania (TAS)",
+                "Australian Capital Territory (ACT)",
+                "Northern Territory (NT)",
+              ].map((state) => (
                 <button
                   key={state}
-                  data-testid={`state-option-${state.replace(/\s+/g, '-').replace(/[()]/g, '')}`}
+                  data-testid={`state-option-${state.replace(/\s+/g, "-").replace(/[()]/g, "")}`}
                   onClick={() => handleStateChange(state)}
                   className={`w-full text-left px-4 py-3 hover:bg-green-50 transition-colors duration-200 ${
-                    selectedState === state 
-                      ? 'bg-green-100 text-green-800 border-r-2 border-green-500' 
-                      : 'text-gray-700 hover:text-green-700'
+                    selectedState === state
+                      ? "bg-green-100 text-green-800 border-r-2 border-green-500"
+                      : "text-gray-700 hover:text-green-700"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{state.split(' ')[0]}</span>
-                    <span className="text-sm text-gray-500">{state.split(' ')[1]}</span>
+                    <span className="font-medium">{state.split(" ")[0]}</span>
+                    <span className="text-sm text-gray-500">{state.split(" ")[1]}</span>
                   </div>
                   {selectedState === state && (
                     <div className="flex items-center space-x-2 mt-1">
@@ -97,7 +104,7 @@ export default function GlobalStateSelector() {
                 </button>
               ))}
             </div>
-            
+
             <div className="p-3 bg-gray-50 border-t border-gray-100">
               <div className="flex items-center space-x-2 text-xs text-gray-600">
                 <span>🌏</span>

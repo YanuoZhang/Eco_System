@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface DataSource {
   name: string;
@@ -12,47 +12,47 @@ interface DataSource {
 
 const DATA_SOURCES: DataSource[] = [
   {
-    name: 'ABS Census Data',
-    description: 'Australian Bureau of Statistics population and demographic data',
-    url: 'https://www.abs.gov.au/statistics/people/population',
-    category: 'Demographics',
-    icon: '📊'
+    name: "ABS Census Data",
+    description: "Australian Bureau of Statistics population and demographic data",
+    url: "https://www.abs.gov.au/statistics/people/population",
+    category: "Demographics",
+    icon: "📊",
   },
   {
-    name: 'Department of Climate Change',
-    description: 'Official climate change and emissions reduction data',
-    url: 'https://www.dcceew.gov.au/climate-change',
-    category: 'Climate',
-    icon: '🌱'
+    name: "Department of Climate Change",
+    description: "Official climate change and emissions reduction data",
+    url: "https://www.dcceew.gov.au/climate-change",
+    category: "Climate",
+    icon: "🌱",
   },
   {
-    name: 'AEMO Emissions Data',
-    description: 'Australian Energy Market Operator energy and emissions data',
-    url: 'https://aemo.com.au/energy-systems/emissions',
-    category: 'Energy',
-    icon: '⚡'
+    name: "AEMO Emissions Data",
+    description: "Australian Energy Market Operator energy and emissions data",
+    url: "https://aemo.com.au/energy-systems/emissions",
+    category: "Energy",
+    icon: "⚡",
   },
   {
-    name: 'City of Melbourne Open Data',
-    description: 'Melbourne city environmental and sustainability data',
-    url: 'https://data.melbourne.vic.gov.au/',
-    category: 'Local Government',
-    icon: '🏙️'
+    name: "City of Melbourne Open Data",
+    description: "Melbourne city environmental and sustainability data",
+    url: "https://data.melbourne.vic.gov.au/",
+    category: "Local Government",
+    icon: "🏙️",
   },
   {
-    name: 'Bureau of Meteorology',
-    description: 'Weather and climate data for environmental analysis',
-    url: 'https://www.bom.gov.au/climate/',
-    category: 'Weather',
-    icon: '🌤️'
+    name: "Bureau of Meteorology",
+    description: "Weather and climate data for environmental analysis",
+    url: "https://www.bom.gov.au/climate/",
+    category: "Weather",
+    icon: "🌤️",
   },
   {
-    name: 'CSIRO Climate Data',
-    description: 'Commonwealth Scientific and Industrial Research Organisation climate research',
-    url: 'https://www.csiro.au/en/research/natural-environment/climate',
-    category: 'Research',
-    icon: '🔬'
-  }
+    name: "CSIRO Climate Data",
+    description: "Commonwealth Scientific and Industrial Research Organisation climate research",
+    url: "https://www.csiro.au/en/research/natural-environment/climate",
+    category: "Research",
+    icon: "🔬",
+  },
 ];
 
 export default function DataSources() {
@@ -62,7 +62,7 @@ export default function DataSources() {
   const closeModal = () => setIsModalOpen(false);
 
   const handleSourceClick = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -81,7 +81,10 @@ export default function DataSources() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div data-testid="data-sources-modal" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          data-testid="data-sources-modal"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        >
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6">

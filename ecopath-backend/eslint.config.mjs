@@ -22,6 +22,6 @@ export default [
   // Disable formatting conflicts
   prettier,
   {
-    ignores: ["dist/**", "node_modules/**"]
-  }
+    ignores: ["dist/**", "node_modules/**"],
+  },
 ];

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface PageHeaderProps {
   title: string;
@@ -19,14 +19,16 @@ export default function PageHeader({
   onBackToHomepage,
   showToolBadge = true,
   toolBadgeText = "Analytics Tool",
-  toolBadgeDescription = "State-wide environmental insights"
+  toolBadgeDescription = "State-wide environmental insights",
 }: PageHeaderProps) {
   return (
     <div className="bg-white/90 backdrop-blur-sm border-b border-green-200/50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className={`w-16 h-16 bg-gradient-to-br ${gradientColors} rounded-2xl flex items-center justify-center`}>
+            <div
+              className={`w-16 h-16 bg-gradient-to-br ${gradientColors} rounded-2xl flex items-center justify-center`}
+            >
               <span className="text-3xl">{icon}</span>
             </div>
             <div>
@@ -34,7 +36,7 @@ export default function PageHeader({
               <p className="text-green-600 text-lg">{description}</p>
             </div>
           </div>
-          
+
           {/* Right side - Back to Homepage button and Tool Badge */}
           <div className="flex items-center space-x-4">
             {/* Back to Homepage Button */}
@@ -48,7 +50,7 @@ export default function PageHeader({
                 <span>Back to Homepage</span>
               </button>
             )}
-            
+
             {/* Tool Badge */}
             {showToolBadge && (
               <div className="text-right">
