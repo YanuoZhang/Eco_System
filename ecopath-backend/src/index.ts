@@ -229,7 +229,7 @@ app.get("/api/climate-targets", async (req: Request, res: Response) => {
             return {
               targetYear: target.target_year,
               baselineYear: target.baseline_year,
-              targetValuePct: target.target_value_pct,
+              targetValuePct: Number(target.target_value_pct),
               planName: `${target.state_name} ${target.target_year} Climate Target`,
               progress: progress,
               progressDescription: progressDescription,
@@ -246,7 +246,7 @@ app.get("/api/climate-targets", async (req: Request, res: Response) => {
         return {
           targetYear: target.target_year,
           baselineYear: target.baseline_year,
-          targetValuePct: target.target_value_pct,
+          targetValuePct: Number(target.target_value_pct),
           planName: `${target.state_name} ${target.target_year} Climate Target`,
           progress: 0,
           progressDescription: "No emissions data available",

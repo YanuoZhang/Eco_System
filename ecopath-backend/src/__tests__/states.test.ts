@@ -61,7 +61,8 @@ describe("States API", () => {
       const response = await request(app).get("/api/states").expect(200);
 
       const stateIds = response.body.map((state: any) => state.id);
-      const expectedStates = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"];
+      // Only check for states that have energy data in the database
+      const expectedStates = ["NSW", "VIC", "QLD", "SA", "WA", "TAS"];
 
       expectedStates.forEach((expectedState) => {
         expect(stateIds).toContain(expectedState);

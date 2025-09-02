@@ -11,7 +11,7 @@ interface TimeUnitSelectorProps {
   onUnitChange: (unit: TimeUnit["value"]) => void;
   className?: string;
   dataTestId?: string;
-  type?: "energy" | "transport";
+  type?: "energy" | "transport" | undefined;
 }
 
 const energyTimeUnits: TimeUnit[] = [
@@ -37,7 +37,7 @@ export default function TimeUnitSelector({
   onUnitChange,
   className = "",
   dataTestId = "time-unit-select",
-  type = "energy",
+  type,
 }: TimeUnitSelectorProps) {
   const getTimeUnits = () => {
     switch (type) {

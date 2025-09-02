@@ -9,8 +9,10 @@ describe("TimeUnitSelector", () => {
     mockOnUnitChange.mockClear();
   });
 
-  it("renders all time unit options", () => {
-    render(<TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} />);
+  it("renders all time unit options when type is not specified", () => {
+    render(
+      <TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} type={undefined} />,
+    );
 
     expect(screen.getByTestId("time-unit-day")).toBeInTheDocument();
     expect(screen.getByTestId("time-unit-week")).toBeInTheDocument();
@@ -18,8 +20,10 @@ describe("TimeUnitSelector", () => {
     expect(screen.getByTestId("time-unit-quarter")).toBeInTheDocument();
   });
 
-  it("shows correct labels for each time unit", () => {
-    render(<TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} />);
+  it("shows correct labels for each time unit when type is not specified", () => {
+    render(
+      <TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} type={undefined} />,
+    );
 
     expect(screen.getByText("Day")).toBeInTheDocument();
     expect(screen.getByText("Week")).toBeInTheDocument();
@@ -28,14 +32,18 @@ describe("TimeUnitSelector", () => {
   });
 
   it("highlights the selected unit", () => {
-    render(<TimeUnitSelector selectedUnit="week" onUnitChange={mockOnUnitChange} />);
+    render(
+      <TimeUnitSelector selectedUnit="week" onUnitChange={mockOnUnitChange} type={undefined} />,
+    );
 
     const weekButton = screen.getByTestId("time-unit-week");
     expect(weekButton).toHaveClass("bg-green-500", "text-white");
   });
 
   it("calls onUnitChange when a different unit is clicked", () => {
-    render(<TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} />);
+    render(
+      <TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} type={undefined} />,
+    );
 
     const dayButton = screen.getByTestId("time-unit-day");
     fireEvent.click(dayButton);
@@ -68,5 +76,25 @@ describe("TimeUnitSelector", () => {
     );
 
     expect(screen.getByTestId(customTestId)).toBeInTheDocument();
+  });
+
+  it("renders energy time units when type is energy", () => {
+    render(<TimeUnitSelector selectedUnit="month" onUnitChange={mockOnUnitChange} type="energy" />);
+
+    expect(screen.getByTestId("time-unit-month")).toBeInTheDocument();
+    expect(screen.getByTestId("time-unit-quarter")).toBeInTheDocument();
+    expect(screen.queryByTestId("time-unit-day")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("time-unit-week")).not.toBeInTheDocument();
+  });
+
+  it("renders transport time units when type is transport", () => {
+    render(
+      <TimeUnitSelector selectedUnit="day" onUnitChange={mockOnUnitChange} type="transport" />,
+    );
+
+    expect(screen.getByTestId("time-unit-day")).toBeInTheDocument();
+    expect(screen.getByTestId("time-unit-month")).toBeInTheDocument();
+    expect(screen.getByTestId("time-unit-quarter")).toBeInTheDocument();
+    expect(screen.queryByTestId("time-unit-week")).not.toBeInTheDocument();
   });
 });

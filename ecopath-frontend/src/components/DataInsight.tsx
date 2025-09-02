@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import EnergyMixChart, { EnergyMix } from "./EnergyMixChart";
 import EmissionsChart, { EmissionData } from "./EmissionsChart";
 import ClimateTargetSidebar from "./ClimateTargetSidebar";
@@ -25,7 +25,7 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
   const [retryCount, setRetryCount] = useState(0);
 
   // Fetch energy mix data from backend API
-  const fetchEnergyMixData = async (state: string, retryAttempt = 0) => {
+  const fetchEnergyMixData = useCallback(async (state: string, retryAttempt = 0) => {
     try {
       setLoading(true);
       setError(null);
@@ -62,10 +62,10 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch emissions data from backend API
-  const fetchEmissionsData = async (state: string, retryAttempt = 0) => {
+  const fetchEmissionsData = useCallback(async (state: string, retryAttempt = 0) => {
     try {
       setLoading(true);
       setError(null);
@@ -99,7 +99,7 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Retry function for manual retry
   const handleRetry = () => {
@@ -117,7 +117,7 @@ export default function DataInsight({ onNext, onPrev }: DataInsightProps) {
       fetchEnergyMixData(selectedState);
       fetchEmissionsData(selectedState);
     }
-  }, [selectedState]);
+  }, [selectedState, fetchEnergyMixData, fetchEmissionsData]);
 
   const tabs = [
     { id: "energy", label: "Energy Mix", icon: "⚡" },
