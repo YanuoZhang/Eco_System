@@ -119,4 +119,58 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Emissions Calculator APIs
+  static async getEmissionsFactors(state: string) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/emissions/factors?state=${state}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching emissions factors:", error);
+      throw error;
+    }
+  }
+
+  static async getSupportedUnits() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/emissions/supported-units`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching supported units:", error);
+      throw error;
+    }
+  }
+
+  static async calculateEmissions(payload: {
+    state: string;
+    energy?: { electricity?: number; gas?: number; timeUnit: "month" | "quarter" | "year" };
+    transport?: {
+      mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+      distance: number;
+      timeUnit: "day" | "week" | "month" | "year";
+      frequency?: number;
+    };
+  }) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/emissions/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        throw new Error(`HTTP error! status: ${response.status} ${errText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error calculating emissions:", error);
+      throw error;
+    }
+  }
 }

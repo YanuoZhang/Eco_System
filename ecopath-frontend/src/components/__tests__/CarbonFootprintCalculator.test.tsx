@@ -1,8 +1,25 @@
 /// <reference types="vitest/globals" />
 
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import type { PropsWithChildren, ReactElement } from "react";
 import CarbonFootprintCalculator from "../CarbonFootprintCalculator";
+
+vi.mock("@/contexts/StateContext", () => ({
+  useStateContext: () => ({
+    selectedState: "Victoria (VIC)",
+    setSelectedState: vi.fn(),
+    availableStates: [
+      "Victoria (VIC)",
+      "New South Wales (NSW)",
+      "Queensland (QLD)",
+      "Western Australia (WA)",
+      "South Australia (SA)",
+      "Tasmania (TAS)",
+    ],
+  }),
+  StateProvider: ({ children }: PropsWithChildren): ReactElement => <>{children}</>,
+}));
 
 describe("CarbonFootprintCalculator", () => {
   it("renders the calculator with transportation timeframe selector", () => {
