@@ -44,7 +44,7 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-    // 暂时注释掉其他浏览器项目，用于开发调试
+    // Temporarily comment out other browser projects for development debugging
     // {
     //   name: 'firefox',
     //   use: { ...devices['Desktop Firefox'] },

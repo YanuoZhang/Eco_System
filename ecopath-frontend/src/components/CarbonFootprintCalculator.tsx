@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "@/services/api";
 import { useStateContext } from "@/contexts/StateContext";
 import TimeUnitSelector, { TimeUnit } from "./TimeUnitSelector";
+import EquivalentsPanel from "./EquivalentsPanel";
 
 interface FormData {
   electricity: string;
@@ -182,7 +183,7 @@ export default function CarbonFootprintCalculator({
     setError(null);
 
     try {
-      // 将前端选择映射到后端 API 所需格式
+      // Map frontend selections to backend API payload shape
       const stateCodeMatch = selectedState.match(/\((.*?)\)/);
       const stateCode = stateCodeMatch ? stateCodeMatch[1] : "VIC";
 
@@ -228,7 +229,7 @@ export default function CarbonFootprintCalculator({
         transport: transportPayload,
       });
 
-      const totalTonnes = resp.totalEmissions / 1000; // 后端单位为 kg，前端以吨展示
+      const totalTonnes = resp.totalEmissions / 1000; // Backend returns kg; UI displays tonnes
       const australianAverage = 16.2;
       const comparison = ((totalTonnes - australianAverage) / australianAverage) * 100;
 
@@ -246,7 +247,7 @@ export default function CarbonFootprintCalculator({
         comparison: Math.round(comparison),
       });
     } catch {
-      setError("计算过程中出现错误，请重试");
+      setError("An error occurred during calculation. Please try again.");
     } finally {
       setIsCalculating(false);
     }
@@ -495,6 +496,12 @@ export default function CarbonFootprintCalculator({
                     </div>
                   </div>
                 </div>
+
+                {/* Equivalents Panel */}
+                <EquivalentsPanel
+                  totalEmissionsKg={result.totalEmissions * 1000}
+                  timeUnit={timeUnit}
+                />
 
                 {/* Factors Panel */}
                 <div className="bg-white rounded-lg p-4 border border-green-200 mt-4">
