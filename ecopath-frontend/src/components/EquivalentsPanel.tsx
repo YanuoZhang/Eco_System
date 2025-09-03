@@ -60,6 +60,13 @@ export default function EquivalentsPanel({ totalEmissionsKg, timeUnit }: Equival
         unit: "cups",
         testId: "equiv-milk",
       },
+      {
+        icon: "✈️",
+        label: "Short-haul flights",
+        value: Math.round(totalEmissionsKg / 255),
+        unit: "flights",
+        testId: "equiv-flights",
+      },
     ];
   };
 
