@@ -58,11 +58,11 @@ describe("DataSources", () => {
       const button = screen.getByRole("button", { name: /data sources/i });
       fireEvent.click(button);
 
-      // Check for key datasets
-      expect(screen.getByText("ABS Census Data")).toBeInTheDocument();
-      expect(screen.getByText("AEMO Emissions Data")).toBeInTheDocument();
-      expect(screen.getByText("City of Melbourne Open Data")).toBeInTheDocument();
-      expect(screen.getByText("Department of Climate Change")).toBeInTheDocument();
+      // Check for key datasets (updated to real sources)
+      expect(screen.getByText("Energy Mix: Open Electricity")).toBeInTheDocument();
+      expect(screen.getByText("Greenhouse Gas Emissions")).toBeInTheDocument();
+      expect(screen.getByText("NGA Factors 2024")).toBeInTheDocument();
+      expect(screen.getByText("Survey of Motor Vehicle Use")).toBeInTheDocument();
     });
 
     it("shows dataset categories and descriptions", () => {
@@ -71,10 +71,13 @@ describe("DataSources", () => {
       const button = screen.getByRole("button", { name: /data sources/i });
       fireEvent.click(button);
 
-      expect(screen.getByText("Demographics")).toBeInTheDocument();
-      expect(screen.getByText("Energy")).toBeInTheDocument();
-      expect(screen.getByText("Local Government")).toBeInTheDocument();
-      expect(screen.getByText("Climate")).toBeInTheDocument();
+      // Updated categories (some appear multiple times)
+      expect(screen.getAllByText("Energy").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Climate").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Policy").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Factors").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Transport").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Demographics").length).toBeGreaterThan(0);
     });
 
     it("closes modal when close button is clicked", () => {
@@ -99,17 +102,14 @@ describe("DataSources", () => {
       const button = screen.getByRole("button", { name: /data sources/i });
       fireEvent.click(button);
 
-      const absDataset = screen.getByText("ABS Census Data").closest("div");
-      expect(absDataset).toBeInTheDocument();
-
-      if (absDataset) {
-        fireEvent.click(absDataset);
-        expect(mockOpen).toHaveBeenCalledWith(
-          "https://www.abs.gov.au/statistics/people/population",
-          "_blank",
-          "noopener,noreferrer",
-        );
-      }
+      // Click on first dataset card and ensure it opens a new tab
+      const firstCard = screen.getByTestId("dataset-link-0");
+      fireEvent.click(firstCard);
+      expect(mockOpen).toHaveBeenCalledWith(
+        expect.stringContaining("http"),
+        "_blank",
+        "noopener,noreferrer",
+      );
     });
 
     it("opens multiple datasets in new tabs", () => {
@@ -118,18 +118,9 @@ describe("DataSources", () => {
       const button = screen.getByRole("button", { name: /data sources/i });
       fireEvent.click(button);
 
-      // Click on AEMO dataset
-      const aemoDataset = screen.getByText("AEMO Emissions Data").closest("div");
-      if (aemoDataset) {
-        fireEvent.click(aemoDataset);
-      }
-
-      // Click on Melbourne dataset
-      const melbourneDataset = screen.getByText("City of Melbourne Open Data").closest("div");
-      if (melbourneDataset) {
-        fireEvent.click(melbourneDataset);
-      }
-
+      // Click on two datasets
+      fireEvent.click(screen.getByTestId("dataset-link-1"));
+      fireEvent.click(screen.getByTestId("dataset-link-2"));
       expect(mockOpen).toHaveBeenCalledTimes(2);
     });
   });
@@ -155,7 +146,7 @@ describe("DataSources", () => {
       fireEvent.click(button);
 
       const datasetCard = screen
-        .getByText("ABS Census Data")
+        .getByText("Energy Mix: Open Electricity")
         .closest('div[class*="border border-gray-200"]');
       expect(datasetCard).toBeInTheDocument();
       expect(datasetCard).toHaveClass("border", "rounded-lg", "p-4");
@@ -168,7 +159,7 @@ describe("DataSources", () => {
       fireEvent.click(button);
 
       const datasetCard = screen
-        .getByText("ABS Census Data")
+        .getByText("Energy Mix: Open Electricity")
         .closest('div[class*="border border-gray-200"]');
       expect(datasetCard).toBeInTheDocument();
       expect(datasetCard).toHaveClass("hover:border-green-300", "hover:shadow-md");
@@ -206,9 +197,9 @@ describe("DataSources", () => {
       const button = screen.getByRole("button", { name: /data sources/i });
       fireEvent.click(button);
 
-      expect(screen.getByText("📊")).toBeInTheDocument(); // ABS
-      expect(screen.getByText("⚡")).toBeInTheDocument(); // AEMO
-      expect(screen.getByText("🏙️")).toBeInTheDocument(); // Melbourne
+      expect(screen.getByText("⚡")).toBeInTheDocument(); // Open Electricity
+      expect(screen.getByText("🌿")).toBeInTheDocument(); // Greenhouse accounts
+      expect(screen.getByText("📑")).toBeInTheDocument(); // NGA Factors
     });
   });
 });
