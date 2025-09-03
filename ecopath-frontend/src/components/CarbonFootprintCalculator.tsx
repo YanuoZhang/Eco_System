@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "@/services/api";
 import { useStateContext } from "@/contexts/StateContext";
 import TimeUnitSelector, { TimeUnit } from "./TimeUnitSelector";
+import EquivalentsPanel from "./EquivalentsPanel";
 
 interface FormData {
   electricity: string;
@@ -495,6 +496,12 @@ export default function CarbonFootprintCalculator({
                     </div>
                   </div>
                 </div>
+
+                {/* Equivalents Panel */}
+                <EquivalentsPanel
+                  totalEmissionsKg={result.totalEmissions * 1000}
+                  timeUnit={timeUnit}
+                />
 
                 {/* Factors Panel */}
                 <div className="bg-white rounded-lg p-4 border border-green-200 mt-4">

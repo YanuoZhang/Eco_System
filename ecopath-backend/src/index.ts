@@ -14,6 +14,25 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
+// Root endpoint
+app.get("/", (_req: Request, res: Response) => {
+  res.json({
+    message: "EcoPath Backend API",
+    version: "1.0.0",
+    status: "running",
+    endpoints: {
+      health: "/healthz",
+      energyMix: "/api/energy-mix?state=VIC",
+      emissions: "/api/emissions?state=VIC&range=10y",
+      states: "/api/states",
+      climateTargets: "/api/climate-targets?state=VIC",
+      emissionsFactors: "/api/emissions/factors?state=VIC",
+      supportedUnits: "/api/emissions/supported-units",
+      calculateEmissions: "/api/emissions/calculate",
+    },
+  });
+});
+
 // Test database connection on startup
 app.get("/healthz", async (_req: Request, res: Response) => {
   try {
