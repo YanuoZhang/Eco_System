@@ -528,6 +528,25 @@ async function calculateTransportEmissions(transport: TransportData, state: stri
     }
   }
 
+  // For electric transport modes (bus, train, tram), calculate based on electricity factor
+  if (["bus", "train", "tram"].includes(transport.mode)) {
+    const electricityFactor = await getDbElectricityFactorKgPerKwh(state);
+    if (electricityFactor != null) {
+      // Electric transport energy consumption per km (kWh/km)
+      const energyConsumptionPerKm = {
+        bus: 1.2, // kWh/km for electric bus
+        train: 0.8, // kWh/km for electric train
+        tram: 0.6, // kWh/km for electric tram
+      };
+
+      const energyConsumption =
+        totalAnnualDistance *
+        energyConsumptionPerKm[transport.mode as keyof typeof energyConsumptionPerKm];
+      const modeEmissions = energyConsumption * electricityFactor;
+      return { [transport.mode]: modeEmissions, total: modeEmissions } as const;
+    }
+  }
+
   const modeEmissions = totalAnnualDistance * EMISSIONS_FACTORS.transport[transport.mode];
   return { [transport.mode]: modeEmissions, total: modeEmissions } as const;
 }
@@ -618,15 +637,17 @@ app.post("/api/emissions/calculate", async (req: Request, res: Response) => {
           });
         }
       } else if (["bus", "train", "tram"].includes(requestData.transport.mode)) {
-        // No assumptions: we don't convert fuel factors to km without explicit per-km data
-        // Return strict error indicating missing per-km emission factor for the mode
-        return res.status(424).json({
-          error: "Missing data",
-          message: `No per-kilometer emission factor available in database for transport mode '${requestData.transport.mode}'.`,
-          state: requestData.state,
-          mode: requestData.transport.mode,
-          missing: ["transport_mode_per_km_factor"],
-        });
+        // For electric transport modes, we need electricity factor from database
+        const electricityFactor = await getDbElectricityFactorKgPerKwh(requestData.state);
+        if (electricityFactor == null) {
+          return res.status(424).json({
+            error: "Missing data",
+            message: `No electricity emissions factor found in database for state '${requestData.state}' to calculate electric transport emissions.`,
+            state: requestData.state,
+            mode: requestData.transport.mode,
+            missing: ["electricity_factor_by_state"],
+          });
+        }
       }
       const transportEmissions = await calculateTransportEmissions(
         requestData.transport,
@@ -644,9 +665,18 @@ app.post("/api/emissions/calculate", async (req: Request, res: Response) => {
       responseTimeUnit = requestData.transport.timeUnit;
     }
 
+    // Only include breakdown sections that were actually calculated
+    const filteredBreakdown: any = {};
+    if (requestData.energy && breakdown.energy) {
+      filteredBreakdown.energy = breakdown.energy;
+    }
+    if (requestData.transport && breakdown.transport) {
+      filteredBreakdown.transport = breakdown.transport;
+    }
+
     const response: EmissionsCalculationResponse = {
       totalEmissions: Math.round(totalEmissions * 100) / 100, // Round to 2 decimal places
-      breakdown,
+      breakdown: filteredBreakdown,
       timeUnit: responseTimeUnit,
       calculationDate: new Date().toISOString(),
     };
@@ -658,6 +688,132 @@ app.post("/api/emissions/calculate", async (req: Request, res: Response) => {
       error: "Internal server error",
       message: "An error occurred while calculating emissions. Please try again.",
       timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /api/emissions/state-average
+app.get("/api/emissions/state-average", async (req: Request, res: Response) => {
+  try {
+    const state = (req.query.state as string) || "";
+    const year = parseInt((req.query.year as string) || "2023");
+
+    if (!state) {
+      return res.status(400).json({
+        error: "Missing state parameter",
+        message: "Please provide a state code (e.g., VIC, NSW, QLD)",
+      });
+    }
+
+    // Get state emissions and population for the year
+    const emissionsQuery = `
+      SELECT emissions_mt 
+      FROM emission_total 
+      WHERE state_id = $1 AND year = $2
+    `;
+
+    const populationQuery = `
+      SELECT population 
+      FROM population 
+      WHERE state_id = $1 AND year = $2
+    `;
+
+    const [emissionsResult, populationResult] = await Promise.all([
+      pool.query(emissionsQuery, [state, year]),
+      pool.query(populationQuery, [state, year]),
+    ]);
+
+    if (
+      emissionsResult.rows.length === 0 ||
+      populationResult.rows.length === 0 ||
+      !emissionsResult.rows[0].emissions_mt ||
+      !populationResult.rows[0].population
+    ) {
+      return res.status(404).json({
+        error: "Data not found",
+        message: `No data available for state ${state} in year ${year}`,
+        state,
+        year,
+      });
+    }
+
+    const totalEmissionsMt = emissionsResult.rows[0].emissions_mt;
+    const totalPopulation = populationResult.rows[0].population;
+
+    // Calculate per capita emissions in tonnes CO2-e
+    const perCapitaEmissionsTonnes = (totalEmissionsMt * 1000000) / totalPopulation; // Convert Mt to tonnes
+
+    res.json({
+      state,
+      year,
+      totalEmissionsMt: Math.round(totalEmissionsMt * 100) / 100,
+      totalPopulation,
+      perCapitaEmissionsTonnes: Math.round(perCapitaEmissionsTonnes * 10) / 10,
+      dataSource: "Australian Government emissions and population data",
+    });
+  } catch (error) {
+    console.error("Error fetching state average:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to fetch state average emissions data",
+    });
+  }
+});
+
+// GET /api/emissions/australian-average
+app.get("/api/emissions/australian-average", async (req: Request, res: Response) => {
+  try {
+    const year = parseInt((req.query.year as string) || "2023");
+
+    // Calculate Australian total emissions and population by aggregating all states
+    const emissionsQuery = `
+      SELECT SUM(emissions_mt) as total_emissions_mt
+      FROM emission_total 
+      WHERE year = $1 AND state_id != 'AUS'
+    `;
+
+    const populationQuery = `
+      SELECT SUM(population) as total_population
+      FROM population 
+      WHERE year = $1 AND state_id != 'AUS'
+    `;
+
+    const [emissionsResult, populationResult] = await Promise.all([
+      pool.query(emissionsQuery, [year]),
+      pool.query(populationQuery, [year]),
+    ]);
+
+    if (
+      emissionsResult.rows.length === 0 ||
+      populationResult.rows.length === 0 ||
+      !emissionsResult.rows[0].total_emissions_mt ||
+      !populationResult.rows[0].total_population
+    ) {
+      return res.status(404).json({
+        error: "Data not found",
+        message: `No data available for Australian average in year ${year}`,
+        year,
+      });
+    }
+
+    const totalEmissionsMt = emissionsResult.rows[0].total_emissions_mt;
+    const totalPopulation = populationResult.rows[0].total_population;
+
+    // Calculate per capita emissions in tonnes CO2-e
+    const perCapitaEmissionsTonnes = (totalEmissionsMt * 1000000) / totalPopulation; // Convert Mt to tonnes
+
+    res.json({
+      year,
+      totalEmissionsMt: Math.round(totalEmissionsMt * 100) / 100,
+      totalPopulation,
+      perCapitaEmissionsTonnes: Math.round(perCapitaEmissionsTonnes * 10) / 10,
+      dataSource: "Australian Government emissions and population data (aggregated from states)",
+    });
+  } catch (error) {
+    console.error("Error fetching Australian average:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to fetch Australian average emissions data",
     });
   }
 });

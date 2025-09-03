@@ -151,6 +151,34 @@ export class ApiService {
     }
   }
 
+  static async getStateAverage(state: string, year: number = 2023) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/emissions/state-average?state=${state}&year=${year}`,
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching state average:", error);
+      throw error;
+    }
+  }
+
+  static async getAustralianAverage(year: number = 2023) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/emissions/australian-average?year=${year}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching Australian average:", error);
+      throw error;
+    }
+  }
+
   static async calculateEmissions(payload: {
     state: string;
     energy?: { electricity?: number; gas?: number; timeUnit: "month" | "quarter" | "year" };
