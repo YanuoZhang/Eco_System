@@ -21,6 +21,7 @@ interface CalculationResult {
     transport: number;
   };
   comparison: number;
+  comparisonLabel: string;
 }
 
 interface CarbonFootprintCalculatorProps {
@@ -183,6 +184,30 @@ export default function CarbonFootprintCalculator({
     setError(null);
 
     try {
+      // Validation: If distance is provided, transport mode is required
+      if (formData.distance && !formData.transportMode) {
+        setError("Please select a transport mode when entering distance.");
+        setIsCalculating(false);
+        return;
+      }
+
+      // Validation: If transport mode is selected, distance is required
+      if (formData.transportMode && !formData.distance) {
+        setError("Please enter distance when selecting a transport mode.");
+        setIsCalculating(false);
+        return;
+      }
+
+      // Validation: At least one input is required (energy or transport)
+      const hasEnergyInput = formData.electricity || formData.gas;
+      const hasTransportInput = formData.transportMode && formData.distance;
+
+      if (!hasEnergyInput && !hasTransportInput) {
+        setError("Please provide at least one input: energy consumption or transport details.");
+        setIsCalculating(false);
+        return;
+      }
+
       // Map frontend selections to backend API payload shape
       const stateCodeMatch = selectedState.match(/\((.*?)\)/);
       const stateCode = stateCodeMatch ? stateCodeMatch[1] : "VIC";
@@ -230,8 +255,35 @@ export default function CarbonFootprintCalculator({
       });
 
       const totalTonnes = resp.totalEmissions / 1000; // Backend returns kg; UI displays tonnes
-      const australianAverage = 16.2;
-      const comparison = ((totalTonnes - australianAverage) / australianAverage) * 100;
+
+      // Get real state average from database for comparison
+      let stateAverage = 16.2; // Fallback value
+      let comparisonLabel = "vs Australian average";
+
+      try {
+        // Try to get the specific state's average first
+        const stateCodeMatch = selectedState.match(/\((.*?)\)/);
+        const stateCode = stateCodeMatch ? stateCodeMatch[1] : "VIC";
+
+        const stateAvgData = await ApiService.getStateAverage(stateCode, 2023);
+        stateAverage = stateAvgData.perCapitaEmissionsTonnes;
+        comparisonLabel = `vs ${selectedState.split(" ")[0]} average`;
+      } catch (error) {
+        console.warn("Failed to fetch state average, using Australian average fallback:", error);
+        // Fallback to Australian average
+        try {
+          const avgData = await ApiService.getAustralianAverage(2023);
+          stateAverage = avgData.perCapitaEmissionsTonnes;
+          comparisonLabel = "vs Australian average";
+        } catch (fallbackError) {
+          console.warn(
+            "Failed to fetch Australian average, using hardcoded fallback:",
+            fallbackError,
+          );
+        }
+      }
+
+      const comparison = ((totalTonnes - stateAverage) / stateAverage) * 100;
 
       setResult({
         totalEmissions: Math.round(totalTonnes * 10) / 10,
@@ -245,6 +297,7 @@ export default function CarbonFootprintCalculator({
             : 0,
         },
         comparison: Math.round(comparison),
+        comparisonLabel,
       });
     } catch {
       setError("An error occurred during calculation. Please try again.");
@@ -468,7 +521,7 @@ export default function CarbonFootprintCalculator({
                       {result.comparison > 0 ? "+" : ""}
                       {result.comparison}%
                     </div>
-                    <div className="text-green-700">vs Australian average</div>
+                    <div className="text-green-700">{result.comparisonLabel}</div>
                   </div>
                 </div>
 
