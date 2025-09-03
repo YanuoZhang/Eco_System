@@ -11,13 +11,46 @@ npm run lint || exit 1
 echo "🎨 Checking code formatting..."
 npm run format:check || exit 1
 
-# Run build check for all workspaces
-echo "🔨 Checking TypeScript compilation..."
-npm run build || exit 1
+# Determine changed files (staged)
+CHANGED_FILES=$(git diff --cached --name-only)
 
-# Run tests for all workspaces
+# Flags for selective tasks
+FRONT_CHANGED=false
+BACK_CHANGED=false
+
+echo "$CHANGED_FILES" | grep -q '^ecopath-frontend/' && FRONT_CHANGED=true || true
+echo "$CHANGED_FILES" | grep -q '^ecopath-backend/' && BACK_CHANGED=true || true
+
+# Build selectively per workspace
+echo "🔨 Checking TypeScript compilation..."
+if [ "$FRONT_CHANGED" = true ]; then
+  echo "   → Building ecopath-frontend"
+  npm --workspace ecopath-frontend run build || exit 1
+else
+  echo "   → Skipping frontend build (no changes in ecopath-frontend)"
+fi
+
+if [ "$BACK_CHANGED" = true ]; then
+  echo "   → Building ecopath-backend"
+  npm --workspace ecopath-backend run build || exit 1
+else
+  echo "   → Skipping backend build (no changes in ecopath-backend)"
+fi
+
+# Run tests selectively per workspace
 echo "🧪 Running tests..."
-npm --workspace ecopath-frontend run test || exit 1
-npm --workspace ecopath-backend run test || exit 1
+if [ "$FRONT_CHANGED" = true ]; then
+  echo "   → Running frontend tests"
+  npm --workspace ecopath-frontend run test || exit 1
+else
+  echo "   → Skipping frontend tests (no changes in ecopath-frontend)"
+fi
+
+if [ "$BACK_CHANGED" = true ]; then
+  echo "   → Running backend tests"
+  npm --workspace ecopath-backend run test || exit 1
+else
+  echo "   → Skipping backend tests (no changes in ecopath-backend)"
+fi
 
 echo "✅ All pre-commit checks passed!"
