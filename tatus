@@ -1,0 +1,18 @@
+* [32mfeature/energy-mix-endpoint[m
+  main[m
+  [31mremotes/origin/HEAD[m -> origin/main
+  [31mremotes/origin/chore/ci-and-hooks[m
+  [31mremotes/origin/chore/frontend-e2e-setup[m
+  [31mremotes/origin/chore/tools-only[m
+  [31mremotes/origin/chore/unit-tests-setup[m
+  [31mremotes/origin/feat/backend-init[m
+  [31mremotes/origin/feat/frontend-init[m
+  [31mremotes/origin/feature/energy-mix-endpoint[m
+  [31mremotes/origin/fix/backend-lint[m
+  [31mremotes/origin/fix/ci-commitlint-no-ci[m
+  [31mremotes/origin/fix/ci-package-lock[m
+  [31mremotes/origin/fix/env-examples[m
+  [31mremotes/origin/fix/workspaces-lockfile[m
+  [31mremotes/origin/fix/workspaces-setup[m
+  [31mremotes/origin/main[m
+  [31mremotes/origin/revert/chore-ci-and-hooks[m
