@@ -1,4 +1,32 @@
-export default function QuizHero() {
+import { useEffect, useState } from "react";
+import { ApiService } from "@/services/api";
+
+export default function QuizHero({
+  states = [],
+  selectedState = "",
+  onStateChange,
+}: {
+  states?: { id: string; displayName?: string }[];
+  selectedState?: string;
+  onStateChange?: (state: string) => void;
+}) {
+  type Factors = {
+    electricity?: number;
+    gas?: number;
+    units?: { gas?: string };
+  } | null;
+
+  const [factors, setFactors] = useState<Factors>(null);
+  const [loadingFactors, setLoadingFactors] = useState(false);
+
+  useEffect(() => {
+    if (!selectedState) return;
+    setLoadingFactors(true);
+    ApiService.getEmissionsFactors(selectedState)
+      .then((data) => setFactors(data as Factors))
+      .catch(() => setFactors(null))
+      .finally(() => setLoadingFactors(false));
+  }, [selectedState]);
   return (
     <section className="pt-0 pb-10 relative overflow-hidden min-h-[600px] sm:min-h-[640px]">
       <div
@@ -37,22 +65,47 @@ export default function QuizHero() {
                   State/Territory
                 </label>
                 <div className="relative">
-                  <select className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 text-slate-700 pr-8">
-                    <option>Choose your state...</option>
-                    <option>New South Wales</option>
-                    <option>Victoria</option>
-                    <option>Queensland</option>
-                    <option>Western Australia</option>
-                    <option>South Australia</option>
-                    <option>Tasmania</option>
-                    <option>Australian Capital Territory</option>
-                    <option>Northern Territory</option>
+                  <select
+                    required
+                    value={selectedState || "VIC"}
+                    onChange={(e) => {
+                      const val = e.target.value || "VIC";
+                      onStateChange && onStateChange(val);
+                    }}
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 text-slate-700 pr-8"
+                  >
+                    {states.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.displayName || s.id}
+                      </option>
+                    ))}
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-lg">
                     ▾
                   </div>
                 </div>
               </div>
+
+              {selectedState && (
+                <div className="bg-white/80 rounded-lg p-3 border border-emerald-200 text-left">
+                  {loadingFactors ? (
+                    <div className="text-sm text-slate-600">Loading factors…</div>
+                  ) : factors ? (
+                    <div className="text-sm text-emerald-700">
+                      <div className="font-semibold mb-1">Emissions factors</div>
+                      <div>Electricity: {factors?.electricity ?? "-"} kg CO₂-e/kWh</div>
+                      <div>
+                        Gas:{" "}
+                        {factors?.units?.gas === "kg CO2-e per GJ"
+                          ? `${factors?.gas ?? "-"} kg/GJ`
+                          : `${factors?.gas ?? "-"} kg/kWh-eq`}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-600">No factors available.</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
