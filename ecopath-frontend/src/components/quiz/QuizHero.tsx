@@ -70,7 +70,7 @@ export default function QuizHero({
                     value={selectedState || "VIC"}
                     onChange={(e) => {
                       const val = e.target.value || "VIC";
-                      onStateChange && onStateChange(val);
+                      onStateChange?.(val);
                     }}
                     className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 text-slate-700 pr-8"
                   >

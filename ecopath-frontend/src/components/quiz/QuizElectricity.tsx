@@ -21,7 +21,7 @@ export default function QuizElectricity({
   open = true,
   onToggle,
   electricity,
-  gasMJ: _gasMJ,
+  gasMJ: _gasMJ, // eslint-disable-line @typescript-eslint/no-unused-vars
   timeUnit = "month",
   onChange,
   factors,
