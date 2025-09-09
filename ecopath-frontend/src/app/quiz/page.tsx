@@ -15,12 +15,21 @@ export default function QuizPage() {
   const [selectedState, setSelectedState] = useState<string>("VIC");
   const [showResults, setShowResults] = useState(false);
   const [timeUnit, setTimeUnit] = useState<"month" | "quarter" | "year">("month");
+  const [factors, setFactors] = useState<{ electricity?: number } | null>(null);
+  const [electricityEmissions, setElectricityEmissions] = useState<number>(0);
 
   useEffect(() => {
     ApiService.getStates()
       .then((list) => setStates(list))
       .catch(() => setStates([]));
   }, []);
+
+  useEffect(() => {
+    if (!selectedState) return;
+    ApiService.getEmissionsFactors(selectedState)
+      .then((data) => setFactors(data as { electricity?: number }))
+      .catch(() => setFactors(null));
+  }, [selectedState]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-amber-50 to-green-50">
@@ -46,14 +55,23 @@ export default function QuizPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
           <QuizElectricity
             timeUnit={timeUnit}
-            onChange={(v) => v.timeUnit && setTimeUnit(v.timeUnit)}
+            factors={factors}
+            onChange={(v) => {
+              if (v.timeUnit) setTimeUnit(v.timeUnit);
+              if (typeof v.electricityEmissionsKgYear === "number")
+                setElectricityEmissions(v.electricityEmissionsKgYear);
+            }}
           />
           <QuizHotWater />
           <QuizAppliances />
           <QuizTransport />
         </div>
       </section>
-      <QuizFloatingPreview onOpen={() => setShowResults(true)} />
+      <QuizFloatingPreview
+        valueKgYear={electricityEmissions}
+        timeUnit={timeUnit}
+        onOpen={() => setShowResults(true)}
+      />
       <QuizResultsModal open={showResults} onClose={() => setShowResults(false)} />
     </div>
   );

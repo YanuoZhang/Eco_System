@@ -12,6 +12,7 @@ type Props = {
     electricity?: number;
     gasMJ?: number;
     timeUnit?: "month" | "quarter" | "year";
+    electricityEmissionsKgYear?: number;
   }) => void;
   factors?: { electricity?: number; gas?: number; units?: { gas?: string } } | null;
 };
@@ -20,7 +21,7 @@ export default function QuizElectricity({
   open = true,
   onToggle,
   electricity,
-  gasMJ,
+  gasMJ: _gasMJ,
   timeUnit = "month",
   onChange,
   factors,
@@ -33,8 +34,8 @@ export default function QuizElectricity({
 
   // Support both known-kWh input and bill/household estimation
   const [knowKwh, setKnowKwh] = useState<boolean>(false);
-  const [bill, setBill] = useState<number>(150); // $/month
-  const [household, setHousehold] = useState<number>(2);
+  const [bill, setBill] = useState<number>(1); // $ per selected unit
+  const [household, setHousehold] = useState<number>(1);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [led, setLed] = useState<"yes" | "no" | "mixed" | null>(null);
   const [ac, setAc] = useState<"frequently" | "rarely" | "seasonally" | null>(null);
@@ -57,6 +58,32 @@ export default function QuizElectricity({
     return Math.round(base * adj);
   }, [bill, household]);
 
+  // Compute electricity emissions (kg CO2e/year) using energyrating.gov.au-based multipliers (conservative)
+  const electricityFactor = factors?.electricity ?? 0;
+  const scale = currentTimeUnit === "month" ? 12 : currentTimeUnit === "quarter" ? 4 : 1;
+  const kwhInput = knowKwh
+    ? typeof localElectricity === "number"
+      ? localElectricity
+      : 0
+    : estimatedKwh;
+  let emissionsYear = kwhInput * scale * electricityFactor;
+  const ledMultiplier = led === "yes" ? 0.85 : led === "no" ? 1.3 : 1.0;
+  const acMultiplier = ac === "rarely" ? 0.88 : ac === "frequently" ? 1.0 : 1.0;
+  const efficientMultiplier = efficient === "yes" ? 0.8 : efficient === "mixed" ? 0.9 : 1.0;
+  emissionsYear = emissionsYear * ledMultiplier * acMultiplier * efficientMultiplier;
+
+  useEffect(() => {
+    onChange?.({ electricityEmissionsKgYear: emissionsYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emissionsYear]);
+
+  const unitLabel =
+    currentTimeUnit === "month"
+      ? "Monthly"
+      : currentTimeUnit === "quarter"
+        ? "Quarterly"
+        : "Yearly";
+
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-orange-200/50 shadow overflow-hidden">
       <button
@@ -72,10 +99,22 @@ export default function QuizElectricity({
             </div>
             <div>
               <h3 className="text-xl font-bold text-slate-800">Electricity Usage</h3>
-              <p className="text-sm text-slate-600">kWh / Gas MJ and time unit</p>
+              <p className="text-sm text-slate-600">
+                {unitLabel} electricity bill and household information
+              </p>
             </div>
           </div>
-          <i className={`ri-arrow-${isOpen ? "up" : "down"}-s-line text-slate-400 text-xl`} />
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden sm:block">
+              <div className="text-xs text-slate-500">{unitLabel}</div>
+              <div className="text-sm font-semibold text-orange-600">
+                {knowKwh
+                  ? `${typeof localElectricity === "number" ? localElectricity : 0} kWh/${currentTimeUnit}`
+                  : `$${bill}`}
+              </div>
+            </div>
+            <i className={`ri-arrow-${isOpen ? "up" : "down"}-s-line text-slate-400 text-xl`} />
+          </div>
         </div>
       </button>
 
@@ -91,15 +130,18 @@ export default function QuizElectricity({
                     : currentTimeUnit === "quarter"
                       ? "Quarterly"
                       : "Yearly"}{" "}
-                  electricity bill: ${bill}
+                  electricity bill
                 </label>
-                <span className="text-xs text-slate-500">
-                  {currentTimeUnit === "month"
-                    ? "Monthly"
-                    : currentTimeUnit === "quarter"
-                      ? "Quarterly"
-                      : "Yearly"}
-                </span>
+                <div className="text-right">
+                  <div className="text-xs text-slate-500">
+                    {currentTimeUnit === "month"
+                      ? "Monthly"
+                      : currentTimeUnit === "quarter"
+                        ? "Quarterly"
+                        : "Yearly"}
+                  </div>
+                  <div className="text-sm font-semibold text-orange-600">${bill}</div>
+                </div>
               </div>
               <input
                 type="range"
@@ -182,13 +224,18 @@ export default function QuizElectricity({
 
             {/* Time unit buttons removed; using the global selector under hero */}
 
-            {factors && (
-              <div className="text-xs text-slate-600">
-                Factors: electricity {factors.electricity ?? "-"} kg CO₂-e/kWh; gas{" "}
-                {factors.gas ?? "-"}{" "}
-                {factors.units?.gas === "kg CO2-e per GJ" ? "kg/GJ" : "kg/kWh-eq"}
+            <details className="bg-white/70 rounded-lg p-3 border border-orange-200">
+              <summary className="text-sm font-medium text-orange-700 cursor-pointer">
+                Calculation details
+              </summary>
+              <div className="mt-2 text-xs text-slate-700 space-y-1">
+                {factors && (
+                  <div>Electricity factor: {factors.electricity ?? "-"} kg CO₂-e/kWh</div>
+                )}
+                <div>Bill→kWh assumption: price 0.25 $/kWh (configurable)</div>
+                <div>Household adjustment applies only when using bill-based estimation</div>
               </div>
-            )}
+            </details>
 
             {/* Advanced options */}
             <button
@@ -283,6 +330,9 @@ export default function QuizElectricity({
                       </button>
                     ))}
                   </div>
+                </div>
+                <div className="text-xs text-slate-500">
+                  Advanced multipliers are based on energyrating.gov.au (conservative defaults)
                 </div>
               </div>
             )}
