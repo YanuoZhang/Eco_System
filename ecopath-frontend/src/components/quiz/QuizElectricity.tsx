@@ -159,24 +159,26 @@ export default function QuizElectricity({
             </div>
 
             {/* Household slider */}
-            <div>
-              <div className="text-slate-800 font-semibold mb-2">
-                Household size: {household} {household === 1 ? "person" : "people"}
+            {!knowKwh && (
+              <div>
+                <div className="text-slate-800 font-semibold mb-2">
+                  Household size: {household} {household === 1 ? "person" : "people"}
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={8}
+                  step={1}
+                  value={household}
+                  onChange={(e) => setHousehold(Number(e.target.value))}
+                  className="w-full h-3 bg-orange-200 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>1 person</span>
+                  <span>8+ people</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={1}
-                max={8}
-                step={1}
-                value={household}
-                onChange={(e) => setHousehold(Number(e.target.value))}
-                className="w-full h-3 bg-orange-200 rounded-lg appearance-none cursor-pointer slider"
-              />
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>1 person</span>
-                <span>8+ people</span>
-              </div>
-            </div>
+            )}
 
             {/* Known kWh toggle + input (same position as refer) */}
             <label className="flex items-center gap-3 cursor-pointer">

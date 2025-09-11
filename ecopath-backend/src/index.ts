@@ -364,6 +364,8 @@ interface EmissionsCalculationResponse {
 }
 
 // Emissions factors (kg CO2-e per unit)
+// Fixed combustion factor for natural gas Scope 1 (kg CO2-e per GJ)
+const GAS_SCOPE1_KG_PER_GJ = 51.5;
 const EMISSIONS_FACTORS = {
   // Energy emissions factors (kg CO2-e per kWh)
   electricity: {
@@ -442,8 +444,10 @@ async function getDbGasFactorKgPerGJ(state: string): Promise<number | null> {
     `;
     const r = await pool.query(q, [state]);
     if (r.rows.length > 0 && r.rows[0].avg_kg_per_gj != null) {
-      const v = r.rows[0].avg_kg_per_gj;
-      return typeof v === "number" ? v : Number(v);
+      const scope3 = r.rows[0].avg_kg_per_gj;
+      const scope3Num = typeof scope3 === "number" ? scope3 : Number(scope3);
+      // Return total factor: Scope1 (combustion) + Scope3 (upstream)
+      return scope3Num + GAS_SCOPE1_KG_PER_GJ;
     }
     return null;
   } catch {

@@ -15,8 +15,13 @@ export default function QuizPage() {
   const [selectedState, setSelectedState] = useState<string>("VIC");
   const [showResults, setShowResults] = useState(false);
   const [timeUnit, setTimeUnit] = useState<"month" | "quarter" | "year">("month");
-  const [factors, setFactors] = useState<{ electricity?: number } | null>(null);
+  const [factors, setFactors] = useState<{
+    electricity?: number;
+    gas?: number;
+    units?: { gas?: string };
+  } | null>(null);
   const [electricityEmissions, setElectricityEmissions] = useState<number>(0);
+  const [hotWaterEmissions, setHotWaterEmissions] = useState<number>(0);
 
   useEffect(() => {
     ApiService.getStates()
@@ -27,7 +32,9 @@ export default function QuizPage() {
   useEffect(() => {
     if (!selectedState) return;
     ApiService.getEmissionsFactors(selectedState)
-      .then((data) => setFactors(data as { electricity?: number }))
+      .then((data) =>
+        setFactors(data as { electricity?: number; gas?: number; units?: { gas?: string } }),
+      )
       .catch(() => setFactors(null));
   }, [selectedState]);
 
@@ -62,13 +69,21 @@ export default function QuizPage() {
                 setElectricityEmissions(v.electricityEmissionsKgYear);
             }}
           />
-          <QuizHotWater />
+          <QuizHotWater
+            timeUnit={timeUnit}
+            factors={factors}
+            onChange={(v) => {
+              if (v.timeUnit) setTimeUnit(v.timeUnit);
+              if (typeof v.hotWaterEmissionsKgYear === "number")
+                setHotWaterEmissions(v.hotWaterEmissionsKgYear);
+            }}
+          />
           <QuizAppliances />
           <QuizTransport />
         </div>
       </section>
       <QuizFloatingPreview
-        valueKgYear={electricityEmissions}
+        valueKgYear={electricityEmissions + hotWaterEmissions}
         timeUnit={timeUnit}
         onOpen={() => setShowResults(true)}
       />
