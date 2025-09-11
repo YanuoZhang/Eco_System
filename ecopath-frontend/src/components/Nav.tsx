@@ -1,0 +1,99 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+type Palette = {
+  bg: string;
+  border: string;
+  brandClass: string;
+  linkClass: string;
+  hoverClass: string;
+  activeClass: string;
+};
+
+const routeColors: Record<string, Palette> = {
+  "/": {
+    // Restore original grey-blue style for home
+    bg: "rgb(36, 73, 89)",
+    border: "rgba(71,85,105,0.3)",
+    brandClass: "text-blue-300",
+    linkClass: "text-slate-200",
+    hoverClass: "hover:text-blue-300",
+    activeClass: "text-white",
+  },
+  "/quiz": {
+    // Keep same style as home for consistency
+    bg: "rgba(255,255,255,0.9)",
+    border: "rgba(251,146,60,0.5)",
+    brandClass: "text-orange-700",
+    linkClass: "text-slate-700",
+    hoverClass: "hover:text-orange-600",
+    activeClass: "text-orange-600",
+  },
+  "/pledge": {
+    bg: "rgb(20, 78, 74)",
+    border: "rgba(45,106,79,0.35)",
+    brandClass: "text-emerald-200",
+    linkClass: "text-emerald-100",
+    hoverClass: "hover:text-emerald-300",
+    activeClass: "text-white",
+  },
+  "/info": {
+    bg: "rgb(54, 65, 82)",
+    border: "rgba(71,85,105,0.35)",
+    brandClass: "text-blue-300",
+    linkClass: "text-slate-200",
+    hoverClass: "hover:text-blue-300",
+    activeClass: "text-white",
+  },
+  "/about": {
+    bg: "rgb(67, 56, 202)",
+    border: "rgba(99,102,241,0.35)",
+    brandClass: "text-indigo-200",
+    linkClass: "text-indigo-100",
+    hoverClass: "hover:text-white",
+    activeClass: "text-white",
+  },
+};
+
+export default function Nav() {
+  const pathname = usePathname() || "/";
+  const palette = routeColors[pathname] || routeColors["/"];
+
+  const linkBase = `transition-colors ${palette.linkClass} ${palette.hoverClass}`;
+  const isActive = (href: string) => (pathname === href ? palette.activeClass : undefined);
+
+  return (
+    <>
+      <nav
+        className="fixed top-0 left-0 right-0 z-40 border-b h-16"
+        style={{ backgroundColor: palette.bg, borderColor: palette.border }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16">
+          <div className="h-full flex items-center justify-between">
+            <div className={`font-semibold text-xl ${palette.brandClass}`}>EcoPath</div>
+            <div className="hidden md:flex items-center space-x-8">
+              <Link href="/" className={`${linkBase} ${isActive("/")}`}>
+                Home
+              </Link>
+              <Link href="/quiz" className={`${linkBase} ${isActive("/quiz")}`}>
+                Explore My Impact
+              </Link>
+              <Link href="/pledge" className={`${linkBase} ${isActive("/pledge")}`}>
+                My Pledge
+              </Link>
+              <Link href="/info" className={`${linkBase} ${isActive("/info")}`}>
+                Info
+              </Link>
+              <Link href="/about" className={`${linkBase} ${isActive("/about")}`}>
+                About
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+      {/* no extra spacer; use layout padding to offset fixed header */}
+    </>
+  );
+}
