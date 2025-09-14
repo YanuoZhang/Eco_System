@@ -15,7 +15,7 @@ CREATE TEMP TABLE _tmp_fuel_econ (
   lpg_cng_l_per_100km NUMERIC
 );
 
-\copy _tmp_fuel_econ(state_id, vehicle_type, petrol_l_per_100km, diesel_l_per_100km, lpg_cng_l_per_100km) FROM 'fuel_economy.csv' CSV HEADER;
+\copy _tmp_fuel_econ(state_id, vehicle_type, petrol_l_per_100km, diesel_l_per_100km, lpg_cng_l_per_100km) FROM fuel_economy.csv CSV HEADER;
 
 -- Upsert
 INSERT INTO fuel_economy_raw(year, state_id, vehicle_type, petrol_l_per_100km, diesel_l_per_100km, lpg_cng_l_per_100km)

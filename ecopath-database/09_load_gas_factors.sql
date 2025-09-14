@@ -15,7 +15,7 @@ CREATE TEMP TABLE _tmp_gas(
   non_metro  TEXT
 );
 
-\copy _tmp_gas(state_name, metro, non_metro) FROM 'gas_factors-2024.csv' CSV HEADER;
+\copy _tmp_gas(state_name, metro, non_metro) FROM gas_factors-2024.csv CSV HEADER;
 
 -- Metro
 INSERT INTO gas_factor_by_state(year, state_id, area_type, kg_co2e_per_gj)
