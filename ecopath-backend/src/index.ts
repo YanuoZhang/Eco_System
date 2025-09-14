@@ -7,6 +7,8 @@ import { pool, testConnection } from "./config/database";
 import { parseString } from 'xml2js';
 import fetch from 'node-fetch';
 import * as cron from 'node-cron';
+import { summarizeText } from "./gemini";
+
 
 dotenv.config();
 
@@ -1852,52 +1854,60 @@ function determineNewsLabel(headline: string, summary: string): NewsItem['label'
 }
 
 // Function to fetch and parse RSS feed
+// 获取气候新闻并调用 Gemini 生成摘要
 async function fetchClimateNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch('https://www.climatecouncil.org.au/feed');
+    const response = await fetch("https://www.climatecouncil.org.au/feed");
     const xmlData = await response.text();
-    
-    return new Promise((resolve, reject) => {
-      parseString(xmlData, (err: any, result: any) => {
-        if (err) {
-          reject(err);
-          return;
-        }
 
-        const items = result.rss.channel[0].item || [];
-        const newsItems: NewsItem[] = items.slice(0, 10).map((item: any, index: number) => {
-          const headline = item.title[0];
-          const summary = item.description[0].replace(/<[^>]*>/g, '').substring(0, 200) + '...';
-          const content = item['content:encoded'] ? item['content:encoded'][0].replace(/<[^>]*>/g, '') : summary;
-          const link = item.link[0];
-          const pubDate = new Date(item.pubDate[0]);
-          
-          return {
-            id: `climate-${index + 1}`,
-            headline,
-            summary,
-            label: determineNewsLabel(headline, summary),
-            source: 'Climate Council Australia',
-            timestamp: pubDate.toLocaleString('en-AU', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-            link,
-            content
-          };
-        });
-
-        resolve(newsItems);
+    // 用 Promise 包装 parseString
+    const result: any = await new Promise((resolve, reject) => {
+      parseString(xmlData, (err: any, parsed: any) => {
+        if (err) reject(err);
+        else resolve(parsed);
       });
     });
+
+    const items = result.rss.channel[0].item || [];
+
+    // 取前 10 条新闻，并调用 Gemini 总结
+    const newsItems: NewsItem[] = await Promise.all(
+      items.slice(0, 10).map(async (item: any, index: number) => {
+        const headline = item.title[0];
+        const rawSummary = item.description[0].replace(/<[^>]*>/g, "").substring(0, 500);
+        const content = item["content:encoded"]
+          ? item["content:encoded"][0].replace(/<[^>]*>/g, "")
+          : rawSummary;
+
+        // ✅ 调用 gemini.ts 里的 summarizeText
+        const summary = await summarizeText(content || rawSummary);
+
+        return {
+          id: `climate-${index + 1}`,
+          headline,
+          summary,
+          label: determineNewsLabel(headline, summary),
+          source: "Climate Council Australia",
+          timestamp: new Date(item.pubDate[0]).toLocaleString("en-AU", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          link: item.link[0],
+          content,
+        };
+      })
+    );
+
+    return newsItems;
   } catch (error) {
-    console.error('Error fetching climate news:', error);
+    console.error("Error fetching climate news:", error);
     throw error;
   }
 }
+
 
 // News API endpoint
 app.get('/api/news/climate', async (req: Request, res: Response) => {
@@ -2036,6 +2046,21 @@ app.post('/api/news/climate/update', async (req: Request, res: Response) => {
   }
 });
 
+app.post("/api/news/summarize", async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, error: "Missing text" });
+    }
+
+    const summary = await summarizeText(text);
+    res.json({ success: true, summary });
+  } catch (err) {
+    console.error("❌ Summarization API error:", err);
+    res.status(500).json({ success: false, error: "Summarization failed" });
+  }
+});
+
 // Export app for testing
 export { app };
 
@@ -2068,3 +2093,5 @@ if (process.env.NODE_ENV !== "test") {
     console.log('Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)');
   });
 }
+
+
