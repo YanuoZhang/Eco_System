@@ -4,6 +4,9 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import swaggerUI from "swagger-ui-express";
 import { pool, testConnection } from "./config/database";
+import { parseString } from 'xml2js';
+import fetch from 'node-fetch';
+import * as cron from 'node-cron';
 
 dotenv.config();
 
@@ -20,16 +23,20 @@ app.get("/", (_req: Request, res: Response) => {
     message: "EcoPath Backend API",
     version: "1.0.0",
     status: "running",
-    endpoints: {
-      health: "/healthz",
-      energyMix: "/api/energy-mix?state=VIC",
-      emissions: "/api/emissions?state=VIC&range=10y",
-      states: "/api/states",
-      climateTargets: "/api/climate-targets?state=VIC",
-      emissionsFactors: "/api/emissions/factors?state=VIC",
-      supportedUnits: "/api/emissions/supported-units",
-      calculateEmissions: "/api/emissions/calculate",
-    },
+      endpoints: {
+        health: "/healthz",
+        energyMix: "/api/energy-mix?state=VIC",
+        emissions: "/api/emissions?state=VIC&range=10y",
+        states: "/api/states",
+        climateTargets: "/api/climate-targets?state=VIC",
+        emissionsFactors: "/api/emissions/factors?state=VIC",
+        supportedUnits: "/api/emissions/supported-units",
+        calculateEmissions: "/api/emissions/calculate",
+        news: "/api/news/climate",
+        newsByCategory: "/api/news/climate/category/:category",
+        individualNews: "/api/news/climate/:id",
+        updateNews: "POST /api/news/climate/update"
+      },
   });
 });
 
@@ -1785,21 +1792,279 @@ const openapiDoc = {
 app.get("/openapi.json", (_req: Request, res: Response) => res.json(openapiDoc));
 app.use("/docs", swaggerUI.serve, swaggerUI.setup(openapiDoc));
 
+// News API interfaces and types
+interface NewsItem {
+  id: string;
+  headline: string;
+  summary: string;
+  label: "Critical" | "Update" | "Positive" | "Neutral" | "High Risk" | "Warning";
+  image?: string;
+  source: string;
+  timestamp: string;
+  link: string;
+  content?: string;
+}
+
+// Cache for news data
+let newsCache: NewsItem[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+// Weekly update function
+async function performWeeklyNewsUpdate(): Promise<void> {
+  try {
+    console.log('Starting weekly news update...');
+    const newsItems = await fetchClimateNews();
+    newsCache = newsItems;
+    lastFetchTime = Date.now();
+    console.log(`Weekly news update completed. Fetched ${newsItems.length} articles.`);
+  } catch (error) {
+    console.error('Error during weekly news update:', error);
+  }
+}
+
+
+// Function to determine news label based on content
+function determineNewsLabel(headline: string, summary: string): NewsItem['label'] {
+  const text = (headline + ' ' + summary).toLowerCase();
+  
+  if (text.includes('record') || text.includes('unprecedented') || text.includes('critical')) {
+    return 'Critical';
+  }
+  
+  if (text.includes('flood') || text.includes('fire') || text.includes('cyclone') || text.includes('disaster')) {
+    return 'High Risk';
+  }
+  
+  if (text.includes('warning') || text.includes('alert') || text.includes('threat')) {
+    return 'Warning';
+  }
+  
+  if (text.includes('renewable') || text.includes('solar') || text.includes('wind') || text.includes('positive')) {
+    return 'Positive';
+  }
+  
+  if (text.includes('update') || text.includes('report') || text.includes('study')) {
+    return 'Update';
+  }
+  
+  return 'Neutral';
+}
+
+// Function to fetch and parse RSS feed
+async function fetchClimateNews(): Promise<NewsItem[]> {
+  try {
+    const response = await fetch('https://www.climatecouncil.org.au/feed');
+    const xmlData = await response.text();
+    
+    return new Promise((resolve, reject) => {
+      parseString(xmlData, (err: any, result: any) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        const items = result.rss.channel[0].item || [];
+        const newsItems: NewsItem[] = items.slice(0, 10).map((item: any, index: number) => {
+          const headline = item.title[0];
+          const summary = item.description[0].replace(/<[^>]*>/g, '').substring(0, 200) + '...';
+          const content = item['content:encoded'] ? item['content:encoded'][0].replace(/<[^>]*>/g, '') : summary;
+          const link = item.link[0];
+          const pubDate = new Date(item.pubDate[0]);
+          
+          return {
+            id: `climate-${index + 1}`,
+            headline,
+            summary,
+            label: determineNewsLabel(headline, summary),
+            source: 'Climate Council Australia',
+            timestamp: pubDate.toLocaleString('en-AU', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            link,
+            content
+          };
+        });
+
+        resolve(newsItems);
+      });
+    });
+  } catch (error) {
+    console.error('Error fetching climate news:', error);
+    throw error;
+  }
+}
+
+// News API endpoint
+app.get('/api/news/climate', async (req: Request, res: Response) => {
+  try {
+    const now = Date.now();
+    
+    // Check if cache is still valid
+    if (newsCache.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+      return res.json({
+        success: true,
+        data: newsCache,
+        cached: true,
+        lastUpdated: new Date(lastFetchTime).toISOString()
+      });
+    }
+
+    // Fetch fresh news
+    const newsItems = await fetchClimateNews();
+    newsCache = newsItems;
+    lastFetchTime = now;
+
+    res.json({
+      success: true,
+      data: newsItems,
+      cached: false,
+      lastUpdated: new Date(lastFetchTime).toISOString()
+    });
+  } catch (error) {
+    console.error('Error in climate news API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch climate news',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// News by category endpoint
+app.get('/api/news/climate/category/:category', async (req: Request, res: Response) => {
+  try {
+    const { category } = req.params;
+    const validCategories = ['Critical', 'High Risk', 'Warning', 'Update', 'Positive', 'Neutral'];
+    
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid category',
+        message: `Category must be one of: ${validCategories.join(', ')}`
+      });
+    }
+
+    const now = Date.now();
+    
+    // Check cache or fetch fresh data
+    if (newsCache.length === 0 || (now - lastFetchTime) >= CACHE_DURATION) {
+      const newsItems = await fetchClimateNews();
+      newsCache = newsItems;
+      lastFetchTime = now;
+    }
+
+    const filteredNews = newsCache.filter(item => item.label === category);
+
+    res.json({
+      success: true,
+      data: filteredNews,
+      category,
+      count: filteredNews.length
+    });
+  } catch (error) {
+    console.error('Error in climate news category API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch climate news by category',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Individual news item endpoint
+app.get('/api/news/climate/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const now = Date.now();
+    
+    // Check cache or fetch fresh data
+    if (newsCache.length === 0 || (now - lastFetchTime) >= CACHE_DURATION) {
+      const newsItems = await fetchClimateNews();
+      newsCache = newsItems;
+      lastFetchTime = now;
+    }
+
+    const newsItem = newsCache.find(item => item.id === id);
+
+    if (!newsItem) {
+      return res.status(404).json({
+        success: false,
+        error: 'News item not found',
+        message: `No news item found with ID: ${id}`
+      });
+    }
+
+    res.json({
+      success: true,
+      data: newsItem
+    });
+  } catch (error) {
+    console.error('Error in individual news API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch news item',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Manual news update endpoint
+app.post('/api/news/climate/update', async (req: Request, res: Response) => {
+  try {
+    console.log('Manual news update triggered via API...');
+    await performWeeklyNewsUpdate();
+    
+    res.json({
+      success: true,
+      message: 'News update completed successfully',
+      lastUpdated: new Date(lastFetchTime).toISOString(),
+      articleCount: newsCache.length
+    });
+  } catch (error) {
+    console.error('Error in manual news update:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update news',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Export app for testing
 export { app };
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== "test") {
   app.listen(port, async () => {
-    console.log(`🚀 API server listening on http://localhost:${port}`);
-    console.log(`📚 OpenAPI docs available at http://localhost:${port}/docs`);
-    console.log(`🔍 OpenAPI spec available at http://localhost:${port}/openapi.json`);
+    console.log(`API server listening on http://localhost:${port}`);
+    console.log(`OpenAPI docs available at http://localhost:${port}/docs`);
+    console.log(`OpenAPI spec available at http://localhost:${port}/openapi.json`);
 
     // Test database connection
     try {
       await testConnection();
     } catch {
-      console.warn("⚠️  Database connection failed. Some endpoints may not work properly.");
+      console.warn("Database connection failed. Some endpoints may not work properly.");
     }
+
+    // Schedule weekly news updates (every Monday at 9:00 AM)
+    cron.schedule('0 9 * * 1', () => {
+      performWeeklyNewsUpdate();
+    }, {
+      scheduled: true,
+      timezone: "Australia/Sydney"
+    });
+
+    // Also perform initial news fetch on startup
+    console.log('Performing initial news fetch...');
+    performWeeklyNewsUpdate();
+
+    console.log('Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)');
   });
 }
