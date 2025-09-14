@@ -20,6 +20,7 @@ CREATE TABLE emission_raw (
 
 -- Load CSV from current working directory (CI cd into ecopath-database/data before invoking)
 \echo Loading emissions from file in current dir: Emissions_by_state.csv
+\echo Loading emissions from file in current dir: Emissions_by_state.csv
 \copy emission_raw FROM 'Emissions_by_state.csv' WITH (FORMAT csv, HEADER true)
 
 

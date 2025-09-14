@@ -31,7 +31,7 @@ CREATE TEMP TABLE _tmp_elec_factors (
 );
 
 -- Load CSV (one line; no semicolon)
-\copy _tmp_elec_factors(power_region, scope2_kg_per_kwh, scope3_kg_per_kwh) FROM 'electricity_factors-2024.csv' CSV HEADER;
+\copy _tmp_elec_factors(power_region, scope2_kg_per_kwh, scope3_kg_per_kwh) FROM electricity_factors-2024.csv CSV HEADER;
 
 -- Upsert into raw with readable column names
 INSERT INTO electricity_factor_raw (
