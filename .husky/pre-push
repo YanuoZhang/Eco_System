@@ -8,3 +8,8 @@ if [ "$branch_name" = "main" ]; then
 fi
 
 echo "[Husky] Root pre-push checks passed (no source in root)."
+
+# Run frontend E2E tests before pushing
+echo "[Husky] Running frontend E2E tests (Playwright)..."
+npm --workspace ecopath-frontend run test:e2e || exit 1
+echo "[Husky] E2E tests passed."
