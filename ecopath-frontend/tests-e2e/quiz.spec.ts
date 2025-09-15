@@ -5,7 +5,7 @@ test("Quiz page: change time unit and see preview", async ({ page }) => {
 
   // Ensure time unit controls exist and click year
   await expect(page.getByRole("button", { name: /^month$/ })).toBeVisible();
-  await page.getByRole("button", { name: /^year$/ }).click();
+  await page.getByRole("button", { name: /^year$/ }).click({ noWaitAfter: true });
 
   // Scroll some section to simulate interaction
   await page
