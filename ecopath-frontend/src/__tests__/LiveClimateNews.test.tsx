@@ -35,16 +35,20 @@ describe("LiveClimateNews", () => {
 });
 
 describe("ClimateNewsCard", () => {
-  it("flips to show AI insight and back", () => {
+  it("flips to show AI insight and back; updates aria-pressed and aria-label", () => {
     render(<ClimateNewsCard headline="H1" summary="S1" label="Critical" insight="INSIGHT" />);
-    // front has summary text
-    expect(screen.getByText("S1")).toBeInTheDocument();
+    const btn = screen.getByRole("button");
+    expect(btn).toHaveAttribute('aria-pressed', 'false');
+    expect(btn).toHaveAttribute('aria-label', 'Show AI insight');
     // click to flip
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(btn);
     expect(screen.getByText(/AI Insight Analysis/i)).toBeInTheDocument();
     expect(screen.getByText("INSIGHT")).toBeInTheDocument();
+    expect(btn).toHaveAttribute('aria-pressed', 'true');
+    expect(btn).toHaveAttribute('aria-label', 'Show headline');
     // click to return
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(btn);
     expect(screen.getByText("S1")).toBeInTheDocument();
+    expect(btn).toHaveAttribute('aria-pressed', 'false');
   });
 });

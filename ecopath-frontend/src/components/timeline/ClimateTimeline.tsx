@@ -96,7 +96,6 @@ export default function ClimateTimeline() {
       ref={sectionRef}
       aria-label="Climate Timeline"
       className="py-12 relative overflow-hidden"
-      style={{ background: "linear-gradient(to bottom, rgb(71, 105, 122), rgb(91, 125, 142))" }}
     >
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-slate-400/10 rounded-full blur-3xl" />
