@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useMemo } from "react";
+import { useState, useEffect, useId, useMemo, useCallback } from "react";
 
 type Props = {
   open?: boolean;
@@ -29,7 +29,7 @@ export default function QuizHotWater({
   const [energySaving, setEnergySaving] = useState<boolean>(false);
   const [usageKnown, setUsageKnown] = useState<boolean>(false);
   const [knownUsage, setKnownUsage] = useState<string>(""); // energy usage per period (string allows empty)
-  const [hotWaterCost, setHotWaterCost] = useState<number>(50); // legacy (not used when usageKnown)
+  // Removed legacy cost-based path to avoid unused state and keep logic simple
   const [household, setHousehold] = useState<number>(1);
 
   // Local fallback timeUnit when parent is not controlling it
@@ -42,17 +42,21 @@ export default function QuizHotWater({
       setUsageKnown(false);
       setKnownUsage("");
     }
-  }, [hotWaterSystem]);
+    // include values that are checked inside the effect
+  }, [hotWaterSystem, usageKnown, knownUsage]);
 
   // Helper: compute gas emissions from energy in MJ using factor units
-  const computeGasEmissionsKg = (energyMJ: number, multiplier: number) => {
-    const gasFactor = factors?.gas ?? 0.18; // default aligns with backend fallback (kg/kWh-eq)
-    const gasUnit = factors?.units?.gas ?? "kg CO2-e per kWh equivalent";
-    const kg = gasUnit.includes("per GJ")
-      ? (energyMJ / 1000) * gasFactor // MJ -> GJ
-      : (energyMJ / 3.6) * gasFactor; // MJ -> kWh-eq
-    return kg * multiplier;
-  };
+  const computeGasEmissionsKg = useCallback(
+    (energyMJ: number, multiplier: number) => {
+      const gasFactor = factors?.gas ?? 0.18; // default aligns with backend fallback (kg/kWh-eq)
+      const gasUnit = factors?.units?.gas ?? "kg CO2-e per kWh equivalent";
+      const kg = gasUnit.includes("per GJ")
+        ? (energyMJ / 1000) * gasFactor // MJ -> GJ
+        : (energyMJ / 3.6) * gasFactor; // MJ -> kWh-eq
+      return kg * multiplier;
+    },
+    [factors],
+  );
 
   // Derived UI label/unit for known usage input
   const usageUnit = hotWaterSystem === "gas" ? "MJ" : "kWh";
@@ -80,27 +84,6 @@ export default function QuizHotWater({
       } else if (hotWaterSystem === "gas") {
         // knownUsage is MJ for gas
         emissionsKgPeriod = computeGasEmissionsKg(knownUsageValue, energySavingMultiplier);
-      }
-    } else if (hotWaterCost > 0 && false) {
-      // cost-based path (disabled by default but retained for reference)
-      let energyPerDollar = 0;
-      switch (hotWaterSystem) {
-        case "electric":
-          energyPerDollar = 4.0; // kWh per dollar (assuming $0.25/kWh)
-          break;
-        case "gas":
-          energyPerDollar = 16.0; // MJ per dollar (assuming $0.25/MJ)
-          break;
-        case "solar":
-          energyPerDollar = 4.0; // kWh per dollar (auxiliary heating)
-          break;
-      }
-      const periodEnergy = hotWaterCost * energyPerDollar;
-      if (hotWaterSystem === "electric" || hotWaterSystem === "solar") {
-        const electricityFactor = factors?.electricity ?? 0.8;
-        emissionsKgPeriod = periodEnergy * electricityFactor * energySavingMultiplier;
-      } else if (hotWaterSystem === "gas") {
-        emissionsKgPeriod = computeGasEmissionsKg(periodEnergy, energySavingMultiplier);
       }
     } else {
       // If user doesn't know usage, estimate based on household size
@@ -153,7 +136,7 @@ export default function QuizHotWater({
     factors,
     usageKnown,
     knownUsageValue,
-    hotWaterCost,
+    computeGasEmissionsKg,
   ]);
 
   useEffect(() => {

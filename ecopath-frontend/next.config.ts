@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "readdy.ai",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

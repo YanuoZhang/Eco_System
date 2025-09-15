@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
 
 // Removed unused Period type to satisfy linter
 
@@ -166,10 +167,11 @@ export default function ClimateTimeline() {
           <div className="flex flex-col lg:grid lg:grid-cols-2 min-h-[380px]">
             {/* Image */}
             <div className="relative order-1 lg:order-2">
-              <img
+              <Image
                 src={active.visual}
                 alt={active.title}
-                className="w-full h-48 sm:h-64 lg:h-full object-cover object-center"
+                fill
+                className="object-cover object-center"
               />
               <div
                 className={

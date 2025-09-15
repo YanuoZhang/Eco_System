@@ -3,6 +3,7 @@ import Hero from "@/components/home/Hero";
 import ClimateTimeline from "@/components/timeline/ClimateTimeline";
 import CallToAction from "@/components/home/CallToAction";
 import BottomFooter from "@/components/home/BottomFooter";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -10,16 +11,18 @@ export default function Home() {
       className="min-h-screen overflow-x-hidden"
       style={{
         background:
-          'linear-gradient(180deg, #3b6a7a 0%, #3b6a7a 50%, rgb(111, 145, 162) 75%, rgb(52, 151, 142) 90%)',
+          "linear-gradient(180deg, #3b6a7a 0%, #3b6a7a 50%, rgb(111, 145, 162) 75%, rgb(52, 151, 142) 90%)",
       }}
     >
       {/* Hero background (aligned with refer style) */}
       <section className="pt-16 sm:pt-20 pb-4 relative overflow-hidden">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/assets/home_bg.jpg"
             alt="Climate landscape background"
-            className="w-full h-full object-cover object-center"
+            fill
+            priority
+            className="object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#244959]/80 via-[#2b5264]/60 to-[#3b6a7a]/30" />
           <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-slate-400/10 rounded-full blur-3xl" />
@@ -40,11 +43,14 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <div className="rounded-xl bg-slate-700/40 backdrop-blur-sm border border-slate-400/20 px-5 sm:px-8 py-5 text-center">
               <p className="text-slate-200">
-                Want to explore detailed climate data and evidence analysis? Check out our{' '}
-                <a href="/info" className="text-blue-200 hover:text-cyan-200 underline cursor-pointer transition-colors">
+                Want to explore detailed climate data and evidence analysis? Check out our{" "}
+                <a
+                  href="/info"
+                  className="text-blue-200 hover:text-cyan-200 underline cursor-pointer transition-colors"
+                >
                   comprehensive data analysis page
-                </a>
-                {' '}for emissions breakdown, energy structure, and environmental indicators.
+                </a>{" "}
+                for emissions breakdown, energy structure, and environmental indicators.
               </p>
             </div>
           </div>
