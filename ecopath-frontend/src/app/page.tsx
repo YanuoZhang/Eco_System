@@ -1,5 +1,6 @@
 import LiveClimateNews from "@/components/news/LiveClimateNews";
 import Hero from "@/components/home/Hero";
+import ClimateTimeline from "@/components/timeline/ClimateTimeline";
 
 export default function Home() {
   return (
@@ -23,6 +24,7 @@ export default function Home() {
       <main className="mx-auto max-w-6xl px-6 pb-10 sm:pb-12">
         {/* Climate section only (aligned with refer background style) */}
         <LiveClimateNews />
+        <ClimateTimeline />
       </main>
     </div>
   );
