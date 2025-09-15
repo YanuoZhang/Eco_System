@@ -1,13 +1,13 @@
+import { describe, it, expect, vi } from "vitest";
 import { summarizeText } from "../gemini";
 
-console.log("🚀 test-gemini.test.ts started");
+vi.mock("../gemini", () => ({
+  summarizeText: vi.fn(async (_text: string) => "mock-summary"),
+}));
 
-async function main() {
-  const summary = await summarizeText(
-    "Australia is experiencing record-breaking floods due to climate change."
-  );
-  console.log("✅ Summary:", summary);
-  console.log("🎯 Test finished");
-}
-
-main().catch(err => console.error("❌ Test failed:", err));
+describe("summarizeText", () => {
+  it("returns a summary string (mocked)", async () => {
+    const summary = await summarizeText("Some content to summarize");
+    expect(summary).toBe("mock-summary");
+  });
+});

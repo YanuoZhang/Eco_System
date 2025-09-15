@@ -4,11 +4,10 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import swaggerUI from "swagger-ui-express";
 import { pool, testConnection } from "./config/database";
-import { parseString } from 'xml2js';
-import fetch from 'node-fetch';
-import * as cron from 'node-cron';
+import { parseString } from "xml2js";
+import fetch from "node-fetch";
+import * as cron from "node-cron";
 import { summarizeText } from "./gemini";
-
 
 dotenv.config();
 
@@ -18,6 +17,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 5001;
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(express.static("public"));
 
 // Root endpoint
 app.get("/", (_req: Request, res: Response) => {
@@ -25,20 +25,22 @@ app.get("/", (_req: Request, res: Response) => {
     message: "EcoPath Backend API",
     version: "1.0.0",
     status: "running",
-      endpoints: {
-        health: "/healthz",
-        energyMix: "/api/energy-mix?state=VIC",
-        emissions: "/api/emissions?state=VIC&range=10y",
-        states: "/api/states",
-        climateTargets: "/api/climate-targets?state=VIC",
-        emissionsFactors: "/api/emissions/factors?state=VIC",
-        supportedUnits: "/api/emissions/supported-units",
-        calculateEmissions: "/api/emissions/calculate",
-        news: "/api/news/climate",
-        newsByCategory: "/api/news/climate/category/:category",
-        individualNews: "/api/news/climate/:id",
-        updateNews: "POST /api/news/climate/update"
-      },
+    endpoints: {
+      health: "/healthz",
+      energyMix: "/api/energy-mix?state=VIC",
+      emissions: "/api/emissions?state=VIC&range=10y",
+      states: "/api/states",
+      climateTargets: "/api/climate-targets?state=VIC",
+      emissionsFactors: "/api/emissions/factors?state=VIC",
+      supportedUnits: "/api/emissions/supported-units",
+      calculateEmissions: "/api/emissions/calculate",
+      news: "/api/news/climate",
+      newsByCategory: "/api/news/climate/category/:category",
+      individualNews: "/api/news/climate/:id",
+      updateNews: "POST /api/news/climate/update",
+      timeline: "/api/timeline",
+      timelinePeriod: "/api/timeline/:period",
+    },
   });
 });
 
@@ -1815,42 +1817,51 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 // Weekly update function
 async function performWeeklyNewsUpdate(): Promise<void> {
   try {
-    console.log('Starting weekly news update...');
+    console.log("Starting weekly news update...");
     const newsItems = await fetchClimateNews();
     newsCache = newsItems;
     lastFetchTime = Date.now();
     console.log(`Weekly news update completed. Fetched ${newsItems.length} articles.`);
   } catch (error) {
-    console.error('Error during weekly news update:', error);
+    console.error("Error during weekly news update:", error);
   }
 }
 
-
 // Function to determine news label based on content
-function determineNewsLabel(headline: string, summary: string): NewsItem['label'] {
-  const text = (headline + ' ' + summary).toLowerCase();
-  
-  if (text.includes('record') || text.includes('unprecedented') || text.includes('critical')) {
-    return 'Critical';
+function determineNewsLabel(headline: string, summary: string): NewsItem["label"] {
+  const text = (headline + " " + summary).toLowerCase();
+
+  if (text.includes("record") || text.includes("unprecedented") || text.includes("critical")) {
+    return "Critical";
   }
-  
-  if (text.includes('flood') || text.includes('fire') || text.includes('cyclone') || text.includes('disaster')) {
-    return 'High Risk';
+
+  if (
+    text.includes("flood") ||
+    text.includes("fire") ||
+    text.includes("cyclone") ||
+    text.includes("disaster")
+  ) {
+    return "High Risk";
   }
-  
-  if (text.includes('warning') || text.includes('alert') || text.includes('threat')) {
-    return 'Warning';
+
+  if (text.includes("warning") || text.includes("alert") || text.includes("threat")) {
+    return "Warning";
   }
-  
-  if (text.includes('renewable') || text.includes('solar') || text.includes('wind') || text.includes('positive')) {
-    return 'Positive';
+
+  if (
+    text.includes("renewable") ||
+    text.includes("solar") ||
+    text.includes("wind") ||
+    text.includes("positive")
+  ) {
+    return "Positive";
   }
-  
-  if (text.includes('update') || text.includes('report') || text.includes('study')) {
-    return 'Update';
+
+  if (text.includes("update") || text.includes("report") || text.includes("study")) {
+    return "Update";
   }
-  
-  return 'Neutral';
+
+  return "Neutral";
 }
 
 // Function to fetch and parse RSS feed
@@ -1898,7 +1909,7 @@ async function fetchClimateNews(): Promise<NewsItem[]> {
           link: item.link[0],
           content,
         };
-      })
+      }),
     );
 
     return newsItems;
@@ -1908,19 +1919,18 @@ async function fetchClimateNews(): Promise<NewsItem[]> {
   }
 }
 
-
 // News API endpoint
-app.get('/api/news/climate', async (req: Request, res: Response) => {
+app.get("/api/news/climate", async (req: Request, res: Response) => {
   try {
     const now = Date.now();
-    
+
     // Check if cache is still valid
-    if (newsCache.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+    if (newsCache.length > 0 && now - lastFetchTime < CACHE_DURATION) {
       return res.json({
         success: true,
         data: newsCache,
         cached: true,
-        lastUpdated: new Date(lastFetchTime).toISOString()
+        lastUpdated: new Date(lastFetchTime).toISOString(),
       });
     }
 
@@ -1933,119 +1943,120 @@ app.get('/api/news/climate', async (req: Request, res: Response) => {
       success: true,
       data: newsItems,
       cached: false,
-      lastUpdated: new Date(lastFetchTime).toISOString()
+      lastUpdated: new Date(lastFetchTime).toISOString(),
     });
   } catch (error) {
-    console.error('Error in climate news API:', error);
+    console.error("Error in climate news API:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch climate news',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      error: "Failed to fetch climate news",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // News by category endpoint
-app.get('/api/news/climate/category/:category', async (req: Request, res: Response) => {
+app.get("/api/news/climate/category/:category", async (req: Request, res: Response) => {
   try {
     const { category } = req.params;
-    const validCategories = ['Critical', 'High Risk', 'Warning', 'Update', 'Positive', 'Neutral'];
-    
+    const validCategories = ["Critical", "High Risk", "Warning", "Update", "Positive", "Neutral"];
+
     if (!validCategories.includes(category)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid category',
-        message: `Category must be one of: ${validCategories.join(', ')}`
+        error: "Invalid category",
+        message: `Category must be one of: ${validCategories.join(", ")}`,
       });
     }
 
     const now = Date.now();
-    
+
     // Check cache or fetch fresh data
-    if (newsCache.length === 0 || (now - lastFetchTime) >= CACHE_DURATION) {
+    if (newsCache.length === 0 || now - lastFetchTime >= CACHE_DURATION) {
       const newsItems = await fetchClimateNews();
       newsCache = newsItems;
       lastFetchTime = now;
     }
 
-    const filteredNews = newsCache.filter(item => item.label === category);
+    const filteredNews = newsCache.filter((item) => item.label === category);
 
     res.json({
       success: true,
       data: filteredNews,
       category,
-      count: filteredNews.length
+      count: filteredNews.length,
     });
   } catch (error) {
-    console.error('Error in climate news category API:', error);
+    console.error("Error in climate news category API:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch climate news by category',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      error: "Failed to fetch climate news by category",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Individual news item endpoint
-app.get('/api/news/climate/:id', async (req: Request, res: Response) => {
+app.get("/api/news/climate/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const now = Date.now();
-    
+
     // Check cache or fetch fresh data
-    if (newsCache.length === 0 || (now - lastFetchTime) >= CACHE_DURATION) {
+    if (newsCache.length === 0 || now - lastFetchTime >= CACHE_DURATION) {
       const newsItems = await fetchClimateNews();
       newsCache = newsItems;
       lastFetchTime = now;
     }
 
-    const newsItem = newsCache.find(item => item.id === id);
+    const newsItem = newsCache.find((item) => item.id === id);
 
     if (!newsItem) {
       return res.status(404).json({
         success: false,
-        error: 'News item not found',
-        message: `No news item found with ID: ${id}`
+        error: "News item not found",
+        message: `No news item found with ID: ${id}`,
       });
     }
 
     res.json({
       success: true,
-      data: newsItem
+      data: newsItem,
     });
   } catch (error) {
-    console.error('Error in individual news API:', error);
+    console.error("Error in individual news API:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch news item',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      error: "Failed to fetch news item",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
 // Manual news update endpoint
-app.post('/api/news/climate/update', async (req: Request, res: Response) => {
+app.post("/api/news/climate/update", async (req: Request, res: Response) => {
   try {
-    console.log('Manual news update triggered via API...');
+    console.log("Manual news update triggered via API...");
     await performWeeklyNewsUpdate();
-    
+
     res.json({
       success: true,
-      message: 'News update completed successfully',
+      message: "News update completed successfully",
       lastUpdated: new Date(lastFetchTime).toISOString(),
-      articleCount: newsCache.length
+      articleCount: newsCache.length,
     });
   } catch (error) {
-    console.error('Error in manual news update:', error);
+    console.error("Error in manual news update:", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update news',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      error: "Failed to update news",
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
 
+// Summarize arbitrary text via Gemini
 app.post("/api/news/summarize", async (req, res) => {
   try {
     const { text } = req.body;
@@ -2058,6 +2069,286 @@ app.post("/api/news/summarize", async (req, res) => {
   } catch (err) {
     console.error("❌ Summarization API error:", err);
     res.status(500).json({ success: false, error: "Summarization failed" });
+  }
+});
+
+// Climate Timeline API interfaces and data
+interface ClimateEvent {
+  year: number;
+  title: string;
+  description: string;
+  icon?: string;
+  category: "scientific" | "political" | "environmental" | "technological" | "social";
+}
+
+interface TimelinePeriod {
+  period: string;
+  years: string;
+  events: ClimateEvent[];
+}
+
+// Static climate timeline data
+const climateTimelineData: TimelinePeriod[] = [
+  {
+    period: "Early Industrial Era",
+    years: "1880–1950",
+    events: [
+      {
+        year: 1896,
+        title: "Arrhenius Discovers Greenhouse Effect",
+        description:
+          "Swedish scientist Svante Arrhenius first calculates how changes in atmospheric CO2 could affect Earth's temperature, laying the foundation for modern climate science.",
+        icon: "🔬",
+        category: "scientific",
+      },
+      {
+        year: 1938,
+        title: "Callendar Links CO2 to Warming",
+        description:
+          "British engineer Guy Callendar publishes evidence showing that CO2 levels had increased and global temperatures were rising, connecting human activities to climate change.",
+        icon: "📊",
+        category: "scientific",
+      },
+      {
+        year: 1950,
+        title: "Keeling Curve Begins",
+        description:
+          "Charles David Keeling starts measuring atmospheric CO2 at Mauna Loa Observatory, establishing the longest continuous record of atmospheric CO2 concentrations.",
+        icon: "📈",
+        category: "scientific",
+      },
+    ],
+  },
+  {
+    period: "Environmental Awakening",
+    years: "1951–1980",
+    events: [
+      {
+        year: 1962,
+        title: "Silent Spring Published",
+        description:
+          "Rachel Carson's groundbreaking book exposes the environmental damage caused by pesticides, sparking the modern environmental movement.",
+        icon: "📚",
+        category: "environmental",
+      },
+      {
+        year: 1970,
+        title: "First Earth Day",
+        description:
+          "20 million Americans participate in the first Earth Day, marking the birth of the modern environmental movement and raising awareness about environmental issues.",
+        icon: "🌍",
+        category: "social",
+      },
+      {
+        year: 1972,
+        title: "UN Stockholm Conference",
+        description:
+          "The first major international environmental conference establishes the United Nations Environment Programme (UNEP) and marks the beginning of global environmental governance.",
+        icon: "🏛️",
+        category: "political",
+      },
+      {
+        year: 1979,
+        title: "First World Climate Conference",
+        description:
+          "Scientists and policymakers meet in Geneva to discuss climate change, leading to the establishment of the World Climate Programme and increased international cooperation.",
+        icon: "🌐",
+        category: "political",
+      },
+    ],
+  },
+  {
+    period: "Climate Science Maturation",
+    years: "1981–2000",
+    events: [
+      {
+        year: 1985,
+        title: "Antarctic Ozone Hole Discovered",
+        description:
+          "British scientists discover a massive hole in the ozone layer over Antarctica, leading to the Montreal Protocol and demonstrating the power of international environmental cooperation.",
+        icon: "🕳️",
+        category: "environmental",
+      },
+      {
+        year: 1988,
+        title: "IPCC Established",
+        description:
+          "The Intergovernmental Panel on Climate Change is founded by the UN to provide scientific assessments of climate change, becoming the world's leading authority on climate science.",
+        icon: "🏛️",
+        category: "political",
+      },
+      {
+        year: 1992,
+        title: "Rio Earth Summit",
+        description:
+          "The United Nations Framework Convention on Climate Change (UNFCCC) is adopted at the Rio Earth Summit, establishing the foundation for international climate negotiations.",
+        icon: "🤝",
+        category: "political",
+      },
+      {
+        year: 1997,
+        title: "Kyoto Protocol Signed",
+        description:
+          "The first international treaty to set binding targets for reducing greenhouse gas emissions is adopted, marking a major step in global climate action.",
+        icon: "📜",
+        category: "political",
+      },
+      {
+        year: 1998,
+        title: "Hottest Year on Record",
+        description:
+          "1998 becomes the hottest year globally since records began, highlighting the accelerating pace of global warming and climate change impacts.",
+        icon: "🌡️",
+        category: "environmental",
+      },
+    ],
+  },
+  {
+    period: "Climate Crisis Recognition",
+    years: "2001–2020",
+    events: [
+      {
+        year: 2006,
+        title: "An Inconvenient Truth Released",
+        description:
+          "Al Gore's documentary brings climate change to mainstream audiences, winning an Academy Award and significantly raising public awareness about global warming.",
+        icon: "🎬",
+        category: "social",
+      },
+      {
+        year: 2007,
+        title: "IPCC Nobel Peace Prize",
+        description:
+          "The IPCC shares the Nobel Peace Prize with Al Gore for their efforts to build up and disseminate greater knowledge about climate change.",
+        icon: "🏆",
+        category: "scientific",
+      },
+      {
+        year: 2015,
+        title: "Paris Agreement Signed",
+        description:
+          "195 countries adopt the Paris Agreement, committing to limit global temperature rise to well below 2°C and pursue efforts to limit it to 1.5°C above pre-industrial levels.",
+        icon: "🌍",
+        category: "political",
+      },
+      {
+        year: 2018,
+        title: "IPCC 1.5°C Report",
+        description:
+          "The IPCC releases a special report warning that limiting global warming to 1.5°C requires rapid, far-reaching changes in all aspects of society.",
+        icon: "⚠️",
+        category: "scientific",
+      },
+      {
+        year: 2019,
+        title: "Global Climate Strikes",
+        description:
+          "Millions of people worldwide, led by youth activists like Greta Thunberg, participate in climate strikes demanding urgent action on climate change.",
+        icon: "✊",
+        category: "social",
+      },
+    ],
+  },
+  {
+    period: "Climate Emergency Era",
+    years: "2021–Present",
+    events: [
+      {
+        year: 2021,
+        title: "COP26 Glasgow Summit",
+        description:
+          "World leaders meet in Glasgow to accelerate action on climate change, with commitments to phase out coal and achieve net-zero emissions.",
+        icon: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+        category: "political",
+      },
+      {
+        year: 2022,
+        title: "Inflation Reduction Act",
+        description:
+          "The US passes its largest climate investment in history, providing $370 billion for clean energy and climate action, accelerating the transition to renewable energy.",
+        icon: "💰",
+        category: "political",
+      },
+      {
+        year: 2023,
+        title: "Hottest Year on Record",
+        description:
+          "2023 becomes the hottest year globally since records began, with extreme weather events worldwide highlighting the urgent need for climate action.",
+        icon: "🔥",
+        category: "environmental",
+      },
+      {
+        year: 2024,
+        title: "Renewable Energy Milestone",
+        description:
+          "Global renewable energy capacity reaches record levels, with solar and wind power becoming the cheapest sources of electricity in many regions.",
+        icon: "⚡",
+        category: "technological",
+      },
+      {
+        year: 2024,
+        title: "Climate Finance Breakthrough",
+        description:
+          "International climate finance reaches new heights, with developed countries providing over $100 billion annually to help developing nations address climate change.",
+        icon: "💚",
+        category: "political",
+      },
+    ],
+  },
+];
+
+// Climate Timeline API endpoint with fallback
+app.get("/api/timeline", (req: Request, res: Response) => {
+  try {
+    res.json({
+      success: true,
+      data: climateTimelineData,
+      totalPeriods: climateTimelineData.length,
+      totalEvents: climateTimelineData.reduce((sum, period) => sum + period.events.length, 0),
+      lastUpdated: new Date().toISOString(),
+      source: "api",
+    });
+  } catch (error) {
+    console.error("Error in climate timeline API:", error);
+
+    // Fallback: redirect to static JSON file
+    res.redirect("/climate-timeline.json");
+  }
+});
+
+// Climate Timeline by period endpoint
+app.get("/api/timeline/:period", (req: Request, res: Response) => {
+  try {
+    const { period } = req.params;
+    const periodIndex = parseInt(period);
+
+    if (isNaN(periodIndex) || periodIndex < 0 || periodIndex >= climateTimelineData.length) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid period",
+        message: `Period must be between 0 and ${climateTimelineData.length - 1}`,
+        availablePeriods: climateTimelineData.map((p, index) => ({
+          index,
+          period: p.period,
+          years: p.years,
+        })),
+      });
+    }
+
+    const timelinePeriod = climateTimelineData[periodIndex];
+
+    res.json({
+      success: true,
+      data: timelinePeriod,
+      totalEvents: timelinePeriod.events.length,
+    });
+  } catch (error) {
+    console.error("Error in climate timeline period API:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch climate timeline period",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 
@@ -2079,19 +2370,20 @@ if (process.env.NODE_ENV !== "test") {
     }
 
     // Schedule weekly news updates (every Monday at 9:00 AM)
-    cron.schedule('0 9 * * 1', () => {
-      performWeeklyNewsUpdate();
-    }, {
-      scheduled: true,
-      timezone: "Australia/Sydney"
-    });
+    cron.schedule(
+      "0 9 * * 1",
+      () => {
+        performWeeklyNewsUpdate();
+      },
+      {
+        timezone: "Australia/Sydney",
+      },
+    );
 
     // Also perform initial news fetch on startup
-    console.log('Performing initial news fetch...');
+    console.log("Performing initial news fetch...");
     performWeeklyNewsUpdate();
 
-    console.log('Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)');
+    console.log("Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)");
   });
 }
-
-
