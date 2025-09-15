@@ -16,3 +16,9 @@ test("Live Climate News: scroll into view and flip card", async ({ page }) => {
   await firstCard.click();
   await expect(firstCard).toHaveAttribute("aria-pressed", "false");
 });
+
+test("Unknown route shows 404 page", async ({ page }) => {
+  await page.goto("/some-unknown-route-123");
+  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  await expect(page.getByText(/not available/i)).toBeVisible();
+});

@@ -72,3 +72,13 @@ jobs:
       - name: Test frontend
         run: npm --workspace ecopath-frontend run test
 
+      - name: Install Playwright Browsers (Chromium only)
+        working-directory: ecopath-frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run frontend E2E (Chromium, 1 worker)
+        working-directory: ecopath-frontend
+        env:
+          CI: true
+        run: npx playwright test --project=chromium --workers=1
+
