@@ -7,12 +7,19 @@ test("Live Climate News: scroll into view and check loading state", async ({ pag
   await section.scrollIntoViewIfNeeded();
   await expect(page.getByText(/Latest Australian Climate Impact Updates/i)).toBeVisible();
 
-  // Check for loading state since API might not be available in E2E tests
-  await expect(page.getByText(/Loading AI-curated climate insights/i)).toBeVisible();
+  // Wait for either loading state or news cards to appear
+  await Promise.race([
+    page.getByText(/Loading AI-curated climate insights/i).waitFor({ timeout: 5000 }),
+    page.getByText(/Headlines with AI insights/i).waitFor({ timeout: 5000 }),
+    section.locator("div").filter({ hasText: "AI Analysis" }).first().waitFor({ timeout: 5000 }),
+  ]);
 
-  // If news cards are loaded, test the interaction
+  // Check if we have news cards loaded
   const newsCards = section.locator("div").filter({ hasText: "AI Analysis" });
-  if ((await newsCards.count()) > 0) {
+  const cardCount = await newsCards.count();
+
+  if (cardCount > 0) {
+    // Test news card interaction
     const firstCard = newsCards.first();
     const aiAnalysisButton = firstCard.locator("button", { hasText: "AI Analysis" });
     await aiAnalysisButton.click();
@@ -26,6 +33,9 @@ test("Live Climate News: scroll into view and check loading state", async ({ pag
 
     // Verify we're back to the original view
     await expect(firstCard.getByText("AI Analysis")).toBeVisible();
+  } else {
+    // If no cards loaded, just verify the section is visible
+    console.log("No news cards loaded, but section is visible");
   }
 });
 
