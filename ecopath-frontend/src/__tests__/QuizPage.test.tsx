@@ -35,8 +35,11 @@ vi.mock("@/components/quiz/QuizResultsModal", () => ({
 }));
 
 vi.mock("@/services/api", () => ({
-  ApiService: {
-    getStates: () => Promise.resolve([{ code: "VIC", name: "Victoria" }]),
+  apiService: {
+    getStates: () =>
+      Promise.resolve([
+        { id: "VIC", name: "Victoria", abbreviation: "VIC", displayName: "Victoria" },
+      ]),
     getEmissionsFactors: () => Promise.resolve({ electricity: 1, gas: 1, units: { gas: "MJ" } }),
   },
 }));

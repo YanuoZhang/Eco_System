@@ -1,39 +1,42 @@
-// API base URL is injected at build time via NEXT_PUBLIC_API_BASE_URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5001";
-// console.log("BASE URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
-console.log("API URL:", API_BASE_URL);
-console.log("BASE URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+// API service for connecting to the backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-export interface EnergyMixData {
+export interface NewsItem {
+  id: string;
+  headline: string;
+  summary: string;
+  label: "Critical" | "High Risk" | "Warning" | "Update" | "Positive" | "Neutral" | string;
+  image?: string;
   source: string;
-  percentage: number;
-  generation: number;
+  timestamp: string;
+  link: string;
+  content: string;
 }
 
-export interface EmissionsData {
-  unit: string;
-  latest: {
-    year: number;
-    value: number;
-  } | null;
+export interface NewsResponse {
+  success: boolean;
+  data: NewsItem[];
+  cached: boolean;
+  lastUpdated: string;
+}
+
+export interface TimelineResponse {
+  success: boolean;
   data: Array<{
-    year: number;
-    value: number;
+    period: string;
+    years: string;
+    events: Array<{
+      year: number;
+      title: string;
+      description: string;
+      icon: string;
+      category: string;
+    }>;
   }>;
-}
-
-export interface ClimateTargetData {
-  targetYear: number;
-  baselineYear: number;
-  targetValuePct: number;
-  planName: string;
-  progress: number;
-  progressDescription: string;
-  latestEmissions: {
-    year: number;
-    value: number;
-  } | null;
-  notes: string;
+  totalPeriods: number;
+  totalEvents: number;
+  lastUpdated: string;
+  source: string;
 }
 
 export interface StateData {
@@ -43,166 +46,83 @@ export interface StateData {
   displayName: string;
 }
 
-export class ApiService {
-  static async getEnergyMix(state: string): Promise<EnergyMixData[]> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/energy-mix?state=${state}`);
+class ApiService {
+  private baseUrl: string;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching energy mix data:", error);
-      throw error;
-    }
+  constructor() {
+    this.baseUrl = API_BASE_URL;
   }
 
-  static async getEmissions(state: string, range: string = "all"): Promise<EmissionsData> {
+  private async request<T>(endpoint: string): Promise<T> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/emissions?state=${state}&range=${range}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching emissions data:", error);
-      throw error;
-    }
-  }
-
-  static async getEnvironment(): Promise<{ env: string }> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/environment`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching environment data:", error);
-      throw error;
-    }
-  }
-
-  static async getClimateTargets(state: string): Promise<ClimateTargetData> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/climate-targets?state=${state}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching climate targets data:", error);
-      throw error;
-    }
-  }
-
-  static async getStates(): Promise<StateData[]> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/states`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching states data:", error);
-      throw error;
-    }
-  }
-
-  // Emissions Calculator APIs
-  static async getEmissionsFactors(state: string) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/emissions/factors?state=${state}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching emissions factors:", error);
-      throw error;
-    }
-  }
-
-  static async getSupportedUnits() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/emissions/supported-units`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching supported units:", error);
-      throw error;
-    }
-  }
-
-  static async getStateAverage(state: string, year: number = 2023) {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/emissions/state-average?state=${state}&year=${year}`,
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching state average:", error);
-      throw error;
-    }
-  }
-
-  static async getAustralianAverage(year: number = 2023) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/emissions/australian-average?year=${year}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching Australian average:", error);
-      throw error;
-    }
-  }
-
-  static async calculateEmissions(payload: {
-    state: string;
-    energy?: { electricity?: number; gas?: number; timeUnit: "month" | "quarter" | "year" };
-    transport?: {
-      mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
-      distance: number;
-      timeUnit: "day" | "week" | "month" | "year";
-      frequency?: number;
-    };
-  }) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/emissions/calculate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+
       if (!response.ok) {
-        const errText = await response.text().catch(() => "");
-        throw new Error(`HTTP error! status: ${response.status} ${errText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
       return await response.json();
     } catch (error) {
-      console.error("Error calculating emissions:", error);
+      console.error(`API request failed for ${endpoint}:`, error);
       throw error;
     }
+  }
+
+  // News API methods
+  async getClimateNews(): Promise<NewsResponse> {
+    return this.request<NewsResponse>("/api/news/climate");
+  }
+
+  async getNewsByCategory(category: string): Promise<NewsResponse> {
+    return this.request<NewsResponse>(`/api/news/climate/category/${category}`);
+  }
+
+  async getNewsById(id: string): Promise<{ success: boolean; data: NewsItem }> {
+    return this.request<{ success: boolean; data: NewsItem }>(`/api/news/climate/${id}`);
+  }
+
+  async updateNews(): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${this.baseUrl}/api/news/climate/update`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  // Timeline API methods
+  async getTimeline(): Promise<TimelineResponse> {
+    return this.request<TimelineResponse>("/api/timeline");
+  }
+
+  async getTimelineByPeriod(period: string): Promise<TimelineResponse> {
+    return this.request<TimelineResponse>(`/api/timeline/${period}`);
+  }
+
+  // States API methods
+  async getStates(): Promise<StateData[]> {
+    return this.request<StateData[]>("/api/states");
+  }
+
+  async getEmissionsFactors(state: string): Promise<unknown> {
+    return this.request<unknown>(`/api/emissions/factors?state=${state}`);
+  }
+
+  // Health check
+  async getHealth(): Promise<{ status: string; database: string; timestamp: string }> {
+    return this.request<{ status: string; database: string; timestamp: string }>("/healthz");
   }
 }
+
+export const apiService = new ApiService();
+export default apiService;

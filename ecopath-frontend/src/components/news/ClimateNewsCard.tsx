@@ -10,6 +10,7 @@ type ClimateNewsCardProps = {
   image?: string;
   source?: string;
   timestamp?: string;
+  link?: string;
 };
 
 export function ClimateNewsCard({
@@ -20,17 +21,19 @@ export function ClimateNewsCard({
   image,
   source,
   timestamp,
+  link,
 }: ClimateNewsCardProps) {
   const [flipped, setFlipped] = useState(false);
 
+  const handleReadMore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (link) {
+      window.open(link, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
-    <button
-      type="button"
-      aria-pressed={flipped}
-      aria-label={flipped ? "Show headline" : "Show AI insight"}
-      onClick={() => setFlipped((v) => !v)}
-      className="relative w-64 sm:w-80 h-[380px] sm:h-[420px] flex-shrink-0 snap-start [perspective:1000px] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-    >
+    <div className="relative w-64 sm:w-80 h-[380px] sm:h-[420px] flex-shrink-0 snap-start [perspective:1000px] rounded-2xl">
       <div
         className={`absolute inset-0 transition-transform duration-500 [transform-style:preserve-3d] ${
           flipped ? "[transform:rotateY(180deg)]" : ""
@@ -56,7 +59,13 @@ export function ClimateNewsCard({
                   ? "bg-red-500/80 text-red-100"
                   : label === "High Risk"
                     ? "bg-orange-500/80 text-orange-100"
-                    : "bg-yellow-500/80 text-yellow-100"
+                    : label === "Warning"
+                      ? "bg-yellow-500/80 text-yellow-100"
+                      : label === "Positive"
+                        ? "bg-green-500/80 text-green-100"
+                        : label === "Update"
+                          ? "bg-blue-500/80 text-blue-100"
+                          : "bg-gray-500/80 text-gray-100"
               }`}
             >
               {label}
@@ -74,10 +83,21 @@ export function ClimateNewsCard({
               <span className="truncate">{source}</span>
               <span className="flex-shrink-0">{timestamp}</span>
             </div>
-            <div className="mt-3 text-center">
-              <span className="text-xs text-slate-300 bg-slate-600/60 px-2 py-1 rounded-full border border-slate-400/30">
-                Click for AI Analysis
-              </span>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => setFlipped(true)}
+                className="flex-1 text-xs text-slate-300 bg-slate-600/60 px-2 py-1 rounded-full border border-slate-400/30 hover:bg-slate-600/80 transition-colors"
+              >
+                AI Analysis
+              </button>
+              {link && (
+                <button
+                  onClick={handleReadMore}
+                  className="flex-1 text-xs text-white bg-blue-600/80 px-2 py-1 rounded-full border border-blue-400/50 hover:bg-blue-600 transition-colors"
+                >
+                  Read More
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -93,14 +113,27 @@ export function ClimateNewsCard({
             <div className="text-indigo-200 font-semibold text-xs mb-1">ORIGINAL HEADLINE</div>
             <div className="text-white text-sm font-medium line-clamp-2">{headline}</div>
           </div>
-          <div className="absolute bottom-3 left-0 right-0 text-center">
-            <span className="inline-block text-xs text-indigo-300 bg-indigo-800/60 px-3 py-1 rounded-full border border-indigo-600/40">
-              Click to return
-            </span>
+          <div className="absolute bottom-3 left-0 right-0 px-4 sm:px-6">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFlipped(false)}
+                className="flex-1 text-xs text-indigo-300 bg-indigo-800/60 px-2 py-1 rounded-full border border-indigo-600/40 hover:bg-indigo-800/80 transition-colors"
+              >
+                Back
+              </button>
+              {link && (
+                <button
+                  onClick={handleReadMore}
+                  className="flex-1 text-xs text-white bg-blue-600/80 px-2 py-1 rounded-full border border-blue-400/50 hover:bg-blue-600 transition-colors"
+                >
+                  Read More
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
