@@ -14,27 +14,53 @@ export async function summarizeText(text: string): Promise<string> {
     const result = await model.generateContent([prompt]);
     return result.response.text();
   } catch (err: any) {
-    console.error("❌ Gemini summarization failed:", err);
-
     // Check if quota exceeded error
-    if (err.message?.includes("429") || err.message?.includes("quota")) {
-      console.log("⚠️ Gemini API quota exceeded, using fallback summarization");
-      return createFallbackSummary(text);
+    const isQuotaError =
+      err.message?.includes("429") ||
+      err.message?.includes("quota") ||
+      err.message?.includes("Too Many Requests") ||
+      err.status === 429;
+
+    if (isQuotaError) {
+      console.log("⚠️ Gemini API quota exceeded, using intelligent fallback summarization");
+      // Don't log the full error for quota issues to reduce noise
+    } else {
+      console.error("❌ Gemini summarization failed:", err.message || err);
     }
 
-    // Use fallback for other errors too
+    // Always use fallback for any error
     return createFallbackSummary(text);
   }
 }
 
 function createFallbackSummary(text: string): string {
-  // Simple fallback strategy: take first 200 characters and add ellipsis
+  // Clean the text and extract meaningful content
   const cleanText = text.replace(/<[^>]*>/g, "").trim();
-  const sentences = cleanText.split(/[.!?]+/).filter((s) => s.trim().length > 10);
 
-  if (sentences.length >= 2) {
-    return sentences.slice(0, 2).join(". ").trim() + "...";
+  // If text is very short, return as is
+  if (cleanText.length < 50) {
+    return cleanText;
   }
 
-  return cleanText.slice(0, 200) + "...";
+  // Try to extract complete sentences
+  const sentences = cleanText.split(/[.!?]+/).filter((s) => s.trim().length > 15);
+
+  if (sentences.length >= 2) {
+    // Take first 2 complete sentences
+    const summary = sentences.slice(0, 2).join(". ").trim();
+    return summary + (summary.length < cleanText.length ? "..." : "");
+  } else if (sentences.length === 1) {
+    // Take the first sentence and add context if needed
+    const firstSentence = sentences[0].trim();
+    if (firstSentence.length < 100 && cleanText.length > 100) {
+      return firstSentence + "...";
+    }
+    return firstSentence;
+  }
+
+  // Fallback: take first 150 characters at word boundary
+  const truncated = cleanText.substring(0, 150);
+  const lastSpace = truncated.lastIndexOf(" ");
+  const summary = lastSpace > 100 ? truncated.substring(0, lastSpace) : truncated;
+  return summary + (cleanText.length > 150 ? "..." : "");
 }

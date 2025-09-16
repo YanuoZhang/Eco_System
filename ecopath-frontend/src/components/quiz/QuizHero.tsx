@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiService } from "@/services/api";
+import apiClient from "@/services/apiClient";
 
 export default function QuizHero({
   states = [],
@@ -22,7 +22,7 @@ export default function QuizHero({
   useEffect(() => {
     if (!selectedState) return;
     setLoadingFactors(true);
-    apiService
+    apiClient
       .getEmissionsFactors(selectedState)
       .then((data) => setFactors(data as Factors))
       .catch(() => setFactors(null))

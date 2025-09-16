@@ -1,95 +1,101 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+// Define a local type to avoid importing server-only modules in a client component
+type TimelineEvent = {
+  year: number;
+  title: string;
+  description: string;
+  icon?: string;
+  category: string;
+};
+type TimelinePeriod = {
+  period: string;
+  years: string;
+  events: TimelineEvent[];
+  title?: string;
+  dramaticText?: string;
+  childPerspective?: string;
+  visual?: string;
+};
+import apiClient from "@/services/apiClient";
 import Image from "next/image";
 
 // Removed unused Period type to satisfy linter
 
-type StoryStep = {
-  id: number;
-  title: string;
-  period: string;
-  description: string;
-  dramaticText: string;
-  childPerspective: string;
-  visual: string;
+type Props = {
+  periods?: TimelinePeriod[];
 };
 
-const STORY_STEPS: StoryStep[] = [
-  {
-    id: 1,
-    title: "Industrial Revolution Begins",
-    period: "1880-1950",
-    description:
-      "Humanity discovers fossil fuels. Coal-powered factories transform society, but the atmosphere begins to change.",
-    dramaticText:
-      "The machines awakened. Steam and steel promised progress, but the atmosphere began remembering every smokestack.",
-    childPerspective:
-      "Children of this era watched the first smokestacks rise, unknowing that these tall towers would forever change the world.",
-    visual:
-      "https://readdy.ai/api/search-image?query=Industrial%20revolution%20scene%20with%20steam-powered%20factories%2C%20coal%20smokestacks%20belching%20black%20smoke%20into%20clear%20sky%2C0workers%20in%20early%20industrial%20setting%2C%20children%20watching%20from%20distance%2C%20dramatic%20contrast%20between%20human%20progress%20and%20environmental%20impact&width=600&height=300&seq=story-industrial-1&orientation=landscape",
-  },
-  {
-    id: 2,
-    title: "The Great Acceleration",
-    period: "1950-1990",
-    description:
-      "Post-war prosperity accelerates consumption. Cars, planes, and mass production reshape the world. Scientists first warn of greenhouse effects.",
-    dramaticText:
-      "We built a world of abundance, not knowing we were writing stories of scarcity for our children.",
-    childPerspective:
-      "Baby boomers grew up believing progress meant prosperity, while their children would inherit a warming world.",
-    visual:
-      "https://readdy.ai/api/search-image?query=1950s%20suburban%20boom%20with%20cars%2C%20highways%2C%20factories%2C%20families%20with%20children%20enjoying%20modern%20lifestyle%20contrasted%20with%20early%20climate%20scientists%20studying%20atmospheric%20data%2C%20showing%20the%20acceleration%20of%20human%20impact&width=600&height=300&seq=story-acceleration-2&orientation=landscape",
-  },
-  {
-    id: 3,
-    title: "First Climate Signals",
-    period: "1990-2010",
-    description:
-      "Extreme weather becomes noticeable. First IPCC reports warn of dangerous warming. Kyoto Protocol attempts global action.",
-    dramaticText:
-      "The Earth began to speak. Hurricanes grew stronger, glaciers retreated, but the world was still learning to listen.",
-    childPerspective:
-      "Millennial children witnessed the first climate documentaries, learning their planet was in danger.",
-    visual:
-      "https://readdy.ai/api/search-image?query=Early%20climate%20change%20impacts%20showing%20melting%20glaciers%2C%20stronger%20hurricanes%2C%20children%20watching%20environmental%20documentaries%20in%20classrooms%2C%20climate%20scientists%20presenting%20research%2C%20growing%20environmental%20awareness%20among%20young%20people&width=600&height=300&seq=story-signals-3&orientation=landscape",
-  },
-  {
-    id: 4,
-    title: "Climate Crisis Arrives",
-    period: "2010-2020",
-    description:
-      "Australian bushfires, record heatwaves, and global protests mark climate emergency. Young voices demand action.",
-    dramaticText:
-      "The future knocked on our door through smoke and flames. A generation stood up, refusing to inherit a broken world.",
-    childPerspective:
-      "Gen Z children led school strikes, demanding adults act on climate change before it was too late.",
-    visual:
-      "https://readdy.ai/api/search-image?query=Climate%20crisis%20scene%20showing%20Australian%20bushfires%2C%20children%20and%20teenagers%20in%20climate%20protests%20holding%20signs%2C%20school%20climate%20strikes%2C%20youngactivists%20speakingat%20rallies%2C%20dramatic%20skywith%20smoke%20and%20flames&width=600&height=300&seq=story-crisis-4&orientation=landscape",
-  },
-  {
-    id: 5,
-    title: "The Crossroads Moment",
-    period: "2020-2030",
-    description:
-      "We stand at a crossroads. Technology offers solutions, but time is running short. Every action taken today shapes the next century.",
-    dramaticText:
-      "This is our moment. The story of what happens next is still being written - through every choice we make today.",
-    childPerspective:
-      "Today&apos;s children will live the consequences of our choices. Their future depends on the actions we take now.",
-    visual:
-      "https://readdy.ai/api/search-image?query=Hopeful%20future%20scene%20showing%20renewable%20energy%20farms%2C%20electric%20vehicles%2C%20green%20cities%2C%20children%20playing%20in%20clean%20environments%2C%20families%20taking%20climate%20action%2C%20solar%20panels%20and%20wind%20turbines%2C%20sustainable%20lifestyle%2C%20bright%20future%20possibility&width=600&height=300&seq=story-choice-5&orientation=landscape",
-  },
-];
-
-export default function ClimateTimeline() {
+export default function ClimateTimeline({ periods }: Props) {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [data, setData] = useState<TimelinePeriod[]>(periods ?? []);
+  const [loading, setLoading] = useState<boolean>(!periods || periods.length === 0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Client-side fetch if no SSR data provided
+  useEffect(() => {
+    if (data.length > 0) return;
+    let mounted = true;
+    setLoading(true);
+    apiClient
+      .getTimeline()
+      .then((res) => {
+        if (!mounted) return;
+        setData(res.data as unknown as TimelinePeriod[]);
+      })
+      .catch((err) => mounted && setError(err?.message ?? "Failed to load timeline"))
+      .finally(() => mounted && setLoading(false));
+    return () => {
+      mounted = false;
+    };
+  }, [data.length]);
 
   // Note: previously used IntersectionObserver to lazy-reveal; now default to visible
 
-  const active = useMemo(() => STORY_STEPS[activeIndex], [activeIndex]);
+  const active = useMemo(() => data[activeIndex], [activeIndex, data]);
+
+  // Loading / Error / Empty states (render early to avoid undefined accesses)
+  if (loading) {
+    return (
+      <section id="timeline-section" aria-label="Climate Timeline" className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-semibold text-white">Loading timeline…</h3>
+            <p className="text-slate-300">Fetching climate story from API</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="h-80 rounded-2xl bg-slate-100/10 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="timeline-section" aria-label="Climate Timeline" className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <h3 className="text-2xl font-semibold text-red-200">Failed to load timeline</h3>
+          <p className="text-slate-300 text-sm">{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!active || data.length === 0) {
+    return (
+      <section id="timeline-section" aria-label="Climate Timeline" className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <h3 className="text-2xl font-semibold text-slate-200">No timeline data</h3>
+          <p className="text-slate-300 text-sm">Please try again later</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -123,9 +129,9 @@ export default function ClimateTimeline() {
               className="flex gap-2 sm:gap-4 overflow-x-auto pb-2"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              {STORY_STEPS.map((step, index) => (
+              {data.map((step, index) => (
                 <button
-                  key={step.id}
+                  key={`${step.period}-${index}`}
                   onClick={() => setActiveIndex(index)}
                   className={
                     "flex-shrink-0 px-3 py-2 sm:px-6 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap " +
@@ -142,10 +148,10 @@ export default function ClimateTimeline() {
                           : "bg-teal-700/70 text-teal-200 hover:bg-teal-600/70 border border-teal-500/40")
                   }
                 >
-                  <span className="hidden sm:block">{step.period}</span>
+                  <span className="hidden sm:block">{step.years}</span>
                   <span className="block sm:hidden">
-                    <div className="text-xs">{step.period.split("-")[0]}</div>
-                    <div className="text-xs opacity-75">{step.period.split("-")[1]}</div>
+                    <div className="text-xs">{step.years.split("-")[0]}</div>
+                    <div className="text-xs opacity-75">{step.years.split("-")[1]}</div>
                   </span>
                 </button>
               ))}
@@ -168,9 +174,10 @@ export default function ClimateTimeline() {
             {/* Image */}
             <div className="relative order-1 lg:order-2">
               <Image
-                src={active.visual}
-                alt={active.title}
+                src={active?.visual || "/assets/home_bg.jpg"}
+                alt={active?.title || active?.period || "Timeline image"}
                 fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
                 className="object-cover object-center"
               />
               <div
@@ -195,7 +202,7 @@ export default function ClimateTimeline() {
                           : "bg-teal-600/90")
                     }
                   >
-                    {active.period}
+                    {active.years}
                   </span>
                 </div>
                 <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight">
@@ -221,7 +228,7 @@ export default function ClimateTimeline() {
                     Historical Context
                   </h4>
                   <p className="text-white text-sm sm:text-base leading-relaxed">
-                    {active.description}
+                    {active.dramaticText}
                   </p>
                 </div>
                 <div>
@@ -304,7 +311,7 @@ export default function ClimateTimeline() {
                   <span>Prev</span>
                 </button>
                 <div className="flex items-center gap-1">
-                  {STORY_STEPS.map((_, i) => (
+                  {data.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => setActiveIndex(i)}
@@ -326,8 +333,8 @@ export default function ClimateTimeline() {
                   ))}
                 </div>
                 <button
-                  onClick={() => setActiveIndex(Math.min(STORY_STEPS.length - 1, activeIndex + 1))}
-                  disabled={activeIndex === STORY_STEPS.length - 1}
+                  onClick={() => setActiveIndex(Math.min(data.length - 1, activeIndex + 1))}
+                  disabled={activeIndex === data.length - 1}
                   className={
                     "flex items-center gap-2 text-xs sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 " +
                     (activeIndex < 2

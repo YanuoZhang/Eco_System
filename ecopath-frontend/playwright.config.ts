@@ -23,13 +23,13 @@ export default defineConfig({
     baseURL: process.env.BASE_URL || "http://localhost:3000",
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    trace: process.env.CI ? "off" : "on-first-retry",
 
     /* Take screenshot on failure */
-    screenshot: "only-on-failure",
+    screenshot: process.env.CI ? "off" : "only-on-failure",
 
     /* Record video on failure */
-    video: "retain-on-failure",
+    video: process.env.CI ? "off" : "retain-on-failure",
 
     /* Increase action timeout */
     actionTimeout: 30000,
@@ -44,31 +44,13 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-    // Temporarily comment out other browser projects for development debugging
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-    // /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
   ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
+    command: "npm run build && npm run start",
+    port: 3000,
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 180000,
   },
 });

@@ -1,4 +1,5 @@
-// API service for connecting to the backend
+// API service for client-side usage (browser/components/hooks)
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5001";
 
 export interface NewsItem {
@@ -25,6 +26,10 @@ export interface TimelineResponse {
   data: Array<{
     period: string;
     years: string;
+    title?: string;
+    dramaticText?: string;
+    childPerspective?: string;
+    visual?: string;
     events: Array<{
       year: number;
       title: string;
@@ -105,10 +110,6 @@ class ApiService {
     return this.request<TimelineResponse>("/api/timeline");
   }
 
-  async getTimelineByPeriod(period: string): Promise<TimelineResponse> {
-    return this.request<TimelineResponse>(`/api/timeline/${period}`);
-  }
-
   // States API methods
   async getStates(): Promise<StateData[]> {
     return this.request<StateData[]>("/api/states");
@@ -124,5 +125,5 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService();
-export default apiService;
+export const apiClient = new ApiService();
+export default apiClient;
