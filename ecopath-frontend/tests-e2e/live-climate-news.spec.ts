@@ -14,25 +14,31 @@ test("Live Climate News: scroll into view and check loading state", async ({ pag
     section.locator("div").filter({ hasText: "AI Analysis" }).first().waitFor({ timeout: 5000 }),
   ]);
 
-  // Check if we have news cards loaded
-  const newsCards = section.locator("div").filter({ hasText: "AI Analysis" });
-  const cardCount = await newsCards.count();
+  // Check if we have any AI Analysis buttons rendered
+  const aiButtons = section.getByRole("button", { name: /AI Analysis/i });
+  const cardCount = await aiButtons.count();
 
   if (cardCount > 0) {
     // Test news card interaction
-    const firstCard = newsCards.first();
-    const aiAnalysisButton = firstCard.locator("button", { hasText: "AI Analysis" });
-    await aiAnalysisButton.click();
+    const aiAnalysisButton = aiButtons.first();
+    await aiAnalysisButton.scrollIntoViewIfNeeded();
+    await aiAnalysisButton.waitFor({ state: "visible", timeout: 5000 });
+    await expect(aiAnalysisButton).toBeVisible();
+    await expect(aiAnalysisButton).toBeEnabled();
+    await aiAnalysisButton.click({ timeout: 5000 });
 
     // Check if AI analysis view is shown
-    await expect(firstCard.getByText("AI Insight Analysis")).toBeVisible();
+    await expect(page.getByText("AI Insight Analysis")).toBeVisible();
 
     // Click Back button to return
-    const backButton = firstCard.locator("button", { hasText: "Back" });
+    const backButton = section.getByRole("button", { name: /Back/i }).first();
+    await backButton.scrollIntoViewIfNeeded();
+    await expect(backButton).toBeVisible();
+    await expect(backButton).toBeEnabled();
     await backButton.click();
 
     // Verify we're back to the original view
-    await expect(firstCard.getByText("AI Analysis")).toBeVisible();
+    await expect(page.getByText("AI Analysis")).toBeVisible();
   } else {
     // If no cards loaded, just verify the section is visible
     console.log("No news cards loaded, but section is visible");
