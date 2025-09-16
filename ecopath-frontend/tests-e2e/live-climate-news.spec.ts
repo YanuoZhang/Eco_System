@@ -7,14 +7,20 @@ test("Live Climate News: scroll into view and flip card", async ({ page }) => {
   await section.scrollIntoViewIfNeeded();
   await expect(page.getByText(/Latest Australian Climate Impact Updates/i)).toBeVisible();
 
-  // Ensure cards rendered and click first to flip
-  const firstCard = section.locator("button").first();
-  await firstCard.click();
-  await expect(firstCard).toHaveAttribute("aria-pressed", "true");
+  // Ensure cards rendered and click AI Analysis button to flip
+  const firstCard = section.locator("div").first();
+  const aiAnalysisButton = firstCard.locator("button", { hasText: "AI Analysis" });
+  await aiAnalysisButton.click();
 
-  // Flip back
-  await firstCard.click();
-  await expect(firstCard).toHaveAttribute("aria-pressed", "false");
+  // Check if AI analysis view is shown (look for "AI Insight Analysis" text)
+  await expect(firstCard.getByText("AI Insight Analysis")).toBeVisible();
+
+  // Click Back button to return
+  const backButton = firstCard.locator("button", { hasText: "Back" });
+  await backButton.click();
+
+  // Verify we're back to the original view
+  await expect(firstCard.getByText("AI Analysis")).toBeVisible();
 });
 
 test("Unknown route shows 404 page", async ({ page }) => {
