@@ -148,10 +148,10 @@ export default function ClimateTimeline({ periods }: Props) {
                           : "bg-teal-700/70 text-teal-200 hover:bg-teal-600/70 border border-teal-500/40")
                   }
                 >
-                  <span className="hidden sm:block">{step.period}</span>
+                  <span className="hidden sm:block">{step.years}</span>
                   <span className="block sm:hidden">
-                    <div className="text-xs">{step.period.split("-")[0]}</div>
-                    <div className="text-xs opacity-75">{step.period.split("-")[1]}</div>
+                    <div className="text-xs">{step.years.split("-")[0]}</div>
+                    <div className="text-xs opacity-75">{step.years.split("-")[1]}</div>
                   </span>
                 </button>
               ))}
@@ -202,7 +202,7 @@ export default function ClimateTimeline({ periods }: Props) {
                           : "bg-teal-600/90")
                     }
                   >
-                    {active.period}
+                    {active.years}
                   </span>
                 </div>
                 <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight">

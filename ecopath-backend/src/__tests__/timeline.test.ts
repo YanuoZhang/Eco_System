@@ -6,11 +6,18 @@ import express from "express";
 const app = express();
 app.use(express.json());
 
-// Mock timeline data
+// Mock timeline data matching real structure
 const mockTimelineData = [
   {
     period: "Early Industrial Era",
-    years: "1880–1950",
+    years: "1880-1950",
+    title: "Industrial Revolution Begins",
+    dramaticText:
+      "The machines awakened. Steam and steel promised progress, but the atmosphere began remembering every smokestack.",
+    childPerspective:
+      "Children of this era watched the first smokestacks rise, unknowing that these tall towers would forever change the world.",
+    visual:
+      "https://readdy.ai/api/search-image?query=Industrial%20revolution%20scene%20with%20steam-powered%20factories%2C%20coal%20smokestacks%20belching%20black%20smoke%20into%20clear%20sky%2C0workers%20in%20early%20industrial%20setting%2C%20children%20watching%20from%20distance%2C%20dramatic%20contrast%20between%20human%20progress%20and%20environmental%20impact&width=600&height=300&seq=story-industrial-1&orientation=landscape",
     events: [
       {
         year: 1896,
@@ -39,15 +46,22 @@ const mockTimelineData = [
     ],
   },
   {
-    period: "Environmental Awakening",
-    years: "1951–1980",
+    period: "The Great Acceleration",
+    years: "1950-1990",
+    title: "The Great Acceleration",
+    dramaticText:
+      "We built a world of abundance, not knowing we were writing stories of scarcity for our children.",
+    childPerspective:
+      "Baby boomers grew up believing progress meant prosperity, while their children would inherit a warming world.",
+    visual:
+      "https://readdy.ai/api/search-image?query=1950s%20suburban%20boom%20with%20cars%2C%20highways%2C%20factories%2C%20families%20with%20children%20enjoying%20modern%20lifestyle%20contrasted%20with%20early%20climate%20scientists%20studying%20atmospheric%20data%2C%20showing%20the%20acceleration%20of%20human%20impact&width=600&height=300&seq=story-acceleration-2&orientation=landscape",
     events: [
       {
         year: 1962,
         title: "Silent Spring Published",
         description:
           "Rachel Carson's groundbreaking book exposes the environmental damage caused by pesticides, sparking the modern environmental movement.",
-        icon: "📚",
+        icon: "🌱",
         category: "environmental",
       },
       {
@@ -74,32 +88,6 @@ app.get("/api/timeline", (req, res) => {
   });
 });
 
-app.get("/api/timeline/:period", (req, res) => {
-  const { period } = req.params;
-  const periodIndex = parseInt(period);
-
-  if (isNaN(periodIndex) || periodIndex < 0 || periodIndex >= mockTimelineData.length) {
-    return res.status(400).json({
-      success: false,
-      error: "Invalid period",
-      message: `Period must be between 0 and ${mockTimelineData.length - 1}`,
-      availablePeriods: mockTimelineData.map((p, index) => ({
-        index,
-        period: p.period,
-        years: p.years,
-      })),
-    });
-  }
-
-  const timelinePeriod = mockTimelineData[periodIndex];
-
-  res.json({
-    success: true,
-    data: timelinePeriod,
-    totalEvents: timelinePeriod.events.length,
-  });
-});
-
 describe("Climate Timeline API", () => {
   describe("GET /api/timeline", () => {
     it("should return all timeline periods", async () => {
@@ -118,6 +106,10 @@ describe("Climate Timeline API", () => {
       const firstPeriod = response.body.data[0];
       expect(firstPeriod).toHaveProperty("period");
       expect(firstPeriod).toHaveProperty("years");
+      expect(firstPeriod).toHaveProperty("title");
+      expect(firstPeriod).toHaveProperty("dramaticText");
+      expect(firstPeriod).toHaveProperty("childPerspective");
+      expect(firstPeriod).toHaveProperty("visual");
       expect(firstPeriod).toHaveProperty("events");
       expect(Array.isArray(firstPeriod.events)).toBe(true);
     });
@@ -134,41 +126,6 @@ describe("Climate Timeline API", () => {
       expect(typeof firstEvent.year).toBe("number");
       expect(typeof firstEvent.title).toBe("string");
       expect(typeof firstEvent.description).toBe("string");
-    });
-  });
-
-  describe("GET /api/timeline/:period", () => {
-    it("should return specific period by index", async () => {
-      const response = await request(app).get("/api/timeline/0").expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.period).toBe("Early Industrial Era");
-      expect(response.body.data.years).toBe("1880–1950");
-      expect(response.body.totalEvents).toBe(3);
-    });
-
-    it("should return second period by index", async () => {
-      const response = await request(app).get("/api/timeline/1").expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.period).toBe("Environmental Awakening");
-      expect(response.body.data.years).toBe("1951–1980");
-      expect(response.body.totalEvents).toBe(2);
-    });
-
-    it("should return 400 for invalid period index", async () => {
-      const response = await request(app).get("/api/timeline/999").expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe("Invalid period");
-      expect(response.body.message).toContain("Period must be between 0 and 1");
-    });
-
-    it("should return 400 for non-numeric period", async () => {
-      const response = await request(app).get("/api/timeline/invalid").expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe("Invalid period");
     });
   });
 
@@ -209,6 +166,29 @@ describe("Climate Timeline API", () => {
           expect(event.description.length).toBeGreaterThan(50);
           expect(event.description).toMatch(/[a-zA-Z]/);
         });
+      });
+    });
+
+    it("should have valid dramatic text and child perspective", async () => {
+      const response = await request(app).get("/api/timeline").expect(200);
+
+      response.body.data.forEach((period: any) => {
+        expect(period.dramaticText).toBeDefined();
+        expect(period.dramaticText.length).toBeGreaterThan(20);
+        expect(period.childPerspective).toBeDefined();
+        expect(period.childPerspective.length).toBeGreaterThan(20);
+        expect(period.visual).toBeDefined();
+        expect(period.visual).toMatch(/^https?:\/\//);
+      });
+    });
+
+    it("should have valid titles", async () => {
+      const response = await request(app).get("/api/timeline").expect(200);
+
+      response.body.data.forEach((period: any) => {
+        expect(period.title).toBeDefined();
+        expect(period.title.length).toBeGreaterThan(5);
+        expect(period.title).toMatch(/[a-zA-Z]/);
       });
     });
   });

@@ -26,6 +26,10 @@ export interface TimelineResponse {
   data: Array<{
     period: string;
     years: string;
+    title?: string;
+    dramaticText?: string;
+    childPerspective?: string;
+    visual?: string;
     events: Array<{
       year: number;
       title: string;
