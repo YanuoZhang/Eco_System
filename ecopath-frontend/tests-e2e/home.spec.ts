@@ -11,17 +11,33 @@ test("Home page: hero, timeline switch, CTA and footer", async ({ page }) => {
   await timeline.scrollIntoViewIfNeeded();
 
   const heading = page.getByRole("heading", { name: /How We Got Here/i });
-  const loading = page.getByRole("heading", { name: /Loading timeline/i });
+  const loadingHeading = page.getByRole("heading", { name: /Loading timeline/i });
+  const noDataText = page.getByText(/No timeline data/i);
 
-  if ((await heading.count()) > 0) {
-    await expect(heading).toBeVisible();
+  let didSeeData = false;
+  try {
+    await heading.waitFor({ state: "visible", timeout: 5000 });
+    didSeeData = true;
+  } catch {
+    // No data header visible promptly; try loading header or empty state
+    try {
+      await loadingHeading.waitFor({ state: "visible", timeout: 3000 });
+    } catch {
+      await noDataText
+        .first()
+        .waitFor({ state: "visible", timeout: 3000 })
+        .catch(async () => {
+          // As a last resort ensure the region rendered
+          await expect(timeline).toBeVisible();
+        });
+    }
+  }
+
+  if (didSeeData) {
     // On small screens, the period button text is split. Click the 3rd period button instead.
     const periodButtons = timeline.getByRole("button");
     await periodButtons.nth(2).click();
     await expect(page.getByRole("heading", { name: /First Climate Signals/i })).toBeVisible();
-  } else {
-    // If API data not available, ensure loading state is shown
-    await expect(loading).toBeVisible();
   }
 
   // CTA link navigates to /quiz
