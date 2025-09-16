@@ -2,63 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import ClimateNewsCard from "./ClimateNewsCard";
-
-type NewsItem = {
-  id: string;
-  headline: string;
-  summary: string;
-  label: "Critical" | "Update" | "Positive" | "Neutral" | string;
-  insight: string;
-  image?: string;
-  source?: string;
-  timestamp?: string;
-};
-
-const MOCK_NEWS: NewsItem[] = [
-  {
-    id: "n1",
-    headline: "Australian Children Face 25% Increased Heat Stress Risk at Schools",
-    summary:
-      "New research shows 5–12 year olds face unprecedented heat‑related health impacts, with 340+ schools lacking adequate cooling systems.",
-    label: "Critical",
-    insight:
-      "Children's developing thermoregulation systems increase vulnerability. Prioritising shade/cooling retrofits prevents majority of incidents.",
-    image:
-      "https://readdy.ai/api/search-image?query=Australian%20school%20children%20in%20hot%20classroom&width=600&height=300&seq=hero-news-children-1&orientation=landscape",
-    source: "Australian Pediatric Research",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: "n2",
-    headline: "Sydney Heat‑Related Hospital Admissions Surge 400%",
-    summary:
-      "As temperatures exceed 45°C for the third consecutive day, emergency departments report unprecedented pediatric heat‑stress cases.",
-    label: "Critical",
-    insight:
-      "Pattern mirrors 2019 Black Summer. Urban heat island adds ~25% risk vs rural; targeted cooling centres reduce peak admissions.",
-    image:
-      "https://readdy.ai/api/search-image?query=Australian%20hospital%20emergency%20room%20heatwave&width=600&height=300&seq=hero-news-health-2&orientation=landscape",
-    source: "ABC Health",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "n3",
-    headline: "Great Barrier Reef Records Fifth Mass Bleaching Event",
-    summary:
-      "Marine scientists confirm widespread coral bleaching across 60% of reef systems as ocean temperatures hit record highs.",
-    label: "High Risk",
-    insight:
-      "Event occurred 2 months earlier than historical pattern; recovery probability falls below 20% under current trajectory.",
-    image:
-      "https://readdy.ai/api/search-image?query=Great%20Barrier%20Reef%20mass%20bleaching&width=600&height=300&seq=hero-news-reef-3&orientation=landscape",
-    source: "AIMS Research",
-    timestamp: "4 hours ago",
-  },
-];
+import { useClimateNews } from "@/hooks/useClimateNews";
+import { NewsItem } from "@/services/api";
 
 export default function LiveClimateNews() {
   const ref = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(false);
+  const { news, loading, error, lastUpdated } = useClimateNews();
 
   useEffect(() => {
     if (!ref.current) return;
@@ -79,9 +29,14 @@ export default function LiveClimateNews() {
     return () => io.disconnect();
   }, []);
 
-  const NEWS = active
-    ? [...MOCK_NEWS, { ...MOCK_NEWS[0], id: "n4" }, { ...MOCK_NEWS[1], id: "n5" }]
-    : [];
+  // Transform API data to match component expectations
+  const transformNewsItem = (item: NewsItem) => ({
+    ...item,
+    insight: item.summary, // Use summary as insight for now
+    image: item.image, // Use image from API
+  });
+
+  const NEWS = active && !loading && !error ? news.map(transformNewsItem) : [];
 
   return (
     <section id="news-section" ref={ref} aria-label="Live Climate News" className="py-10 sm:py-14">
@@ -90,11 +45,21 @@ export default function LiveClimateNews() {
           <div className="inline-flex items-center gap-2 bg-slate-700/60 text-slate-100 px-4 py-2 rounded-full border border-slate-500/40 mb-4">
             <span>🚨</span>
             <span>Live Climate News</span>
+            {lastUpdated && (
+              <span className="text-xs text-slate-300 ml-2">
+                Updated {new Date(lastUpdated).toLocaleTimeString()}
+              </span>
+            )}
           </div>
           <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Latest Australian Climate Impact Updates
           </h3>
-          <p className="mt-1 text-slate-200">Headlines with AI insights — tap to flip</p>
+          <p className="mt-1 text-slate-200">
+            {loading
+              ? "Loading AI-curated climate insights..."
+              : "Headlines with AI insights — tap to flip"}
+          </p>
+          {error && <p className="mt-2 text-red-300 text-sm">Error loading news: {error}</p>}
         </div>
 
         {/* Full-bleed horizontal scroller with slight gutters to show ~4.5 cards */}
@@ -103,26 +68,45 @@ export default function LiveClimateNews() {
             className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory w-full"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {active
-              ? NEWS.map((n) => (
-                  <ClimateNewsCard
-                    key={n.id}
-                    headline={n.headline}
-                    summary={n.summary}
-                    label={n.label}
-                    insight={n.insight}
-                    image={n.image}
-                    source={n.source}
-                    timestamp={n.timestamp}
-                  />
-                ))
-              : Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-64 sm:w-80 h-[380px] sm:h-[420px] flex-shrink-0 snap-start rounded-2xl bg-slate-100/20 border border-slate-500/30 animate-pulse"
-                    aria-hidden="true"
-                  />
-                ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-64 sm:w-80 h-[380px] sm:h-[420px] flex-shrink-0 snap-start rounded-2xl bg-slate-100/20 border border-slate-500/30 animate-pulse"
+                  aria-hidden="true"
+                />
+              ))
+            ) : error ? (
+              <div className="w-full flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="text-red-400 text-4xl mb-4">⚠️</div>
+                  <p className="text-red-300 text-lg">Failed to load news</p>
+                  <p className="text-slate-400 text-sm mt-2">{error}</p>
+                </div>
+              </div>
+            ) : NEWS.length > 0 ? (
+              NEWS.map((n) => (
+                <ClimateNewsCard
+                  key={n.id}
+                  headline={n.headline}
+                  summary={n.summary}
+                  label={n.label}
+                  insight={n.insight}
+                  image={n.image}
+                  source={n.source}
+                  timestamp={n.timestamp}
+                  link={n.link}
+                />
+              ))
+            ) : (
+              <div className="w-full flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="text-slate-400 text-4xl mb-4">📰</div>
+                  <p className="text-slate-300 text-lg">No news available</p>
+                  <p className="text-slate-400 text-sm mt-2">Check back later for updates</p>
+                </div>
+              </div>
+            )}
           </div>
           <style jsx>{`
             .flex::-webkit-scrollbar {
