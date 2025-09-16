@@ -10,12 +10,41 @@ let newsCache: NewsItem[] = [];
 let lastFetchTime = 0;
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
+// Function to create intelligent fallback summary when Gemini is unavailable
+function createIntelligentFallbackSummary(headline: string, description: string): string {
+  // Clean the description and extract meaningful content
+  const cleanDesc = description.replace(/<[^>]*>/g, "").trim();
+
+  // If description is too short, use headline with context
+  if (cleanDesc.length < 50) {
+    return `Breaking news: ${headline}. This climate-related story highlights important environmental developments.`;
+  }
+
+  // Find the first complete sentence or paragraph
+  const sentences = cleanDesc.split(/[.!?]+/).filter((s) => s.trim().length > 10);
+  if (sentences.length > 0) {
+    const firstSentence = sentences[0].trim();
+    // Ensure it ends properly
+    if (!/[.!?]$/.test(firstSentence)) {
+      return firstSentence + "...";
+    }
+    return firstSentence;
+  }
+
+  // Fallback to first 150 characters with proper ending
+  const truncated = cleanDesc.substring(0, 150);
+  const lastSpace = truncated.lastIndexOf(" ");
+  const summary = lastSpace > 100 ? truncated.substring(0, lastSpace) : truncated;
+  return summary + (cleanDesc.length > 150 ? "..." : "");
+}
+
 // Function to check if news is climate/environment related
 export function isClimateRelated(headline: string, summary: string): boolean {
   const text = (headline + " " + summary).toLowerCase();
 
-  // Exclude obvious non-climate related keywords
+  // Exclude obvious non-climate related keywords (expanded list)
   const nonClimateKeywords = [
+    // Political/Government
     "trump",
     "netanyahu",
     "israel",
@@ -31,12 +60,156 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     "reshuffle",
     "nampijinpa price",
     "melissa price",
+    "election",
+    "vote",
+    "parliament",
+    "senate",
+    "congress",
+    "government",
+    "minister",
+    "prime minister",
+    "president",
+    "mayor",
+    "council",
+    "budget",
+    "economy",
+    "tax",
+    "policy",
+    "independence",
+    "colony",
+    "colonial",
+    "papua new guinea",
+    "png",
+    "chiefs of staff",
+    "mp",
+    "laura gerber",
+    "lnp",
+    "labor",
+    "mudslinging",
+    "gold coast",
+
+    // Technology/Social Media
     "social media ban",
     "teen ban",
     "under-16",
     "platforms",
     "guidelines",
     "esafety",
+    "facebook",
+    "instagram",
+    "tiktok",
+    "twitter",
+    "x.com",
+    "meta",
+    "apple",
+    "google",
+    "microsoft",
+    "tech",
+    "software",
+    "app",
+    "digital",
+
+    // Sports/Entertainment
+    "football",
+    "soccer",
+    "cricket",
+    "tennis",
+    "olympics",
+    "world cup",
+    "movie",
+    "film",
+    "music",
+    "concert",
+    "festival",
+    "celebrity",
+    "actor",
+    "singer",
+    "band",
+    "tv show",
+    "series",
+    "netflix",
+    "streaming",
+
+    // Crime/Legal
+    "murder",
+    "theft",
+    "robbery",
+    "fraud",
+    "court",
+    "trial",
+    "jail",
+    "prison",
+    "police",
+    "arrest",
+    "investigation",
+    "lawsuit",
+    "legal",
+    "lawyer",
+
+    // Health (non-environmental)
+    "covid",
+    "pandemic",
+    "vaccine",
+    "hospital",
+    "medical",
+    "doctor",
+    "nurse",
+    "surgery",
+    "treatment",
+    "medicine",
+    "drug",
+    "pharmaceutical",
+
+    // Business/Finance (non-environmental)
+    "stock market",
+    "shares",
+    "investment",
+    "bank",
+    "finance",
+    "money",
+    "profit",
+    "loss",
+    "revenue",
+    "company",
+    "business",
+    "corporate",
+
+    // Education
+    "school",
+    "university",
+    "student",
+    "teacher",
+    "education",
+    "exam",
+    "grade",
+
+    // Transportation (non-environmental)
+    "traffic",
+    "road",
+    "highway",
+    "airport",
+    "flight",
+    "train station",
+
+    // Miscellaneous
+    "wedding",
+    "marriage",
+    "divorce",
+    "birth",
+    "death",
+    "funeral",
+    "restaurant",
+    "food",
+    "recipe",
+    "cooking",
+    "fashion",
+    "clothes",
+    "shopping",
+    "store",
+    "market",
+    "price",
+    "sale",
+    "discount",
   ];
 
   // If contains obvious non-climate keywords, return false directly
@@ -44,8 +217,9 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     return false;
   }
 
+  // Enhanced climate keywords with better coverage
   const climateKeywords = [
-    // Climate change terms
+    // Core climate terms
     "climate",
     "global warming",
     "greenhouse",
@@ -87,8 +261,9 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     "oil",
     "gas",
     "petroleum",
+    "methane",
 
-    // Natural disasters
+    // Natural disasters and weather
     "bushfire",
     "wildfire",
     "cyclone",
@@ -99,6 +274,12 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     "drought",
     "extreme weather",
     "natural disaster",
+    "heatwave",
+    "cold snap",
+    "blizzard",
+    "tornado",
+    "earthquake",
+    "tsunami",
 
     // Policy and action
     "net zero",
@@ -113,6 +294,10 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     "environmental policy",
     "conservation",
     "protection",
+    "carbon tax",
+    "carbon credit",
+    "emissions trading",
+    "carbon footprint",
 
     // Scientific terms
     "ipcc",
@@ -123,8 +308,13 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     "mitigation",
     "adaptation",
     "resilience",
+    "climate model",
+    "atmospheric",
+    "meteorological",
+    "climatologist",
+    "scientist",
 
-    // Specific climate events and impacts
+    // Specific impacts and risks
     "climate risk",
     "climate assessment",
     "climate report",
@@ -133,19 +323,322 @@ export function isClimateRelated(headline: string, summary: string): boolean {
     "carbon budget",
     "climate emergency",
     "climate crisis",
-    "bushfire",
-    "wildfire",
-    "heatwave",
-    "flooding",
-    "drought",
-    "storm",
-    "extreme weather",
-    "weather event",
     "climate impact",
     "environmental impact",
+    "ecological",
+    "habitat",
+
+    // Energy and technology
+    "electric vehicle",
+    "ev",
+    "battery",
+    "storage",
+    "grid",
+    "power",
+    "energy transition",
+    "decarbonization",
+    "electrification",
+
+    // Water and agriculture
+    "water scarcity",
+    "irrigation",
+    "agriculture",
+    "farming",
+    "crop",
+    "food security",
+    "drought resistant",
+    "water conservation",
+
+    // Ocean and marine
+    "ocean",
+    "marine",
+    "coral",
+    "bleaching",
+    "acidification",
+    "sea ice",
+    "permafrost",
+    "melting",
+    "thawing",
   ];
 
-  return climateKeywords.some((keyword) => text.includes(keyword));
+  // Check for climate keywords with word boundary matching for better accuracy
+  const hasClimateKeyword = climateKeywords.some((keyword) => {
+    // Use word boundary regex for more precise matching
+    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    return regex.test(text);
+  });
+
+  // Additional check: if headline contains non-climate terms but no clear climate terms, exclude
+  const headlineText = headline.toLowerCase();
+  const hasNonClimateInHeadline = nonClimateKeywords.some((keyword) =>
+    headlineText.includes(keyword),
+  );
+  const hasClimateInHeadline = climateKeywords.some((keyword) => {
+    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    return regex.test(headlineText);
+  });
+
+  // If headline has non-climate terms but no climate terms, exclude even if summary has climate terms
+  if (hasNonClimateInHeadline && !hasClimateInHeadline) {
+    return false;
+  }
+
+  // More specific political check - only exclude if clearly non-climate political content
+  const specificPoliticalTerms = [
+    "independence",
+    "colony",
+    "colonial",
+    "staff",
+    "chiefs of staff",
+    "minister.*staff",
+  ];
+  const hasSpecificPoliticalTerms = specificPoliticalTerms.some((term) => {
+    if (term.includes(".*")) {
+      const regex = new RegExp(term, "i");
+      return regex.test(headlineText);
+    }
+    return headlineText.includes(term);
+  });
+  if (hasSpecificPoliticalTerms && !hasClimateInHeadline) {
+    return false;
+  }
+
+  // Final strict check: specific patterns that should always be excluded
+  const strictExcludePatterns = [
+    /questions raised after.*minister/i,
+    /goes through.*chiefs of staff/i,
+    /before.*gained independence/i,
+    /was a colony of/i,
+    /papua new guinea.*independence/i,
+    /qld minister.*staff/i,
+    /gold coast.*mp/i,
+    /labor.*mudslinging/i,
+    /lnp.*elected/i,
+  ];
+
+  const matchesStrictExclude = strictExcludePatterns.some((pattern) => {
+    const matches = pattern.test(headlineText);
+    if (matches) {
+      console.log(`🚫 Excluding news due to strict pattern match: "${headline}"`);
+    }
+    return matches;
+  });
+
+  if (matchesStrictExclude && !hasClimateInHeadline) {
+    return false;
+  }
+
+  // Additional debugging and manual exclusion for specific problematic headlines
+  const problematicHeadlines = [
+    "before png gained independence, it was a colony of australia",
+    "questions raised after qld minister goes through three chiefs of staff in a year",
+  ];
+
+  const isProblematic = problematicHeadlines.some((problematic) =>
+    headlineText.includes(problematic.replace(/[^a-z\s]/g, "")),
+  );
+
+  if (isProblematic && !hasClimateInHeadline) {
+    console.log(`🚫 Excluding problematic headline: "${headline}"`);
+    return false;
+  }
+
+  return hasClimateKeyword;
+}
+
+// Function to check if news is Australia-related
+export function isAustraliaRelated(headline: string, summary: string): boolean {
+  const text = (headline + " " + summary).toLowerCase();
+
+  // Australian keywords
+  const australiaKeywords = [
+    // Country names
+    "australia",
+    "australian",
+    "australians",
+    // States and territories
+    "new south wales",
+    "nsw",
+    "victoria",
+    "vic",
+    "queensland",
+    "qld",
+    "qld",
+    "western australia",
+    "wa",
+    "south australia",
+    "sa",
+    "tasmania",
+    "tas",
+    "northern territory",
+    "nt",
+    "australian capital territory",
+    "act",
+    // Major cities
+    "sydney",
+    "melbourne",
+    "brisbane",
+    "perth",
+    "adelaide",
+    "hobart",
+    "darwin",
+    "canberra",
+    "gold coast",
+    "newcastle",
+    "wollongong",
+    "geelong",
+    "townsville",
+    "cairns",
+    "toowoomba",
+    "ballarat",
+    "bendigo",
+    "albury",
+    "launceston",
+    "mackay",
+    // Australian institutions and organizations
+    "csiro",
+    "bureau of meteorology",
+    "bom",
+    "australian bureau of statistics",
+    "abs",
+    "australian government",
+    "federal government",
+    "state government",
+    "local council",
+    "australian defence force",
+    "adf",
+    "australian federal police",
+    "afp",
+    "australian broadcasting corporation",
+    "abc",
+    "sbs",
+    "special broadcasting service",
+    "reserve bank of australia",
+    "rba",
+    "australian securities exchange",
+    "asx",
+    // Climate and environment specific
+    "great barrier reef",
+    "murray darling",
+    "kakadu",
+    "uluru",
+    "kata tjuta",
+    "australian alps",
+    "blue mountains",
+    "daintree",
+    "fraser island",
+    "kangaroo island",
+    "tasmanian wilderness",
+    "simpson desert",
+    "nullarbor",
+    "kimberley",
+    "australian outback",
+    "red centre",
+    "top end",
+    "tropical north queensland",
+    // Australian climate events and phenomena
+    "el niño",
+    "la niña",
+    "indian ocean dipole",
+    "southern annular mode",
+    "sam",
+    "east coast low",
+    "black summer",
+    "bushfire",
+    "cyclone",
+    "tropical cyclone",
+    "flood",
+    "drought",
+    "heatwave",
+    "frost",
+    "hail",
+    "thunderstorm",
+    // Australian flora and fauna
+    "eucalyptus",
+    "gum tree",
+    "wattle",
+    "banksia",
+    "waratah",
+    "kangaroo",
+    "koala",
+    "wombat",
+    "echidna",
+    "platypus",
+    "kookaburra",
+    "cockatoo",
+    "emu",
+    "dingo",
+    // Australian energy and resources
+    "coal",
+    "iron ore",
+    "natural gas",
+    "lng",
+    "renewable energy",
+    "solar farm",
+    "wind farm",
+    "hydroelectric",
+    "battery storage",
+    "grid",
+    "aemo",
+    // Australian politics and policy
+    "prime minister",
+    "premier",
+    "minister",
+    "parliament",
+    "senate",
+    "house of representatives",
+    "liberal party",
+    "labor party",
+    "greens",
+    "national party",
+    "independent",
+    "coalition",
+    "opposition",
+    "budget",
+    "policy",
+    "legislation",
+    "bill",
+    // Australian economy and business
+    "australian dollar",
+    "aud",
+    "gdp",
+    "inflation",
+    "interest rate",
+    "unemployment",
+    "retail",
+    "manufacturing",
+    "mining",
+    "agriculture",
+    "tourism",
+    "education",
+    "healthcare",
+    "infrastructure",
+    "transport",
+    "rail",
+    "road",
+    "airport",
+    // Time references
+    "today",
+    "yesterday",
+    "this week",
+    "this month",
+    "this year",
+    "recently",
+    "australian time",
+    "aest",
+    "aedt",
+    "acst",
+    "awst",
+  ];
+
+  // Check for Australian keywords with word boundary matching
+  const hasAustraliaKeyword = australiaKeywords.some((keyword) => {
+    // Use word boundary regex for more precise matching
+    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    return regex.test(text);
+  });
+
+  return hasAustraliaKeyword;
 }
 
 // Function to determine news label based on content
@@ -233,173 +726,20 @@ export function determineNewsLabel(headline: string, summary: string): NewsItem[
   return "Neutral";
 }
 
-// Function to fetch all news without climate filtering
-export async function fetchAllNews(): Promise<NewsItem[]> {
-  // Try multiple RSS sources
-  const rssSources = [
-    "https://www.abc.net.au/news/feed/1534/rss.xml", // ABC News Climate
-    "https://www.theguardian.com/environment/climate-change/rss.xml", // Guardian Climate
-    "https://www.climatecouncil.org.au/feed", // Climate Council (fallback)
-  ];
-
-  for (const rssUrl of rssSources) {
-    try {
-      console.log(`Trying RSS source: ${rssUrl}`);
-      const response = await axios.get(rssUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-          Accept: "application/rss+xml, application/xml, text/xml, */*",
-        },
-        timeout: 15000,
-      });
-      const xmlData = response.data;
-
-      // Wrap parseString with Promise
-      const result: any = await new Promise((resolve, reject) => {
-        parseString(xmlData, (err: any, parsed: any) => {
-          if (err) reject(err);
-          else resolve(parsed);
-        });
-      });
-
-      // Handle different RSS formats
-      let items: any[] = [];
-      if (result.rss && result.rss.channel && result.rss.channel[0] && result.rss.channel[0].item) {
-        items = result.rss.channel[0].item;
-      } else if (result.feed && result.feed.entry) {
-        // Atom feed format
-        items = result.feed.entry;
-      }
-
-      if (items.length === 0) {
-        console.log(`No items found in RSS feed: ${rssUrl}`);
-        continue;
-      }
-
-      console.log(`Successfully fetched ${items.length} items from ${rssUrl}`);
-
-      // Take first 10 news items without climate filtering
-      const newsItems: NewsItem[] = await Promise.all(
-        items.slice(0, 10).map(async (item: any, index: number) => {
-          // Handle different RSS formats
-          const headline = item.title?.[0] || item.title?.["#text"] || "No title";
-          const link = item.link?.[0] || item.link?.["@"]?.href || item.link?.["#text"] || "#";
-          const description =
-            item.description?.[0] ||
-            item.summary?.[0] ||
-            item.content?.[0]?.["#text"] ||
-            item.content?.[0] ||
-            "";
-          const pubDate = item.pubDate?.[0] || item.published?.[0] || new Date().toISOString();
-
-          // Extract image URL
-          let imageUrl = "";
-
-          // Try different image fields
-          if (
-            item.enclosure &&
-            item.enclosure[0] &&
-            item.enclosure[0].$ &&
-            item.enclosure[0].$.type?.startsWith("image/")
-          ) {
-            imageUrl = item.enclosure[0].$.url;
-          } else if (
-            item["media:content"] &&
-            item["media:content"][0] &&
-            item["media:content"][0].$
-          ) {
-            imageUrl = item["media:content"][0].$.url;
-          } else if (
-            item["media:thumbnail"] &&
-            item["media:thumbnail"][0] &&
-            item["media:thumbnail"][0].$
-          ) {
-            imageUrl = item["media:thumbnail"][0].$.url;
-          } else if (
-            item["media:group"] &&
-            item["media:group"][0] &&
-            item["media:group"][0]["media:content"]
-          ) {
-            const mediaContent = item["media:group"][0]["media:content"];
-            if (Array.isArray(mediaContent)) {
-              const imageContent = mediaContent.find(
-                (content: any) =>
-                  content.$ && content.$.type && content.$.type.startsWith("image/"),
-              );
-              if (imageContent && imageContent.$) {
-                imageUrl = imageContent.$.url;
-              }
-            }
-          }
-
-          // If no image found, try to extract from description
-          if (!imageUrl && description) {
-            const imgMatch = description.match(/<img[^>]+src="([^"]+)"/i);
-            if (imgMatch) {
-              imageUrl = imgMatch[1];
-            }
-          }
-
-          // Clean HTML tags
-          const cleanDescription = description.replace(/<[^>]*>/g, "").substring(0, 500);
-          const content = item["content:encoded"]
-            ? item["content:encoded"][0].replace(/<[^>]*>/g, "")
-            : cleanDescription;
-
-          // Use Gemini for summarization
-          const summary = await summarizeText(content || cleanDescription);
-
-          // Determine label based on content
-          const label = determineNewsLabel(headline, summary);
-
-          // Determine source
-          const source = rssUrl.includes("abc.net.au")
-            ? "ABC News"
-            : rssUrl.includes("theguardian.com")
-              ? "The Guardian"
-              : "Climate Council Australia";
-
-          return {
-            id: `news-${Date.now()}-${index + 1}`,
-            headline,
-            summary,
-            label,
-            image: imageUrl || undefined,
-            source,
-            timestamp: new Date(pubDate).toLocaleString("en-AU", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            link,
-            content,
-          };
-        }),
-      );
-
-      return newsItems;
-    } catch (error) {
-      console.error(`Error fetching from ${rssUrl}:`, error);
-      continue; // Try next source
-    }
-  }
-
-  // If all sources fail, return mock data
-  console.log("All RSS sources failed, falling back to mock news data...");
-  return getMockNewsData();
-}
-
 // Function to fetch and parse RSS feed with climate filtering
 export async function fetchClimateNews(): Promise<NewsItem[]> {
-  // Try multiple RSS sources
+  // Try multiple RSS sources - only Australian sources
   const rssSources = [
-    "https://www.abc.net.au/news/feed/1534/rss.xml", // ABC News Climate
-    "https://www.theguardian.com/environment/climate-change/rss.xml", // Guardian Climate
-    "https://www.climatecouncil.org.au/feed", // Climate Council (fallback)
+    "https://www.abc.net.au/news/feed/1534/rss.xml", // ABC News Climate (Australian climate news)
+    "https://www.abc.net.au/news/feed/1535/rss.xml", // ABC News Environment (additional environment feed)
+    "https://www.abc.net.au/news/feed/1536/rss.xml", // ABC News Science (science and climate)
+    "https://feeds.abc.net.au/news/science", // ABC News Science RSS
+    "https://www.theguardian.com/au/environment/rss", // Guardian Australia Environment
+    "https://www.theguardian.com/au/environment/climate-change/rss", // Guardian Australia Climate Change
+    // "https://www.climatecouncil.org.au/feed", // Climate Council (blocked by Cloudflare)
   ];
+
+  let allCollectedNews: NewsItem[] = [];
 
   for (const rssUrl of rssSources) {
     try {
@@ -506,12 +846,66 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
             ? item["content:encoded"][0].replace(/<[^>]*>/g, "")
             : cleanDescription;
 
-          // Use Gemini for summarization
-          const summary = await summarizeText(content || cleanDescription);
+          // Provide default image for news without images
+          if (!imageUrl) {
+            imageUrl =
+              "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=600&h=400&fit=crop&crop=center"; // Default climate image
+          }
 
-          // Check if climate-related, skip if not
-          if (!isClimateRelated(headline, summary)) {
+          // Immediate strict exclusion check before any other processing - only for clearly non-climate content
+          const headlineLower = headline.toLowerCase();
+          const immediateExcludePatterns = [
+            "before png gained independence",
+            "was a colony of australia",
+            "questions raised after qld minister",
+            "goes through three chiefs of staff",
+            "laura gerber",
+            "gold coast mp",
+            "lnp elected",
+          ];
+
+          const shouldImmediatelyExclude = immediateExcludePatterns.some((pattern) =>
+            headlineLower.includes(pattern),
+          );
+
+          if (shouldImmediatelyExclude) {
+            console.log(`🚫 Immediately excluding non-climate news: "${headline}"`);
             return null;
+          }
+
+          // Check if climate-related first, before calling Gemini
+          const textToCheck = content || cleanDescription || headline;
+          if (!isClimateRelated(headline, textToCheck)) {
+            return null;
+          }
+
+          // Additional check: ensure it's Australia-related
+          if (!isAustraliaRelated(headline, textToCheck)) {
+            return null;
+          }
+
+          // Use Gemini for summarization (with improved fallback)
+          let summary: string;
+          try {
+            summary = await summarizeText(content || cleanDescription);
+          } catch (error) {
+            // Check if it's a quota exceeded error
+            const isQuotaError =
+              error instanceof Error &&
+              (error.message.includes("429") ||
+                error.message.includes("quota") ||
+                error.message.includes("Too Many Requests"));
+
+            if (isQuotaError) {
+              console.log(
+                `⚠️ Gemini API quota exceeded, using intelligent fallback for: ${headline}`,
+              );
+            } else {
+              console.log(`⚠️ Gemini API error, using fallback for: ${headline}`);
+            }
+
+            // Create a more intelligent fallback summary
+            summary = createIntelligentFallbackSummary(headline, cleanDescription);
           }
 
           // Determine label based on content
@@ -548,76 +942,27 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
       const newsItems = allNewsItems.filter((item) => item !== null).slice(0, 10) as NewsItem[];
 
       console.log(`Filtered to ${newsItems.length} climate-related news items from ${rssUrl}`);
-      return newsItems;
+      allCollectedNews.push(...newsItems);
+
+      // If we have enough news, return early
+      if (allCollectedNews.length >= 5) {
+        return allCollectedNews.slice(0, 10);
+      }
     } catch (error) {
       console.error(`Error fetching from ${rssUrl}:`, error);
       continue; // Try next source
     }
   }
 
-  // If all sources fail, return mock data
-  console.log("All RSS sources failed, falling back to mock news data...");
-  return getMockNewsData();
-}
+  // Return whatever real news we collected, no mock data
+  if (allCollectedNews.length > 0) {
+    console.log(`Collected ${allCollectedNews.length} real news articles from RSS sources`);
+    return allCollectedNews.slice(0, 10);
+  }
 
-// Mock news data as fallback
-function getMockNewsData(): NewsItem[] {
-  return [
-    {
-      id: "climate-1",
-      headline: "Australia's Climate Action Progress",
-      summary:
-        "Australia continues to make significant progress in renewable energy adoption, with solar and wind power reaching new milestones in 2024.",
-      label: "Positive",
-      source: "Climate Council Australia",
-      timestamp: new Date().toLocaleString("en-AU", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      link: "https://www.climatecouncil.org.au/",
-      content:
-        "Australia continues to make significant progress in renewable energy adoption, with solar and wind power reaching new milestones in 2024.",
-    },
-    {
-      id: "climate-2",
-      headline: "Climate Change Impact on Australian Communities",
-      summary:
-        "Recent studies show increasing climate impacts on Australian communities, highlighting the urgent need for adaptation measures.",
-      label: "High Risk",
-      source: "Climate Council Australia",
-      timestamp: new Date(Date.now() - 86400000).toLocaleString("en-AU", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      link: "https://www.climatecouncil.org.au/",
-      content:
-        "Recent studies show increasing climate impacts on Australian communities, highlighting the urgent need for adaptation measures.",
-    },
-    {
-      id: "climate-3",
-      headline: "Renewable Energy Investment Reaches Record High",
-      summary:
-        "Investment in renewable energy projects across Australia has reached unprecedented levels, signaling strong market confidence in clean energy.",
-      label: "Positive",
-      source: "Climate Council Australia",
-      timestamp: new Date(Date.now() - 172800000).toLocaleString("en-AU", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      link: "https://www.climatecouncil.org.au/",
-      content:
-        "Investment in renewable energy projects across Australia has reached unprecedented levels, signaling strong market confidence in clean energy.",
-    },
-  ];
+  // If all sources fail, return empty array instead of mock data
+  console.log("All RSS sources failed, returning empty news array");
+  return [];
 }
 
 // Weekly update function

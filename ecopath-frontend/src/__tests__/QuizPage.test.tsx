@@ -34,8 +34,8 @@ vi.mock("@/components/quiz/QuizResultsModal", () => ({
   default: ({ open }: { open: boolean }) => (open ? <div role="dialog">results</div> : null),
 }));
 
-vi.mock("@/services/api", () => ({
-  apiService: {
+vi.mock("@/services/apiClient", () => ({
+  default: {
     getStates: () =>
       Promise.resolve([
         { id: "VIC", name: "Victoria", abbreviation: "VIC", displayName: "Victoria" },

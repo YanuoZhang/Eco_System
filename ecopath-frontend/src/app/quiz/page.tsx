@@ -8,7 +8,7 @@ import QuizAppliances from "@/components/quiz/QuizAppliances";
 import QuizTransport from "@/components/quiz/QuizTransport";
 import QuizFloatingPreview from "@/components/quiz/QuizFloatingPreview";
 import QuizResultsModal from "@/components/quiz/QuizResultsModal";
-import { apiService, StateData } from "@/services/api";
+import apiClient, { StateData } from "@/services/apiClient";
 
 export default function QuizPage() {
   const [states, setStates] = useState<StateData[]>([]);
@@ -24,7 +24,7 @@ export default function QuizPage() {
   const [hotWaterEmissions, setHotWaterEmissions] = useState<number>(0);
 
   useEffect(() => {
-    apiService
+    apiClient
       .getStates()
       .then((list) => setStates(list))
       .catch(() => setStates([]));
@@ -32,7 +32,7 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (!selectedState) return;
-    apiService
+    apiClient
       .getEmissionsFactors(selectedState)
       .then((data) =>
         setFactors(data as { electricity?: number; gas?: number; units?: { gas?: string } }),

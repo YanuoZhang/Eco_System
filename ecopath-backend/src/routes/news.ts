@@ -7,7 +7,6 @@ import {
   getNewsById,
   performWeeklyNewsUpdate,
   getCacheInfo,
-  fetchAllNews,
 } from "../services/newsService";
 import { summarizeText } from "../gemini";
 
@@ -30,27 +29,6 @@ router.get("/climate", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to fetch climate news",
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
-
-// All news API endpoint (unfiltered)
-router.get("/all", async (req: Request, res: Response) => {
-  try {
-    const newsItems = await fetchAllNews();
-
-    res.json({
-      success: true,
-      data: newsItems,
-      cached: false,
-      lastUpdated: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error("Error in all news API:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch all news",
       message: error instanceof Error ? error.message : "Unknown error",
     });
   }

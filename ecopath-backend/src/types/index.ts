@@ -23,6 +23,11 @@ export interface ClimateEvent {
 export interface TimelinePeriod {
   period: string;
   years: string;
+  // Optional rich fields to support frontend story timeline
+  title?: string;
+  dramaticText?: string;
+  childPerspective?: string;
+  visual?: string;
   events: ClimateEvent[];
 }
 

@@ -1,11 +1,12 @@
 import LiveClimateNews from "@/components/news/LiveClimateNews";
 import Hero from "@/components/home/Hero";
 import ClimateTimeline from "@/components/timeline/ClimateTimeline";
+// For client-side verification of API calls, we no longer fetch timeline in SSR.
 import CallToAction from "@/components/home/CallToAction";
 import BottomFooter from "@/components/home/BottomFooter";
 import Image from "next/image";
 
-export default function Home() {
+export default async function Home() {
   return (
     <div
       className="min-h-screen overflow-x-hidden"

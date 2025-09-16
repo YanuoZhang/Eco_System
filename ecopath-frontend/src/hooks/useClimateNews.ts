@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { apiService, NewsItem } from "@/services/api";
+import { apiClient, NewsItem } from "@/services/apiClient";
 
 interface UseClimateNewsReturn {
   news: NewsItem[];
@@ -29,7 +29,7 @@ export function useClimateNews(): UseClimateNewsReturn {
       }
       abortRef.current = new AbortController();
 
-      const response = await apiService.getClimateNews();
+      const response = await apiClient.getClimateNews();
 
       if (response.success) {
         if (!isMountedRef.current) return;

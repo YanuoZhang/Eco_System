@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ClimateNewsCard from "./ClimateNewsCard";
 import { useClimateNews } from "@/hooks/useClimateNews";
-import { NewsItem } from "@/services/api";
+import { NewsItem } from "@/services/apiClient";
 
 export default function LiveClimateNews() {
   const ref = useRef<HTMLDivElement | null>(null);
