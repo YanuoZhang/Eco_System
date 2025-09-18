@@ -2,13 +2,18 @@ import { test, expect } from "@playwright/test";
 
 test("Transport quiz section loads and functions correctly", async ({ page }) => {
   await page.goto("/quiz");
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
 
-  // Check if transport section is visible
-  await expect(page.getByText(/Weekly Transport Habits/i)).toBeVisible();
+  // Ensure transport section is open
+  const transportHeader = page.getByText(/Weekly Transport Habits/i);
+  await expect(transportHeader).toBeVisible();
+  await transportHeader.click(); // idempotent toggle
 
-  // Section is open by default; wait for car section to be present
-  await page.getByTestId("car-section").waitFor({ state: "visible" });
+  // Wait for car section to be attached and visible
+  const carSectionInit = page.getByTestId("car-section");
+  await carSectionInit.waitFor({ state: "attached" });
+  await carSectionInit.scrollIntoViewIfNeeded();
+  await carSectionInit.waitFor({ state: "visible" });
 
   // Scope to Car section then toggle and assert inputs appear
   const carSection = page.getByTestId("car-section");
@@ -68,7 +73,12 @@ test("Transport quiz section loads and functions correctly", async ({ page }) =>
 
 test("Transport emissions calculation updates correctly", async ({ page }) => {
   await page.goto("/quiz");
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
+
+  // Ensure transport section is open
+  const transportHeader2 = page.getByText(/Weekly Transport Habits/i);
+  await expect(transportHeader2).toBeVisible();
+  await transportHeader2.click(); // idempotent toggle
 
   // Ensure car section is in DOM, then scroll into view and wait visible
   const carSection = page.getByTestId("car-section");
