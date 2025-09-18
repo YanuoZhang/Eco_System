@@ -90,3 +90,74 @@ export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
     totalPages: number;
   };
 }
+
+// Pledge types
+export interface Pledge {
+  id: string;
+  title: string;
+  description: string;
+  category: "energy" | "transport" | "waste" | "water" | "food" | "lifestyle";
+  difficulty: "easy" | "medium" | "hard";
+  impact: "low" | "medium" | "high";
+  estimatedSavings?: string; // e.g., "Save $50/year"
+  estimatedCO2Reduction?: string; // e.g., "Reduce 100kg CO2/year"
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PledgeListResponse extends PaginatedResponse<Pledge> {
+  categories?: string[];
+  totalPledges: number;
+}
+
+// Quiz data types for AI recommendations
+export interface QuizData {
+  location?: {
+    state: string;
+    city?: string;
+  };
+  electricity?: {
+    usage: number; // kWh per period
+    timeUnit: "month" | "quarter" | "year";
+    bill?: number; // $ per period
+    household: number;
+    ledBulbs?: "yes" | "no" | "mixed";
+    airConditioning?: "frequently" | "rarely" | "seasonally";
+    efficientAppliances?: "yes" | "no" | "mixed";
+  };
+  hotWater?: {
+    system: "electric" | "gas" | "solar";
+    usage?: number; // kWh or MJ per period
+    timeUnit: "month" | "quarter" | "year";
+    household: number;
+    energySaving: boolean;
+  };
+  transport?: {
+    modes: Array<{
+      mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+      distance: number; // km per week
+      frequency: number; // trips per week
+    }>;
+  };
+  appliances?: {
+    weeklyUsage: Array<{
+      appliance: string;
+      hoursPerWeek: number;
+      energyEfficient: boolean;
+    }>;
+  };
+}
+
+export interface AIRecommendedPledge extends Pledge {
+  explanation: string; // Why this pledge was recommended
+  confidence: number; // 0-1 confidence score
+  impactScore: number; // 0-1 impact potential for this user
+  priority: "high" | "medium" | "low";
+}
+
+export interface AIRecommendationResponse extends ApiResponse<AIRecommendedPledge[]> {
+  quizData?: QuizData;
+  totalRecommendations: number;
+  insights?: string[]; // Key insights about user's carbon footprint
+}

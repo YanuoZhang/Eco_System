@@ -7,6 +7,7 @@ import newsRoutes from "./news";
 import timelineRoutes from "./timeline";
 import statesRoutes from "./states";
 import climateTargetsRoutes from "./climateTargets";
+import pledgesRoutes from "./pledges";
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use("/news", newsRoutes);
 router.use("/timeline", timelineRoutes);
 router.use("/states", statesRoutes);
 router.use("/climate-targets", climateTargetsRoutes);
+router.use("/pledges", pledgesRoutes);
 
 export default router;
