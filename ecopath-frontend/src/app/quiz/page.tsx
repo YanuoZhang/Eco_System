@@ -14,7 +14,7 @@ export default function QuizPage() {
   const [states, setStates] = useState<StateData[]>([]);
   const [selectedState, setSelectedState] = useState<string>("VIC");
   const [showResults, setShowResults] = useState(false);
-  const [timeUnit, setTimeUnit] = useState<"month" | "quarter" | "year">("month");
+  const [timeUnit, setTimeUnit] = useState<"week" | "month" | "quarter" | "year">("month");
   const [factors, setFactors] = useState<{
     electricity?: number;
     gas?: number;
@@ -22,6 +22,11 @@ export default function QuizPage() {
   } | null>(null);
   const [electricityEmissions, setElectricityEmissions] = useState<number>(0);
   const [hotWaterEmissions, setHotWaterEmissions] = useState<number>(0);
+  const [appliancesEmissions, setAppliancesEmissions] = useState<number>(0);
+  const [applianceBreakdown, setApplianceBreakdown] = useState<
+    | Record<string, { name: string; icon: string; emissions: number; usageHoursPerWeek: number }>
+    | undefined
+  >(undefined);
 
   useEffect(() => {
     apiClient
@@ -46,8 +51,8 @@ export default function QuizPage() {
       {/* Global time unit selector under hero, aligned to top-right */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex justify-end">
-          <div className="grid grid-cols-3 gap-3 mt-4">
-            {(["month", "quarter", "year"] as const).map((tu) => (
+          <div className="grid grid-cols-4 gap-3 mt-4">
+            {(["week", "month", "quarter", "year"] as const).map((tu) => (
               <button
                 key={tu}
                 type="button"
@@ -80,16 +85,34 @@ export default function QuizPage() {
                 setHotWaterEmissions(v.hotWaterEmissionsKgYear);
             }}
           />
-          <QuizAppliances />
+          <QuizAppliances
+            timeUnit={timeUnit}
+            factors={{ electricity: factors?.electricity }}
+            onChange={(v) => {
+              if (typeof v.appliancesEmissionsKgYear === "number")
+                setAppliancesEmissions(v.appliancesEmissionsKgYear);
+              if (v.applianceBreakdownKgYear) setApplianceBreakdown(v.applianceBreakdownKgYear);
+            }}
+          />
           <QuizTransport />
         </div>
       </section>
       <QuizFloatingPreview
-        valueKgYear={electricityEmissions + hotWaterEmissions}
+        valueKgYear={electricityEmissions + hotWaterEmissions + appliancesEmissions}
         timeUnit={timeUnit}
         onOpen={() => setShowResults(true)}
       />
-      <QuizResultsModal open={showResults} onClose={() => setShowResults(false)} />
+      <QuizResultsModal
+        open={showResults}
+        onClose={() => setShowResults(false)}
+        timeUnit={timeUnit}
+        totals={{
+          electricityKgYear: electricityEmissions,
+          hotWaterKgYear: hotWaterEmissions,
+          appliancesKgYear: appliancesEmissions,
+        }}
+        appliances={applianceBreakdown}
+      />
     </div>
   );
 }

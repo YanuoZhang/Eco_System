@@ -7,11 +7,11 @@ type Props = {
   onToggle?: () => void;
   electricity?: number; // kWh
   gasMJ?: number; // MJ
-  timeUnit?: "month" | "quarter" | "year";
+  timeUnit?: "week" | "month" | "quarter" | "year";
   onChange?: (v: {
     electricity?: number;
     gasMJ?: number;
-    timeUnit?: "month" | "quarter" | "year";
+    timeUnit?: "week" | "month" | "quarter" | "year";
     electricityEmissionsKgYear?: number;
   }) => void;
   factors?: { electricity?: number; gas?: number; units?: { gas?: string } } | null;
@@ -42,7 +42,7 @@ export default function QuizElectricity({
   const [efficient, setEfficient] = useState<"yes" | "no" | "mixed" | null>(null);
 
   // Local fallback timeUnit when parent is not controlling it
-  const [localTimeUnit] = useState<"month" | "quarter" | "year">("month");
+  const [localTimeUnit] = useState<"week" | "month" | "quarter" | "year">("month");
   const currentTimeUnit = timeUnit ?? localTimeUnit;
 
   // Locally controlled kWh; always editable; sync initial value from parent
@@ -60,7 +60,14 @@ export default function QuizElectricity({
 
   // Compute electricity emissions (kg CO2e/year) using energyrating.gov.au-based multipliers (conservative)
   const electricityFactor = factors?.electricity ?? 0;
-  const scale = currentTimeUnit === "month" ? 12 : currentTimeUnit === "quarter" ? 4 : 1;
+  const scale =
+    currentTimeUnit === "month"
+      ? 12
+      : currentTimeUnit === "quarter"
+        ? 4
+        : currentTimeUnit === "week"
+          ? 52.143
+          : 1;
   const kwhInput = knowKwh
     ? typeof localElectricity === "number"
       ? localElectricity
@@ -78,11 +85,13 @@ export default function QuizElectricity({
   }, [emissionsYear]);
 
   const unitLabel =
-    currentTimeUnit === "month"
-      ? "Monthly"
-      : currentTimeUnit === "quarter"
-        ? "Quarterly"
-        : "Yearly";
+    currentTimeUnit === "week"
+      ? "Weekly"
+      : currentTimeUnit === "month"
+        ? "Monthly"
+        : currentTimeUnit === "quarter"
+          ? "Quarterly"
+          : "Yearly";
 
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-orange-200/50 shadow overflow-hidden">

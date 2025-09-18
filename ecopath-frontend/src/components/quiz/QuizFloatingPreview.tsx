@@ -4,11 +4,12 @@ export default function QuizFloatingPreview({
   onOpen,
 }: {
   valueKgYear?: number;
-  timeUnit?: "month" | "quarter" | "year";
+  timeUnit?: "week" | "month" | "quarter" | "year";
   onOpen: () => void;
 }) {
   if (!valueKgYear || valueKgYear <= 0) return null;
-  const scale = timeUnit === "month" ? 12 : timeUnit === "quarter" ? 4 : 1;
+  const scale =
+    timeUnit === "month" ? 12 : timeUnit === "quarter" ? 4 : timeUnit === "week" ? 52.143 : 1;
   const shown = valueKgYear / scale;
   const unitLabel = timeUnit;
   return (
