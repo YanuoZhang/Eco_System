@@ -119,21 +119,25 @@ if (process.env.NODE_ENV !== "test") {
       console.warn("Database connection failed. Some endpoints may not work properly.");
     }
 
-    // Schedule weekly news updates (every Monday at 9:00 AM)
-    cron.schedule(
-      "0 9 * * 1",
-      () => {
-        performWeeklyNewsUpdate();
-      },
-      {
-        timezone: "Australia/Sydney",
-      },
-    );
+    if (process.env.NEWS_AUTO_UPDATE !== "false") {
+      // Schedule weekly news updates (every Monday at 9:00 AM)
+      cron.schedule(
+        "0 9 * * 1",
+        () => {
+          performWeeklyNewsUpdate();
+        },
+        {
+          timezone: "Australia/Sydney",
+        },
+      );
 
-    // Also perform initial news fetch on startup
-    console.log("Performing initial news fetch...");
-    performWeeklyNewsUpdate();
+      // Also perform initial news fetch on startup
+      console.log("Performing initial news fetch...");
+      performWeeklyNewsUpdate();
 
-    console.log("Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)");
+      console.log("Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)");
+    } else {
+      console.log("NEWS_AUTO_UPDATE=false → Skipping news cron and initial fetch");
+    }
   });
 }

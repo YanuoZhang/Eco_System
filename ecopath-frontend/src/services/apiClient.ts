@@ -77,6 +77,16 @@ class ApiService {
     }
   }
 
+  private async requestWithBody<T>(endpoint: string, method: string, body?: unknown): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    return (await response.json()) as T;
+  }
+
   // News API methods
   async getClimateNews(): Promise<NewsResponse> {
     return this.request<NewsResponse>("/api/news/climate");
@@ -122,6 +132,66 @@ class ApiService {
   // Health check
   async getHealth(): Promise<{ status: string; database: string; timestamp: string }> {
     return this.request<{ status: string; database: string; timestamp: string }>("/healthz");
+  }
+
+  // Pledges (public)
+  async getPublicPledges(params?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    difficulty?: string;
+    impact?: string;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.page !== undefined) q.append("page", String(params.page));
+    if (params?.limit !== undefined) q.append("limit", String(params.limit));
+    if (params?.category) q.append("category", params.category);
+    if (params?.difficulty) q.append("difficulty", params.difficulty);
+    if (params?.impact) q.append("impact", params.impact);
+    const qs = q.toString();
+    return this.request(`/api/pledges${qs ? `?${qs}` : ""}`);
+  }
+
+  async getPledgeCategories() {
+    return this.request(`/api/pledges/categories`);
+  }
+
+  async searchPledges(q: string) {
+    return this.request(`/api/pledges/search?q=${encodeURIComponent(q)}`);
+  }
+
+  async getPledgeById(id: string) {
+    return this.request(`/api/pledges/${id}`);
+  }
+
+  async getAiRecommendations(quizData: unknown) {
+    return this.requestWithBody(`/api/pledges/ai-recommendations`, "POST", quizData);
+  }
+
+  // User pledges (in-memory server storage)
+  async listUserPledges(userId: string) {
+    return this.request(`/api/pledges/user?userId=${encodeURIComponent(userId)}`);
+  }
+
+  async saveUserPledges(body: {
+    userId: string;
+    pledges: Array<{ pledgeId: string; reminderType?: string; customDate?: string }>;
+  }) {
+    return this.requestWithBody(`/api/pledges/user`, "POST", body);
+  }
+
+  async rescheduleUserPledge(
+    recordId: string,
+    body: { userId: string; reminderType?: string; customDate?: string },
+  ) {
+    return this.requestWithBody(`/api/pledges/user/${encodeURIComponent(recordId)}`, "PATCH", body);
+  }
+
+  async deleteUserPledge(recordId: string, userId: string) {
+    // Allow sending userId in body for convenience
+    return this.requestWithBody(`/api/pledges/user/${encodeURIComponent(recordId)}`, "DELETE", {
+      userId,
+    });
   }
 }
 

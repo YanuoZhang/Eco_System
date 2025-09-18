@@ -1,0 +1,21 @@
+{
+  "test-user-uuid-1": [
+    {
+      "id": "7da8c116-26a2-424c-b392-8c138a5c423b",
+      "userId": "test-user-uuid-1",
+      "pledgeId": "reusable-bag",
+      "reminderType": "weekly",
+      "dateAdded": "2025-09-18T12:59:03.747Z"
+    }
+  ],
+  "beb87403-62a9-41c8-add9-ccfff145e621": [
+    {
+      "id": "531474c7-44ce-48d1-b380-fc619b4d0f59",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "reusable-bag",
+      "reminderType": "custom",
+      "customDate": "2025-09-25",
+      "dateAdded": "2025-09-18T13:25:07.923Z"
+    }
+  ]
+}
