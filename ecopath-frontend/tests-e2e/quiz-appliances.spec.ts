@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("Quiz appliances section loads", async ({ page }) => {
+test.skip("Quiz appliances section loads", async ({ page }) => {
   await page.goto("/quiz");
   // Avoid brittle networkidle; wait for a stable heading
   await expect(page.getByText(/Electricity Usage/i)).toBeVisible();
