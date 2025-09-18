@@ -348,6 +348,24 @@ export default function QuizElectricity({
               </div>
             )}
           </div>
+
+          {/* Section total summary */}
+          <div className="mt-4 bg-white/80 rounded-lg p-4 border border-orange-200/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-orange-800">Section total</div>
+                <div className="text-xs text-orange-600">Electricity emissions</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-orange-600">
+                  {(emissionsYear / scale).toFixed(1)} kg CO₂/{unitLabel}
+                </div>
+                <div className="text-xs text-orange-500">
+                  {emissionsYear.toFixed(1)} kg CO₂/year
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {/* Slider thumb styles */}

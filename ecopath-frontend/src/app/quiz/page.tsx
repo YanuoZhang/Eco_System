@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import QuizHero from "@/components/quiz/QuizHero";
 import QuizElectricity from "@/components/quiz/QuizElectricity";
 import QuizHotWater from "@/components/quiz/QuizHotWater";
@@ -23,10 +23,33 @@ export default function QuizPage() {
   const [electricityEmissions, setElectricityEmissions] = useState<number>(0);
   const [hotWaterEmissions, setHotWaterEmissions] = useState<number>(0);
   const [appliancesEmissions, setAppliancesEmissions] = useState<number>(0);
+  const [transportEmissions, setTransportEmissions] = useState<number>(0);
+  const [transportBreakdown, setTransportBreakdown] = useState<
+    | Record<
+        string,
+        { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
+      >
+    | undefined
+  >(undefined);
   const [applianceBreakdown, setApplianceBreakdown] = useState<
     | Record<string, { name: string; icon: string; emissions: number; usageHoursPerWeek: number }>
     | undefined
   >(undefined);
+
+  const handleTransportChange = useCallback(
+    (v: {
+      transportEmissionsKgYear?: number;
+      transportBreakdownKgYear?: Record<
+        string,
+        { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
+      >;
+    }) => {
+      if (typeof v.transportEmissionsKgYear === "number")
+        setTransportEmissions(v.transportEmissionsKgYear);
+      if (v.transportBreakdownKgYear) setTransportBreakdown(v.transportBreakdownKgYear);
+    },
+    [],
+  );
 
   useEffect(() => {
     apiClient
@@ -94,11 +117,13 @@ export default function QuizPage() {
               if (v.applianceBreakdownKgYear) setApplianceBreakdown(v.applianceBreakdownKgYear);
             }}
           />
-          <QuizTransport />
+          <QuizTransport timeUnit={timeUnit} factors={factors} onChange={handleTransportChange} />
         </div>
       </section>
       <QuizFloatingPreview
-        valueKgYear={electricityEmissions + hotWaterEmissions + appliancesEmissions}
+        valueKgYear={
+          electricityEmissions + hotWaterEmissions + appliancesEmissions + transportEmissions
+        }
         timeUnit={timeUnit}
         onOpen={() => setShowResults(true)}
       />
@@ -110,8 +135,10 @@ export default function QuizPage() {
           electricityKgYear: electricityEmissions,
           hotWaterKgYear: hotWaterEmissions,
           appliancesKgYear: appliancesEmissions,
+          transportKgYear: transportEmissions,
         }}
         appliances={applianceBreakdown}
+        transport={transportBreakdown}
       />
     </div>
   );

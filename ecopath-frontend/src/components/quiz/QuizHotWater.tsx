@@ -370,6 +370,34 @@ export default function QuizHotWater({
               </div>
             </details>
           </div>
+
+          {/* Section total summary */}
+          <div className="mt-4 bg-white/80 rounded-lg p-4 border border-red-200/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-red-800">Section total</div>
+                <div className="text-xs text-red-600">Hot water emissions</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-red-600">
+                  {(
+                    hotWaterEmissionsKgYear /
+                    (currentTimeUnit === "month"
+                      ? 12
+                      : currentTimeUnit === "quarter"
+                        ? 4
+                        : currentTimeUnit === "week"
+                          ? 52.143
+                          : 1)
+                  ).toFixed(1)}{" "}
+                  kg CO₂/{unitLabel}
+                </div>
+                <div className="text-xs text-red-500">
+                  {hotWaterEmissionsKgYear.toFixed(1)} kg CO₂/year
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -7,7 +7,7 @@ export default function QuizFloatingPreview({
   timeUnit?: "week" | "month" | "quarter" | "year";
   onOpen: () => void;
 }) {
-  if (!valueKgYear || valueKgYear <= 0) return null;
+  if (valueKgYear === undefined || valueKgYear === null) return null;
   const scale =
     timeUnit === "month" ? 12 : timeUnit === "quarter" ? 4 : timeUnit === "week" ? 52.143 : 1;
   const shown = valueKgYear / scale;

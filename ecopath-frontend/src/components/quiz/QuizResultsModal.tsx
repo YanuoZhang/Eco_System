@@ -6,21 +6,32 @@ export default function QuizResultsModal({
   timeUnit = "year",
   totals,
   appliances,
+  transport,
 }: {
   open: boolean;
   onClose: () => void;
   timeUnit?: TimeUnit;
-  totals?: { electricityKgYear?: number; hotWaterKgYear?: number; appliancesKgYear?: number };
+  totals?: {
+    electricityKgYear?: number;
+    hotWaterKgYear?: number;
+    appliancesKgYear?: number;
+    transportKgYear?: number;
+  };
   appliances?: Record<
     string,
     { name: string; icon: string; emissions: number; usageHoursPerWeek: number }
+  >;
+  transport?: Record<
+    string,
+    { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
   >;
 }) {
   if (!open) return null;
   const year =
     (totals?.electricityKgYear ?? 0) +
     (totals?.hotWaterKgYear ?? 0) +
-    (totals?.appliancesKgYear ?? 0);
+    (totals?.appliancesKgYear ?? 0) +
+    (totals?.transportKgYear ?? 0);
   const scale =
     timeUnit === "month" ? 12 : timeUnit === "quarter" ? 4 : timeUnit === "week" ? 52.143 : 1;
   const shown = year / scale;
@@ -38,7 +49,7 @@ export default function QuizResultsModal({
           </button>
         </div>
         {/* Summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl p-5 border-l-4 border-orange-500 shadow">
             <div className="text-sm text-slate-500">Electricity</div>
             <div className="text-2xl font-bold text-orange-600">
@@ -57,6 +68,13 @@ export default function QuizResultsModal({
             <div className="text-sm text-slate-500">Appliances</div>
             <div className="text-2xl font-bold text-purple-600">
               {((totals?.appliancesKgYear ?? 0) / scale).toFixed(1)}
+            </div>
+            <div className="text-xs text-slate-500">kg CO₂/{unitLabel}</div>
+          </div>
+          <div className="bg-white rounded-xl p-5 border-l-4 border-green-500 shadow">
+            <div className="text-sm text-slate-500">Transport</div>
+            <div className="text-2xl font-bold text-green-600">
+              {((totals?.transportKgYear ?? 0) / scale).toFixed(1)}
             </div>
             <div className="text-xs text-slate-500">kg CO₂/{unitLabel}</div>
           </div>
@@ -80,16 +98,18 @@ export default function QuizResultsModal({
               <div className="font-semibold text-sky-800 mb-2">Quick Wins</div>
               <ul className="text-left text-sky-700 space-y-1">
                 <li>• Switch to LED bulbs</li>
-                <li>• Reduce dryer usage when possible</li>
+                <li>• Walk or cycle short trips</li>
                 <li>• Set AC thermostat +2°C / heater -2°C</li>
+                <li>• Use public transport when possible</li>
               </ul>
             </div>
             <div className="bg-white/80 rounded-lg p-4">
               <div className="font-semibold text-sky-800 mb-2">Long-term Impact</div>
               <ul className="text-left text-sky-700 space-y-1">
-                <li>• Consider efficient appliances</li>
+                <li>• Consider electric vehicles</li>
                 <li>• Explore green electricity plans</li>
                 <li>• Improve home insulation</li>
+                <li>• Plan efficient travel routes</li>
               </ul>
             </div>
           </div>
@@ -148,6 +168,66 @@ export default function QuizResultsModal({
             </div>
           </div>
         )}
+
+        {/* Transport Breakdown */}
+        {transport && Object.keys(transport).length > 0 && (
+          <div className="mt-8 bg-white rounded-xl p-6 border border-green-200">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🚗</span>
+              <h4 className="text-xl font-bold text-slate-800">Transport Breakdown</h4>
+            </div>
+            <div className="space-y-3">
+              {Object.entries(transport)
+                .sort(([, a], [, b]) => b.emissions - a.emissions)
+                .map(([id, t]) => (
+                  <div
+                    key={id}
+                    className="flex items-center justify-between bg-green-50/60 rounded-lg p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{t.icon}</span>
+                      <div>
+                        <span className="font-medium text-slate-700">{t.name}</span>
+                        {t.fuelType && (
+                          <span className="text-xs text-slate-500 ml-2">({t.fuelType})</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        {t.distance.toFixed(0)} km/year
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-green-600">
+                        {(t.emissions / scale).toFixed(1)} kg/{unitLabel}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {((t.emissions / year) * 100).toFixed(1)}% of total
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex gap-4 mt-8 pt-6 border-t border-slate-200">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-3 px-6 rounded-xl transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => {
+              // Navigate to pledge page or other action
+              window.location.href = "/pledge";
+            }}
+            className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+          >
+            Create Action Plan →
+          </button>
+        </div>
       </div>
     </div>
   );

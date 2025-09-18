@@ -338,6 +338,41 @@ export default function QuizAppliances({
               </div>
             )}
           </div>
+
+          {/* Section total summary */}
+          <div className="mt-4 bg-white/80 rounded-lg p-4 border border-purple-200/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-purple-800">Section total</div>
+                <div className="text-xs text-purple-600">Appliances emissions</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-purple-600">
+                  {(
+                    emissionsKgYear /
+                    (timeUnit === "month"
+                      ? 12
+                      : timeUnit === "quarter"
+                        ? 4
+                        : timeUnit === "week"
+                          ? 52.143
+                          : 1)
+                  ).toFixed(1)}{" "}
+                  kg CO₂/
+                  {timeUnit === "week"
+                    ? "Weekly"
+                    : timeUnit === "month"
+                      ? "Monthly"
+                      : timeUnit === "quarter"
+                        ? "Quarterly"
+                        : "Yearly"}
+                </div>
+                <div className="text-xs text-purple-500">
+                  {emissionsKgYear.toFixed(1)} kg CO₂/year
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
