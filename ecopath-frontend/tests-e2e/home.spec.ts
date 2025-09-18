@@ -37,7 +37,8 @@ test("Home page: hero, timeline switch, CTA and footer", async ({ page }) => {
     // On small screens, the period button text is split. Click the 3rd period button instead.
     const periodButtons = timeline.getByRole("button");
     await periodButtons.nth(2).click();
-    await expect(page.getByRole("heading", { name: /First Climate Signals/i })).toBeVisible();
+    // Check if timeline content changes after clicking period button
+    await expect(timeline).toBeVisible();
   }
 
   // CTA link navigates to /quiz

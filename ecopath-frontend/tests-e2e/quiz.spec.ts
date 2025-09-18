@@ -13,12 +13,12 @@ test("Quiz page: change time unit and see preview", async ({ page }) => {
     .first()
     .scrollIntoViewIfNeeded();
 
-  // Floating preview presence (text contains preview or CO2 icon). Relaxed assertion by checking any element containing 'preview' text.
-  const previewLocator = page.locator("text=/preview/i").first();
-  // Not all builds show the text; just assert page is still responsive by checking footer brand
-  if (await previewLocator.count()) {
-    await expect(previewLocator).toBeVisible();
+  // Check if floating preview appears
+  const floatingPreview = page.getByRole("button", { name: /Click for full analysis/i });
+  if (await floatingPreview.isVisible().catch(() => false)) {
+    await expect(floatingPreview).toBeVisible();
   } else {
+    // Fallback: check if page is still responsive
     await expect(page.getByText("EcoPath").first()).toBeVisible();
   }
 });
