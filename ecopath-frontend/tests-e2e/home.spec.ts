@@ -51,14 +51,17 @@ test("Home page: hero, timeline switch, CTA and footer", async ({ page }) => {
 test("Nav links navigate to Quiz / Info / Pledge", async ({ page }) => {
   await page.goto("/");
   // Desktop nav links exist; click each and verify route
-  await page.getByRole("link", { name: "Explore My Impact" }).click({ noWaitAfter: true });
+  await page.getByRole("link", { name: "Explore My Impact" }).waitFor({ state: "visible" });
+  await page.getByRole("link", { name: "Explore My Impact" }).click();
   await expect(page).toHaveURL(/\/quiz$/);
 
-  await page.getByRole("link", { name: "Info" }).click({ noWaitAfter: true });
+  await page.getByRole("link", { name: "Info" }).waitFor({ state: "visible" });
+  await page.getByRole("link", { name: "Info" }).click();
   await expect(page).toHaveURL(/\/info$/);
   await expect(page.getByRole("heading", { name: /Info/ })).toBeVisible();
 
-  await page.getByRole("link", { name: "My Pledge" }).click({ noWaitAfter: true });
+  await page.getByRole("link", { name: "My Pledge" }).waitFor({ state: "visible" });
+  await page.getByRole("link", { name: "My Pledge" }).click();
   await expect(page).toHaveURL(/\/pledge$/);
   await expect(page.getByRole("heading", { name: /Pledge/ })).toBeVisible();
 });

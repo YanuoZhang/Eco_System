@@ -1,14 +1,17 @@
 import { test, expect } from "@playwright/test";
 
-// E2E: 周/月切换 + 家电选择 + 结果一致性
+// E2E: week/month switch + appliances selection + results consistency
 test("Quiz appliances: week/month switch and consistency", async ({ page }) => {
   await page.goto("/");
+
+  // Wait for navigation link to be visible and clickable
+  await page.getByRole("link", { name: "Explore My Impact" }).waitFor({ state: "visible" });
   await page.getByRole("link", { name: "Explore My Impact" }).click();
 
-  // 确保页面加载
+  // Ensure page loaded
   await expect(page.getByText(/Electricity Usage/i)).toBeVisible();
 
-  // 选择 VIC 州（若有选择器）
+  // Select VIC state if selector exists
   if (
     await page
       .getByLabel(/State\/Territory/i)
@@ -18,44 +21,44 @@ test("Quiz appliances: week/month switch and consistency", async ({ page }) => {
     await page.getByLabel(/State\/Territory/i).selectOption("VIC");
   }
 
-  // 切换到 week
+  // Switch to week
   await page.getByRole("button", { name: "week" }).click();
 
-  // 展开家电模块
+  // Expand appliances section
   const appliancesHeader = page.getByRole("button", { name: /Common Appliances/i });
   await appliancesHeader.click();
 
-  // 勾选电视与电脑
+  // Select TV and Computer
   const tv = page.getByRole("button", { name: /Television/i });
   const computer = page.getByRole("button", { name: /Computer/i });
   await tv.click();
   await computer.click();
 
-  // 打开高级并调整用量：电视 10h/week，电脑 5h/week
+  // Open advanced settings and adjust usage: TV 10h/week, Computer 5h/week
   await page.getByRole("button", { name: /Advanced usage settings/i }).click();
   const inputs = page.locator("input[type='number']");
-  // 由于 fridge 默认常开，inputs 顺序可能变化，这里直接填所有可编辑输入框前两个
+  // Since fridge is always on by default, input order may vary, fill first two editable inputs
   const editable = await inputs.elementHandles();
   if (editable.length > 0) await editable[0].fill("10");
   if (editable.length > 1) await editable[1].fill("5");
 
-  // 打开预览
+  // Open preview
   await page.getByRole("button", { name: /Click for full analysis/i }).click();
 
-  // 校验弹窗出现并为 week 口径
+  // Verify modal appears with week unit
   await expect(page.getByText(/kg CO₂\/week/i)).toBeVisible();
 
-  // 记录周总值
+  // Record week total value
   const weekText = await page.locator("text=/kg CO₂\\/week/").first().textContent();
   expect(weekText).toBeTruthy();
 
-  // 关闭弹窗
+  // Close modal
   await page.getByRole("button", { name: "×" }).click();
 
-  // 切到 month
+  // Switch to month
   await page.getByRole("button", { name: "month" }).click();
 
-  // 再次打开预览并断言口径切换
+  // Open preview again and assert unit change
   await page.getByRole("button", { name: /Click for full analysis/i }).click();
   await expect(page.getByText(/kg CO₂\/month/i)).toBeVisible();
 });
