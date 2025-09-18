@@ -90,3 +90,104 @@ export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
     totalPages: number;
   };
 }
+
+// Pledge types (aligned with backend pledge API branch)
+export interface Pledge {
+  id: string;
+  title: string;
+  description: string;
+  category: "energy" | "transport" | "waste" | "water" | "food" | "lifestyle";
+  difficulty: "easy" | "medium" | "hard";
+  impact: "low" | "medium" | "high";
+  estimatedSavings?: string;
+  estimatedCO2Reduction?: string;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PledgeListResponse extends ApiResponse<Pledge[]> {
+  totalPledges?: number;
+  categories?: string[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface QuizData {
+  location?: { state?: string; city?: string };
+  electricity?: {
+    usage?: number;
+    timeUnit?: "month" | "quarter" | "year";
+    bill?: number;
+    household?: number;
+    ledBulbs?: "yes" | "no" | "mixed";
+    airConditioning?: "frequently" | "rarely" | "seasonally";
+    efficientAppliances?: "yes" | "no" | "mixed";
+  };
+  hotWater?: {
+    system?: "electric" | "gas" | "solar";
+    usage?: number;
+    timeUnit?: "month" | "quarter" | "year";
+    household?: number;
+    energySaving?: boolean;
+  };
+  transport?: {
+    modes?: Array<{
+      mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+      distance?: number;
+      frequency?: number;
+    }>;
+  };
+  appliances?: {
+    weeklyUsage?: Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>;
+  };
+}
+
+export interface AIRecommendedPledge {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: "high" | "medium" | "low";
+  impactScore: number;
+  reasoning?: string;
+}
+
+export interface AIRecommendationResponse extends ApiResponse<AIRecommendedPledge[]> {
+  totalRecommendations?: number;
+  quizData?: QuizData;
+  insights?: string[];
+}
+
+// User pledge types for persistence APIs
+export type ReminderType = "once" | "daily" | "weekly" | "custom";
+
+export interface UserPledge {
+  id: string; // server-side UUID for this saved pledge record
+  userId: string;
+  pledgeId: string;
+  title?: string;
+  icon?: string;
+  reminderType?: ReminderType;
+  customDate?: string; // ISO date
+  dateAdded: string; // ISO datetime
+}
+
+export interface SaveUserPledgesRequest {
+  userId: string;
+  pledges: Array<{
+    pledgeId: string;
+    reminderType?: ReminderType;
+    customDate?: string;
+  }>;
+}
+
+export interface RescheduleUserPledgeRequest {
+  userId: string;
+  reminderType?: ReminderType;
+  customDate?: string;
+}

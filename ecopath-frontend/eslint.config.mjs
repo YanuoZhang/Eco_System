@@ -24,6 +24,13 @@ const eslintConfig = [
       "package-lock.json",
     ],
   },
+  // Test files: relax Next.js specific DOM rules
+  {
+    files: ["**/__tests__/**", "tests-e2e/**"],
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

@@ -125,7 +125,33 @@ export default function QuizPage() {
           electricityEmissions + hotWaterEmissions + appliancesEmissions + transportEmissions
         }
         timeUnit={timeUnit}
-        onOpen={() => setShowResults(true)}
+        onOpen={() => {
+          // Persist quiz summary for AI suggestions and later revisit
+          try {
+            const payload = {
+              state: selectedState,
+              timeUnit,
+              totals: {
+                electricityKgYear: electricityEmissions,
+                hotWaterKgYear: hotWaterEmissions,
+                appliancesKgYear: appliancesEmissions,
+                transportKgYear: transportEmissions,
+                totalKgYear:
+                  electricityEmissions +
+                  hotWaterEmissions +
+                  appliancesEmissions +
+                  transportEmissions,
+              },
+              appliances: applianceBreakdown || {},
+              transport: transportBreakdown || {},
+              savedAt: new Date().toISOString(),
+            };
+            if (typeof window !== "undefined") {
+              localStorage.setItem("carbonFootprint", JSON.stringify(payload));
+            }
+          } catch {}
+          setShowResults(true);
+        }}
       />
       <QuizResultsModal
         open={showResults}

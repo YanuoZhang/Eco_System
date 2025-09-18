@@ -31,12 +31,7 @@ interface TransportData {
   cycling: TransportMode;
 }
 
-export default function QuizTransport({
-  open = true,
-  onToggle,
-  timeUnit = "week",
-  onChange,
-}: Props) {
+export default function QuizTransport({ open = true, onToggle, onChange }: Props) {
   const [localOpen, setLocalOpen] = useState(open);
   const isOpen = onToggle ? open : localOpen;
 
@@ -52,8 +47,7 @@ export default function QuizTransport({
     cycling: { enabled: false, distance: 0 },
   });
 
-  // Local fallback timeUnit when parent is not controlling it
-  const [localTimeUnit] = useState<"week" | "month" | "quarter" | "year">("week");
+  // Note: time unit configuration is currently not used by the UI/logic
 
   // Transport emission factors (kg CO2-e per km)
   const transportFactors = useMemo(
