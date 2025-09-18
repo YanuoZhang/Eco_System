@@ -212,7 +212,10 @@ export default function QuizTransport({
 
             <div className="space-y-6">
               {/* Car Transport */}
-              <div className="bg-white/80 rounded-xl p-4 border border-green-200">
+              <div
+                className="bg-white/80 rounded-xl p-4 border border-green-200"
+                data-testid="car-section"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">🚗</span>
@@ -232,6 +235,7 @@ export default function QuizTransport({
                       className={`w-12 h-6 rounded-full transition-colors duration-200 ${
                         transportData.car.enabled ? "bg-green-500" : "bg-gray-300"
                       }`}
+                      data-testid="car-toggle"
                     >
                       <div
                         className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ${
@@ -257,6 +261,7 @@ export default function QuizTransport({
                           }
                           className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           placeholder="0"
+                          data-testid="car-distance"
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">
                           km/week
@@ -273,6 +278,7 @@ export default function QuizTransport({
                           value={transportData.car.fuelType}
                           onChange={(e) => handleModeChange("car", "fuelType", e.target.value)}
                           className="w-full p-2 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                          data-testid="car-fuel"
                         >
                           <option value="petrol">Petrol</option>
                           <option value="diesel">Diesel</option>
@@ -288,6 +294,7 @@ export default function QuizTransport({
                           value={transportData.car.vehicleType}
                           onChange={(e) => handleModeChange("car", "vehicleType", e.target.value)}
                           className="w-full p-2 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                          data-testid="car-vehicle"
                         >
                           <option value="small">Small</option>
                           <option value="medium">Medium</option>
@@ -309,6 +316,7 @@ export default function QuizTransport({
                 <div
                   key={transport.key}
                   className="bg-white/80 rounded-xl p-4 border border-green-200"
+                  data-testid={transport.key === "bus" ? "bus-section" : undefined}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -330,6 +338,7 @@ export default function QuizTransport({
                           )
                         }
                         className="sr-only"
+                        data-testid={transport.key === "bus" ? "bus-toggle" : undefined}
                       />
                       <div
                         className={`w-12 h-6 rounded-full transition-colors duration-200 ${
@@ -368,6 +377,7 @@ export default function QuizTransport({
                             }
                             className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             placeholder="0"
+                            data-testid={transport.key === "bus" ? "bus-distance" : undefined}
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">
                             km/week
@@ -387,6 +397,7 @@ export default function QuizTransport({
                 <div
                   key={transport.key}
                   className="bg-white/80 rounded-xl p-4 border border-green-200"
+                  data-testid={transport.key === "walking" ? "walking-section" : undefined}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -408,6 +419,7 @@ export default function QuizTransport({
                           )
                         }
                         className="sr-only"
+                        data-testid={transport.key === "walking" ? "walking-toggle" : undefined}
                       />
                       <div
                         className={`w-12 h-6 rounded-full transition-colors duration-200 ${
@@ -446,6 +458,9 @@ export default function QuizTransport({
                             }
                             className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             placeholder="0"
+                            data-testid={
+                              transport.key === "walking" ? "walking-distance" : undefined
+                            }
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">
                             km/week
@@ -472,7 +487,10 @@ export default function QuizTransport({
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-green-700">
+                    <div
+                      className="text-lg font-bold text-green-700"
+                      data-testid="transport-summary-emissions"
+                    >
                       {calculateTransportEmissions().totalEmissions.toFixed(1)} kg CO₂/year
                     </div>
                     <div className="text-xs text-green-600">Annual emissions</div>
