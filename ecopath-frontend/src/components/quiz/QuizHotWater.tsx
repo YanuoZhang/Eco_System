@@ -3,7 +3,7 @@ import { useState, useEffect, useId, useMemo, useCallback } from "react";
 type Props = {
   open?: boolean;
   onToggle?: () => void;
-  timeUnit?: "month" | "quarter" | "year";
+  timeUnit?: "week" | "month" | "quarter" | "year";
   onChange?: (v: {
     hotWaterEmissionsKgYear?: number;
     timeUnit?: "month" | "quarter" | "year";
@@ -33,7 +33,7 @@ export default function QuizHotWater({
   const [household, setHousehold] = useState<number>(1);
 
   // Local fallback timeUnit when parent is not controlling it
-  const [localTimeUnit] = useState<"month" | "quarter" | "year">("month");
+  const [localTimeUnit] = useState<"week" | "month" | "quarter" | "year">("month");
   const currentTimeUnit = timeUnit ?? localTimeUnit;
 
   // Reset known usage if system is not selected
@@ -102,6 +102,9 @@ export default function QuizHotWater({
 
       let periodDays = 0;
       switch (currentTimeUnit) {
+        case "week":
+          periodDays = 7;
+          break;
         case "month":
           periodDays = 30;
           break;
@@ -124,7 +127,14 @@ export default function QuizHotWater({
       }
     }
 
-    const scaleToYear = currentTimeUnit === "month" ? 12 : currentTimeUnit === "quarter" ? 4 : 1;
+    const scaleToYear =
+      currentTimeUnit === "month"
+        ? 12
+        : currentTimeUnit === "quarter"
+          ? 4
+          : currentTimeUnit === "week"
+            ? 52.143
+            : 1;
     const emissionsKgYear = emissionsKgPeriod * scaleToYear;
 
     return Math.round(emissionsKgYear * 100) / 100;
@@ -145,11 +155,13 @@ export default function QuizHotWater({
   }, [hotWaterEmissionsKgYear]);
 
   const unitLabel =
-    currentTimeUnit === "month"
-      ? "Monthly"
-      : currentTimeUnit === "quarter"
-        ? "Quarterly"
-        : "Yearly";
+    currentTimeUnit === "week"
+      ? "Weekly"
+      : currentTimeUnit === "month"
+        ? "Monthly"
+        : currentTimeUnit === "quarter"
+          ? "Quarterly"
+          : "Yearly";
 
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-orange-200/50 shadow overflow-hidden">
@@ -357,6 +369,34 @@ export default function QuizHotWater({
                 )}
               </div>
             </details>
+          </div>
+
+          {/* Section total summary */}
+          <div className="mt-4 bg-white/80 rounded-lg p-4 border border-red-200/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-red-800">Section total</div>
+                <div className="text-xs text-red-600">Hot water emissions</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-red-600">
+                  {(
+                    hotWaterEmissionsKgYear /
+                    (currentTimeUnit === "month"
+                      ? 12
+                      : currentTimeUnit === "quarter"
+                        ? 4
+                        : currentTimeUnit === "week"
+                          ? 52.143
+                          : 1)
+                  ).toFixed(1)}{" "}
+                  kg CO₂/{unitLabel}
+                </div>
+                <div className="text-xs text-red-500">
+                  {hotWaterEmissionsKgYear.toFixed(1)} kg CO₂/year
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
