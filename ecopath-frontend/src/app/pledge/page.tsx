@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import apiClient from "@/services/apiClient";
 
@@ -73,6 +73,126 @@ export default function PledgePage() {
     if (userId === "anonymous") return;
   }, [userId]);
 
+  const publicPledges: Pledge[] = useMemo(
+    () => [
+      {
+        id: "reusable-bag",
+        icon: "🛍️",
+        title: "Use a reusable bag",
+        benefit: "Save 170 plastic bags per year",
+        category: "daily",
+        impact: "small",
+      },
+      {
+        id: "water-bottle",
+        icon: "🚰",
+        title: "Carry a water bottle",
+        benefit: "Prevent 156 plastic bottles annually",
+        category: "daily",
+        impact: "small",
+      },
+      {
+        id: "bike-transport",
+        icon: "🚴",
+        title: "Bike to work once a week",
+        benefit: "Reduce 520kg CO₂ per year",
+        category: "transport",
+        impact: "medium",
+      },
+      {
+        id: "meatless-monday",
+        icon: "🥗",
+        title: "Try Meatless Monday",
+        benefit: "Save 600kg CO₂ annually",
+        category: "diet",
+        impact: "medium",
+      },
+      {
+        id: "led-bulbs",
+        icon: "💡",
+        title: "Switch to LED bulbs",
+        benefit: "Cut lighting energy by 75%",
+        category: "energy",
+        impact: "medium",
+      },
+      {
+        id: "shorter-showers",
+        icon: "🚿",
+        title: "Take 5-minute showers",
+        benefit: "Save 30,000L water yearly",
+        category: "water",
+        impact: "small",
+      },
+      {
+        id: "public-transport",
+        icon: "🚌",
+        title: "Use public transport",
+        benefit: "Reduce transport emissions by 45%",
+        category: "transport",
+        impact: "large",
+      },
+      {
+        id: "local-food",
+        icon: "🌾",
+        title: "Buy local produce",
+        benefit: "Support community & reduce transport",
+        category: "diet",
+        impact: "medium",
+      },
+      {
+        id: "air-dry",
+        icon: "👕",
+        title: "Air dry clothes",
+        benefit: "Save 300kg CO₂ per year",
+        category: "energy",
+        impact: "small",
+      },
+      {
+        id: "thermostat",
+        icon: "🌡️",
+        title: "Adjust thermostat by 2°C",
+        benefit: "Reduce heating costs by 20%",
+        category: "energy",
+        impact: "large",
+      },
+      {
+        id: "walk-short",
+        icon: "🚶",
+        title: "Walk for trips under 1km",
+        benefit: "Zero emissions for short trips",
+        category: "transport",
+        impact: "small",
+      },
+      {
+        id: "plant-herbs",
+        icon: "🌿",
+        title: "Grow herbs at home",
+        benefit: "Fresh food with zero food miles",
+        category: "diet",
+        impact: "small",
+      },
+    ],
+    [],
+  );
+
+  const [aiSuggestedPledges, setAiSuggestedPledges] = useState<Pledge[]>([]);
+
+  // Build a quick lookup for pledge meta from both sources
+  const pledgeMetaById = useMemo(() => {
+    const pool = [...publicPledges, ...aiSuggestedPledges];
+    const map = new Map<string, Partial<Pledge>>();
+    pool.forEach((p) =>
+      map.set(p.id, {
+        title: p.title,
+        icon: p.icon,
+        benefit: p.benefit,
+        category: p.category,
+        impact: p.impact,
+      }),
+    );
+    return map;
+  }, [publicPledges, aiSuggestedPledges]);
+
   // Load saved pledges from backend
   useEffect(() => {
     if (!userId || userId === "anonymous") return;
@@ -90,19 +210,7 @@ export default function PledgePage() {
           }>;
         };
         if (!resp?.success || !resp.data) return;
-        const mapMeta = (pledgeId: string): Partial<Pledge> => {
-          const pool = [...publicPledges, ...aiSuggestedPledges];
-          const f = pool.find((p) => p.id === pledgeId);
-          return f
-            ? {
-                title: f.title,
-                icon: f.icon,
-                benefit: f.benefit,
-                category: f.category,
-                impact: f.impact,
-              }
-            : {};
-        };
+        const mapMeta = (pledgeId: string): Partial<Pledge> => pledgeMetaById.get(pledgeId) || {};
         const list: SavedPledge[] = resp.data.map((r) => ({
           id: r.pledgeId,
           recordId: r.id,
@@ -123,108 +231,7 @@ export default function PledgePage() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
-
-  const publicPledges: Pledge[] = [
-    {
-      id: "reusable-bag",
-      icon: "🛍️",
-      title: "Use a reusable bag",
-      benefit: "Save 170 plastic bags per year",
-      category: "daily",
-      impact: "small",
-    },
-    {
-      id: "water-bottle",
-      icon: "🚰",
-      title: "Carry a water bottle",
-      benefit: "Prevent 156 plastic bottles annually",
-      category: "daily",
-      impact: "small",
-    },
-    {
-      id: "bike-transport",
-      icon: "🚴",
-      title: "Bike to work once a week",
-      benefit: "Reduce 520kg CO₂ per year",
-      category: "transport",
-      impact: "medium",
-    },
-    {
-      id: "meatless-monday",
-      icon: "🥗",
-      title: "Try Meatless Monday",
-      benefit: "Save 600kg CO₂ annually",
-      category: "diet",
-      impact: "medium",
-    },
-    {
-      id: "led-bulbs",
-      icon: "💡",
-      title: "Switch to LED bulbs",
-      benefit: "Cut lighting energy by 75%",
-      category: "energy",
-      impact: "medium",
-    },
-    {
-      id: "shorter-showers",
-      icon: "🚿",
-      title: "Take 5-minute showers",
-      benefit: "Save 30,000L water yearly",
-      category: "water",
-      impact: "small",
-    },
-    {
-      id: "public-transport",
-      icon: "🚌",
-      title: "Use public transport",
-      benefit: "Reduce transport emissions by 45%",
-      category: "transport",
-      impact: "large",
-    },
-    {
-      id: "local-food",
-      icon: "🌾",
-      title: "Buy local produce",
-      benefit: "Support community & reduce transport",
-      category: "diet",
-      impact: "medium",
-    },
-    {
-      id: "air-dry",
-      icon: "👕",
-      title: "Air dry clothes",
-      benefit: "Save 300kg CO₂ per year",
-      category: "energy",
-      impact: "small",
-    },
-    {
-      id: "thermostat",
-      icon: "🌡️",
-      title: "Adjust thermostat by 2°C",
-      benefit: "Reduce heating costs by 20%",
-      category: "energy",
-      impact: "large",
-    },
-    {
-      id: "walk-short",
-      icon: "🚶",
-      title: "Walk for trips under 1km",
-      benefit: "Zero emissions for short trips",
-      category: "transport",
-      impact: "small",
-    },
-    {
-      id: "plant-herbs",
-      icon: "🌿",
-      title: "Grow herbs at home",
-      benefit: "Fresh food with zero food miles",
-      category: "diet",
-      impact: "small",
-    },
-  ];
-
-  const [aiSuggestedPledges, setAiSuggestedPledges] = useState<Pledge[]>([]);
+  }, [userId, pledgeMetaById]);
 
   useEffect(() => {
     if (!hasCompletedQuiz) return;
@@ -558,6 +565,7 @@ export default function PledgePage() {
       {/* Hero */}
       <section className="relative py-20 px-4 sm:px-6 overflow-hidden">
         <div className="absolute inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/home_bg.jpg"
             alt="Hope and Growth"
