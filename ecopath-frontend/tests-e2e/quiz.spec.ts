@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test("Quiz page loads with time controls", async ({ page }) => {
   await page.goto("/quiz");
-  await page.waitForLoadState("networkidle");
+  // Avoid brittle networkidle; wait for a stable heading
+  await expect(page.getByText(/Electricity Usage/i)).toBeVisible();
 
   // Check if quiz page loads
   await expect(page.getByText(/Electricity Usage/i)).toBeVisible();

@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test("Home page loads with news section", async ({ page }) => {
   await page.goto("/");
-  await page.waitForLoadState("networkidle");
+  // Avoid brittle networkidle; wait for a stable UI element
+  await expect(page.getByText("EcoPath").first()).toBeVisible();
 
   // Check if home page loads
   await expect(page.getByText("EcoPath").first()).toBeVisible();
@@ -16,7 +17,8 @@ test("Home page loads with news section", async ({ page }) => {
 
 test("404 page shows for unknown routes", async ({ page }) => {
   await page.goto("/some-unknown-route-123");
-  await page.waitForLoadState("networkidle");
+  // Wait for 404 content instead of networkidle
+  await expect(page.getByText(/not available/i)).toBeVisible();
 
   // Check if 404 page loads
   await expect(page.getByText(/not available/i)).toBeVisible();
