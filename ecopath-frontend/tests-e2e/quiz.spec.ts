@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { loginViaApi } from "./test-utils";
 
-test("Quiz page loads with time controls", async ({ page }) => {
-  await loginViaApi(page);
+test("Quiz page loads with time controls", async ({ page, request }) => {
+  await loginViaApi(request, page);
   await page.goto("/quiz");
   // Avoid brittle networkidle; wait for a stable heading
   await expect(page.getByText(/Electricity Usage/i)).toBeVisible();

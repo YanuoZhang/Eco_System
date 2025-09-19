@@ -1,25 +1,30 @@
 import { test, expect } from "@playwright/test";
 import { loginViaApi } from "./test-utils";
 
-test("Transport quiz section loads and functions correctly", async ({ page }) => {
-  await loginViaApi(page);
+test("Transport quiz section loads and functions correctly", async ({ page, request }) => {
+  await loginViaApi(request, page);
   await page.goto("/quiz");
   await page.waitForLoadState("domcontentloaded");
 
-  // Nudge layout and wait for car section to attach (slow env safety)
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.waitForTimeout(100);
-  const carSectionInit = page.getByTestId("car-section");
-  await page.waitForSelector('[data-testid="car-section"]', { state: "attached" });
-  await carSectionInit.scrollIntoViewIfNeeded();
-  await carSectionInit.waitFor({ state: "visible" });
+  // Wait for the quiz page to load completely
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText(/Electricity Usage/i)).toBeVisible();
 
-  // Scope to Car section then toggle and assert inputs appear
+  // Scroll to transport section and wait for it to be visible
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(500);
+
   const carSection = page.getByTestId("car-section");
+  await carSection.waitFor({ state: "visible" });
+  await carSection.scrollIntoViewIfNeeded();
+
+  // Enable car transport by clicking the checkbox
   await carSection.evaluate((el) => {
     const checkbox = el.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
     if (checkbox && !checkbox.checked) checkbox.click();
   });
+
+  // Wait for the input fields to appear
   await carSection.getByTestId("car-distance").waitFor({ state: "visible" });
   await carSection.getByTestId("car-fuel").waitFor({ state: "visible" });
   await carSection.getByTestId("car-vehicle").waitFor({ state: "visible" });
@@ -78,32 +83,36 @@ test("Transport quiz section loads and functions correctly", async ({ page }) =>
   await expect(page.getByTestId("transport-summary-emissions")).toBeVisible();
 });
 
-test("Transport emissions calculation updates correctly", async ({ page }) => {
-  await loginViaApi(page);
+test("Transport emissions calculation updates correctly", async ({ page, request }) => {
+  await loginViaApi(request, page);
   await page.goto("/quiz");
   await page.waitForLoadState("domcontentloaded");
 
-  // Ensure car section is in DOM, then scroll into view and wait visible
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.waitForTimeout(100);
-  const carSection = page.getByTestId("car-section");
-  await page.waitForSelector('[data-testid="car-section"]', { state: "attached" });
-  await carSection.scrollIntoViewIfNeeded();
-  await carSection.waitFor({ state: "visible" });
+  // Wait for the quiz page to load completely
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText(/Electricity Usage/i)).toBeVisible();
 
-  // Enable car transport via section label
-  const carSection2 = page.getByTestId("car-section");
-  await carSection2.evaluate((el) => {
+  // Scroll to transport section and wait for it to be visible
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(500);
+
+  const carSection = page.getByTestId("car-section");
+  await carSection.waitFor({ state: "visible" });
+  await carSection.scrollIntoViewIfNeeded();
+
+  // Enable car transport by clicking the checkbox
+  await carSection.evaluate((el) => {
     const checkbox = el.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
     if (checkbox && !checkbox.checked) checkbox.click();
   });
 
-  // Set car distance
-  const distanceInput = carSection2.getByTestId("car-distance");
+  // Wait for input fields to appear and then set car distance
+  await carSection.getByTestId("car-distance").waitFor({ state: "visible" });
+  const distanceInput = carSection.getByTestId("car-distance");
   await distanceInput.fill("100");
 
   // Set fuel type to petrol
-  const fuelSelect = carSection2.getByTestId("car-fuel");
+  const fuelSelect = carSection.getByTestId("car-fuel");
   await fuelSelect.selectOption("petrol");
 
   // Check if emissions calculation appears in summary
