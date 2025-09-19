@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuthToken } from "@/lib/siteAuth";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -25,7 +26,19 @@ export function middleware(req: NextRequest) {
     console.log("Redirecting to gate:", url.toString());
     return NextResponse.redirect(url);
   }
-  // token presence only; verification happens server-side on API endpoints.
+
+  // Verify token validity
+  const isValid = verifyAuthToken(token);
+  console.log("Token validation:", { isValid });
+
+  if (!isValid) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/gate";
+    url.searchParams.set("next", pathname);
+    console.log("Invalid token, redirecting to gate:", url.toString());
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 

@@ -1,9 +1,8 @@
 "use client";
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function GateForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const nextPath = params.get("next") || "/";
   const [password, setPassword] = useState("");
@@ -24,7 +23,8 @@ function GateForm() {
       console.log("Login response:", { status: res.status, data, nextPath });
       if (!res.ok || !data?.success) throw new Error("Invalid password");
       console.log("Redirecting to:", nextPath);
-      router.replace(nextPath);
+      // Use window.location.href to ensure full page reload and cookie is properly set
+      window.location.href = nextPath;
     } catch (err) {
       console.error("Login error:", err);
       setError("Invalid password");
