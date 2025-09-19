@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { loginViaApi } from "./test-utils";
 
-test.skip("Transport quiz section loads and functions correctly", async ({ page }) => {
+test("Transport quiz section loads and functions correctly", async ({ page }) => {
+  await loginViaApi(page);
   await page.goto("/quiz");
   await page.waitForLoadState("domcontentloaded");
 
@@ -39,7 +41,11 @@ test.skip("Transport quiz section loads and functions correctly", async ({ page 
 
   // Test public transport
   const busSection = page.getByTestId("bus-section");
-  await page.getByTestId("bus-toggle").click();
+  // Click checkbox programmatically to avoid visual switch intercepting pointer events
+  await busSection.evaluate((el) => {
+    const checkbox = el.querySelector('[data-testid="bus-toggle"]') as HTMLInputElement | null;
+    if (checkbox && !checkbox.checked) checkbox.click();
+  });
   await expect(busSection.locator('input[type="checkbox"]').first()).toBeChecked();
   await page.waitForTimeout(500);
 
@@ -53,7 +59,10 @@ test.skip("Transport quiz section loads and functions correctly", async ({ page 
   // Test active transport
   const walkingSection = page.getByTestId("walking-section");
   await walkingSection.scrollIntoViewIfNeeded();
-  await walkingSection.getByTestId("walking-toggle").click();
+  await walkingSection.evaluate((el) => {
+    const checkbox = el.querySelector('[data-testid="walking-toggle"]') as HTMLInputElement | null;
+    if (checkbox && !checkbox.checked) checkbox.click();
+  });
   await expect(walkingSection.locator('input[type="checkbox"]').first()).toBeChecked();
   await page.waitForTimeout(500);
 
@@ -69,7 +78,8 @@ test.skip("Transport quiz section loads and functions correctly", async ({ page 
   await expect(page.getByTestId("transport-summary-emissions")).toBeVisible();
 });
 
-test.skip("Transport emissions calculation updates correctly", async ({ page }) => {
+test("Transport emissions calculation updates correctly", async ({ page }) => {
+  await loginViaApi(page);
   await page.goto("/quiz");
   await page.waitForLoadState("domcontentloaded");
 

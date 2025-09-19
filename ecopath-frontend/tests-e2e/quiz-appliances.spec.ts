@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { loginViaApi } from "./test-utils";
 
-test.skip("Quiz appliances section loads", async ({ page }) => {
+test("Quiz appliances section loads", async ({ page }) => {
+  await loginViaApi(page);
   await page.goto("/quiz");
   // Avoid brittle networkidle; wait for a stable heading
   await expect(page.getByText(/Electricity Usage/i)).toBeVisible();
