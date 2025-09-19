@@ -27,13 +27,25 @@ export async function POST(req: NextRequest) {
 
     const token = generateAuthToken("site-user");
     const res = NextResponse.json({ success: true });
-    res.cookies.set("site_auth", token, {
+
+    const cookieOptions = {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_HTTPS === "true",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day
+      domain: process.env.NODE_ENV === "production" ? process.env.NEXT_PUBLIC_DOMAIN : undefined,
+    };
+
+    console.log("Setting cookie with options:", {
+      ...cookieOptions,
+      token: token.substring(0, 20) + "...",
+      env: process.env.NODE_ENV,
+      https: process.env.NEXT_PUBLIC_HTTPS,
+      domain: process.env.NEXT_PUBLIC_DOMAIN,
     });
+
+    res.cookies.set("site_auth", token, cookieOptions);
     return res;
   } catch {
     return NextResponse.json({ success: false }, { status: 400 });
