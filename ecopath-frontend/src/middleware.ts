@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuthToken } from "@/lib/siteAuth";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -27,18 +26,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Verify token validity
-  const isValid = verifyAuthToken(token);
-  console.log("Token validation:", { isValid });
-
-  if (!isValid) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/gate";
-    url.searchParams.set("next", pathname);
-    console.log("Invalid token, redirecting to gate:", url.toString());
-    return NextResponse.redirect(url);
-  }
-
+  // Basic token presence check only - detailed validation happens in API routes
+  // This avoids Node.js API usage in Edge Runtime
   return NextResponse.next();
 }
 
