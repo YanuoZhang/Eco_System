@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_HTTPS === "true",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day
-      domain: process.env.NODE_ENV === "production" ? process.env.NEXT_PUBLIC_DOMAIN : undefined,
+      // Remove domain setting to avoid cookie issues in development
     };
 
     console.log("Setting cookie with options:", {

@@ -25,7 +25,9 @@ export function middleware(req: NextRequest) {
     console.log("Redirecting to gate:", url.toString());
     return NextResponse.redirect(url);
   }
-  // token presence only; verification happens server-side on API endpoints.
+
+  // Basic token presence check only - detailed validation happens in API routes
+  // This avoids Node.js API usage in Edge Runtime
   return NextResponse.next();
 }
 

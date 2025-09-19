@@ -20,7 +20,7 @@ test.skip("Transport quiz section loads and functions correctly", async ({ page,
 
   // Enable car transport by clicking the hidden checkbox directly with force
   await carSection.locator('input[type="checkbox"]').click({ force: true });
-  
+
   // Wait for React state to update and input fields to appear
   await page.waitForTimeout(500);
   await carSection.getByTestId("car-distance").waitFor({ state: "visible" });
@@ -100,7 +100,7 @@ test.skip("Transport emissions calculation updates correctly", async ({ page, re
 
   // Enable car transport by clicking the hidden checkbox directly with force
   await carSection.locator('input[type="checkbox"]').click({ force: true });
-  
+
   // Wait for React state to update and input fields to appear
   await page.waitForTimeout(500);
   await carSection.getByTestId("car-distance").waitFor({ state: "visible" });
