@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { loginViaApi } from "./test-utils";
 
-test("Home page loads with news section", async ({ page }) => {
-  await loginViaApi(page);
+test("Home page loads with news section", async ({ page, request }) => {
+  await loginViaApi(request, page);
   await page.goto("/");
   // Avoid brittle networkidle; wait for a stable UI element
   await expect(page.getByText("EcoPath").first()).toBeVisible();
@@ -17,8 +17,8 @@ test("Home page loads with news section", async ({ page }) => {
   }
 });
 
-test("404 page shows for unknown routes", async ({ page }) => {
-  await loginViaApi(page);
+test("404 page shows for unknown routes", async ({ page, request }) => {
+  await loginViaApi(request, page);
   await page.goto("/some-unknown-route-123");
   // Wait for 404 content instead of networkidle
   await expect(page.getByText(/not available/i)).toBeVisible();

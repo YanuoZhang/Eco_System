@@ -21,9 +21,12 @@ function GateForm() {
         body: JSON.stringify({ password }),
       });
       const data = (await res.json()) as { success?: boolean };
+      console.log("Login response:", { status: res.status, data, nextPath });
       if (!res.ok || !data?.success) throw new Error("Invalid password");
+      console.log("Redirecting to:", nextPath);
       router.replace(nextPath);
-    } catch {
+    } catch (err) {
+      console.error("Login error:", err);
       setError("Invalid password");
     } finally {
       setLoading(false);

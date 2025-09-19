@@ -13,6 +13,7 @@
 # Test artifacts
 **/coverage/
 **/test-results/
+**/playwright-report/
 
 # Env files (keep examples tracked)
 **/.env
