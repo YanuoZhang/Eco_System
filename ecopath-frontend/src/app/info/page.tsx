@@ -77,7 +77,10 @@ export default function InfoPage() {
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
-        setLoading(false);
+        // Only update state if we're in a browser environment
+        if (typeof window !== "undefined") {
+          setLoading(false);
+        }
       }
     };
 
