@@ -7,7 +7,9 @@ import NotFound from "@/app/not-found";
 describe("Static pages", () => {
   it("renders Info page", () => {
     render(<InfoPage />);
-    expect(screen.getByRole("heading", { name: /Info/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Australian Climate Data Center/i }),
+    ).toBeInTheDocument();
     // Content may evolve; assert heading exists only
   });
 

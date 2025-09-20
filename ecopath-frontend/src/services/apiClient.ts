@@ -129,6 +129,40 @@ class ApiService {
     return this.request<unknown>(`/api/emissions/factors?state=${state}`);
   }
 
+  async getEmissionsData(
+    state: string,
+    range: string = "10y",
+  ): Promise<{
+    unit: string;
+    latest: { year: number; value: string | number } | null;
+    data: { year: number; value: string | number }[];
+  }> {
+    return this.request(`/api/emissions?state=${state}&range=${range}`);
+  }
+
+  async getEnergyMixData(state: string): Promise<
+    Array<{
+      source: string;
+      percentage: number;
+      generation: string | number;
+    }>
+  > {
+    return this.request(`/api/energy-mix?state=${state}`);
+  }
+
+  async getClimateTargets(state: string): Promise<{
+    targetYear: number;
+    baselineYear: number;
+    targetValuePct: number;
+    planName: string;
+    progress: string | number;
+    progressDescription: string;
+    latestEmissions: { year: number; value: string | number } | null;
+    notes: string;
+  }> {
+    return this.request(`/api/climate-targets?state=${state}`);
+  }
+
   // Health check
   async getHealth(): Promise<{ status: string; database: string; timestamp: string }> {
     return this.request<{ status: string; database: string; timestamp: string }>("/healthz");
