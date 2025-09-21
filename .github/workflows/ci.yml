@@ -82,3 +82,8 @@ jobs:
           CI: true
         run: npx playwright test --project=chromium --workers=1
 
+      - name: Security audit with Snyk
+        run: |
+          echo "🔒 Running security audit..."
+          npm run security:audit
+

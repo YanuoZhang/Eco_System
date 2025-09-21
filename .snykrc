@@ -1,0 +1,38 @@
+# Snyk configuration file
+# Documentation: https://docs.snyk.io/features/cli/configuration
+
+# API endpoint (default: https://api.snyk.io)
+# api: https://api.snyk.io
+
+# Organization ID (set this when you have a Snyk account)
+# org: your-org-id
+
+# Project name (optional)
+# project-name: eco-system
+
+# Severity threshold (low, medium, high, critical)
+severity-threshold: medium
+
+# Fail on any vulnerability (set to none for unauthenticated scans)
+fail-on: none
+
+# Include dev dependencies in scan
+dev-dependencies: true
+
+# Output format (table, json, sarif)
+format: table
+
+# Show all vulnerabilities (including patched ones)
+show-vulnerable-paths: all
+
+# Include license information
+include-license: true
+
+# Scan depth (how many levels deep to scan)
+depth: 10
+
+# Skip unused dependencies check
+skip-unused: false
+
+# Include test files
+include-tests: true

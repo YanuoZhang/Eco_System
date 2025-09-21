@@ -16,7 +16,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "pre-commit": "npm run lint:check && npm run format:check && npm run build"
+    "pre-commit": "npm run lint:check && npm run format:check && npm run build",
+    "security:audit": "snyk test || npm audit || true",
+    "security:monitor": "snyk monitor"
   },
   "dependencies": {
     "next": "15.5.2",
