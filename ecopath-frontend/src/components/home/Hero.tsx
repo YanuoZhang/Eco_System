@@ -17,33 +17,7 @@ export default function Hero() {
         </h2>
         <p className="text-sm sm:text-lg text-slate-200">See it. Change it. Live it.</p>
 
-        {/* Action cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto mt-5 sm:mt-8">
-          <a
-            href="#news-section"
-            className="bg-slate-700/70 backdrop-blur-sm rounded-xl p-4 border border-slate-500/40 hover:bg-slate-600/70 hover:scale-105 transition-all duration-300 cursor-pointer text-left"
-          >
-            <div className="text-2xl mb-2">🤖</div>
-            <h3 className="text-white font-semibold">AI News Analysis</h3>
-            <p className="text-slate-300 text-sm">AI-curated climate insights</p>
-          </a>
-          <a
-            href="#timeline-section"
-            className="bg-slate-700/70 backdrop-blur-sm rounded-xl p-4 border border-slate-500/40 hover:bg-slate-600/70 hover:scale-105 transition-all duration-300 cursor-pointer text-left"
-          >
-            <div className="text-2xl mb-2">📖</div>
-            <h3 className="text-white font-semibold">Climate Timeline</h3>
-            <p className="text-slate-300 text-sm">Our climate journey</p>
-          </a>
-          <a
-            href="/quiz"
-            className="bg-slate-700/70 backdrop-blur-sm rounded-xl p-4 border border-slate-500/40 hover:bg-slate-600/70 hover:scale-105 transition-all duration-300 cursor-pointer text-left"
-          >
-            <div className="text-2xl mb-2">📊</div>
-            <h3 className="text-white font-semibold">My Impact</h3>
-            <p className="text-slate-300 text-sm">Personal action plans</p>
-          </a>
-        </div>
+        {/* Action cards removed as requested; keep the hero content centered */}
       </div>
     </div>
   );

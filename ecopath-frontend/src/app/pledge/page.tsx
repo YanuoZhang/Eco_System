@@ -563,35 +563,6 @@ export default function PledgePage() {
       {/* Hidden heading for accessibility and unit tests */}
       <h1 className="sr-only">Pledge</h1>
       {/* Hero */}
-      <section className="relative py-20 px-4 sm:px-6 overflow-hidden">
-        <div className="absolute inset-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/assets/home_bg.jpg"
-            alt="Hope and Growth"
-            className="w-full h-full object-top object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/60 via-emerald-800/40 to-sky-900/60" />
-        </div>
-        <div className="relative max-w-4xl mx-auto text-center">
-          <div className="text-6xl mb-6">🌱</div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
-            Change starts with a single step
-          </h1>
-          <p className="text-xl sm:text-2xl text-emerald-100 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Make a commitment that matters. Choose actions that fit your life and create lasting
-            positive impact for our planet.
-          </p>
-          <button
-            onClick={() =>
-              document.getElementById("pledge-section")?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 text-white font-bold text-2xl px-12 py-6 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer"
-          >
-            Start Your Pledge →
-          </button>
-        </div>
-      </section>
 
       {/* Pledge Section */}
       <section id="pledge-section" className="py-16 px-4 sm:px-6 pb-28">
@@ -863,19 +834,18 @@ export default function PledgePage() {
         </div>
       </section>
 
-      {/* Floating Action Bar */}
+      {/* Floating Action Bar (restored) */}
       {selectedPledges.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-emerald-200/50 shadow-2xl">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {selectedPledges.length}
                   </div>
-                  <span className="text-slate-800 font-semibold">
-                    {selectedPledges.length} pledge{selectedPledges.length !== 1 ? "s" : ""}{" "}
-                    selected
+                  <span className="text-slate-800 font-semibold whitespace-nowrap">
+                    {selectedPledges.length} pledges selected
                   </span>
                 </div>
                 <div className="hidden md:flex items-center gap-2">
@@ -895,7 +865,7 @@ export default function PledgePage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSelectedPledges([])}
                   className="text-slate-500 hover:text-slate-700 transition-colors cursor-pointer px-4 py-2"
@@ -904,7 +874,7 @@ export default function PledgePage() {
                 </button>
                 <button
                   onClick={openReminderModal}
-                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold px-8 py-3 rounded-full shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer whitespace-nowrap"
+                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold px-6 sm:px-8 py-3 rounded-full shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer whitespace-nowrap"
                 >
                   Set Reminders & Download
                 </button>

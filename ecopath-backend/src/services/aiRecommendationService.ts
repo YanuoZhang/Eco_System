@@ -6,12 +6,12 @@ const apiKey = process.env.GEMINI_API_KEY || "";
 let model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null = null;
 try {
   if (!apiKey) {
-    console.warn("[AI] GEMINI_API_KEY is missing or empty; using fallback recommendations.");
+    // warn removed (keep silent)
   } else {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
     model = genAI.getGenerativeModel({ model: modelName });
-    console.log(`[AI] Gemini initialized with model: ${modelName}`);
+    // init info removed
   }
 } catch (e: any) {
   console.error("[AI] Failed to initialize Gemini:", e?.message || e);

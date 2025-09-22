@@ -166,6 +166,24 @@ export default function QuizPage() {
         appliances={applianceBreakdown}
         transport={transportBreakdown}
       />
+
+      {/* Bottom CTA: clear next-step guidance with large primary button */}
+      <div className="border-t border-slate-200 mt-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 text-center">
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3">
+            Ready to turn insights into action?
+          </h3>
+          <p className="text-slate-600 mb-6">
+            Use your footprint results to build a personalised pledge plan and set reminders.
+          </p>
+          <a
+            href="/pledge"
+            className="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold text-lg sm:text-xl px-10 sm:px-12 py-4 sm:py-5 rounded-full shadow-2xl transition-all duration-300 ring-4 ring-emerald-300/20"
+          >
+            Create My Action Plan →
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

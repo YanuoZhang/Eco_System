@@ -37,13 +37,7 @@ export async function POST(req: NextRequest) {
       // Remove domain setting to avoid cookie issues in development
     };
 
-    console.log("Setting cookie with options:", {
-      ...cookieOptions,
-      token: token.substring(0, 20) + "...",
-      env: process.env.NODE_ENV,
-      https: process.env.NEXT_PUBLIC_HTTPS,
-      domain: process.env.NEXT_PUBLIC_DOMAIN,
-    });
+    // Logging removed
 
     res.cookies.set("site_auth", token, cookieOptions);
     return res;
