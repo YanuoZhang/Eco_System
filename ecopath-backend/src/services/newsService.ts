@@ -743,7 +743,7 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
 
   for (const rssUrl of rssSources) {
     try {
-      console.log(`Trying RSS source: ${rssUrl}`);
+      // log removed
       const response = await axios.get(rssUrl, {
         headers: {
           "User-Agent":
@@ -772,11 +772,11 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
       }
 
       if (items.length === 0) {
-        console.log(`No items found in RSS feed: ${rssUrl}`);
+        // log removed
         continue;
       }
 
-      console.log(`Successfully fetched ${items.length} items from ${rssUrl}`);
+      // log removed
 
       // Take first 20 news items for filtering, return max 10 climate-related items
       const allNewsItems = await Promise.all(
@@ -869,7 +869,7 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
           );
 
           if (shouldImmediatelyExclude) {
-            console.log(`🚫 Immediately excluding non-climate news: "${headline}"`);
+            // log removed
             return null;
           }
 
@@ -941,7 +941,7 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
       // Filter out null values (non-climate news) and limit count
       const newsItems = allNewsItems.filter((item) => item !== null).slice(0, 10) as NewsItem[];
 
-      console.log(`Filtered to ${newsItems.length} climate-related news items from ${rssUrl}`);
+      // log removed
       allCollectedNews.push(...newsItems);
 
       // If we have enough news, return early
@@ -956,23 +956,23 @@ export async function fetchClimateNews(): Promise<NewsItem[]> {
 
   // Return whatever real news we collected, no mock data
   if (allCollectedNews.length > 0) {
-    console.log(`Collected ${allCollectedNews.length} real news articles from RSS sources`);
+    // log removed
     return allCollectedNews.slice(0, 10);
   }
 
   // If all sources fail, return empty array instead of mock data
-  console.log("All RSS sources failed, returning empty news array");
+  // log removed
   return [];
 }
 
 // Weekly update function
 export async function performWeeklyNewsUpdate(): Promise<void> {
   try {
-    console.log("Starting weekly news update...");
+    // log removed
     const newsItems = await fetchClimateNews();
     newsCache = newsItems;
     lastFetchTime = Date.now();
-    console.log(`Weekly news update completed. Fetched ${newsItems.length} articles.`);
+    // log removed
   } catch (error) {
     console.error("Error during weekly news update:", error);
   }

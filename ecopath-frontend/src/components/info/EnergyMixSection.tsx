@@ -99,11 +99,9 @@ export default function EnergyMixSection({ energyMixData, stateName }: EnergyMix
                         strokeWidth="0.5"
                         className="cursor-pointer transition-all duration-200 hover:opacity-80"
                         onMouseEnter={() => {
-                          console.log("Mouse enter:", slice.source);
                           setHoveredSlice(slice);
                         }}
                         onMouseLeave={() => {
-                          console.log("Mouse leave:", slice.source);
                           setHoveredSlice(null);
                         }}
                       />

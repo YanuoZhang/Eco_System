@@ -103,17 +103,19 @@ export function ClimateNewsCard({
         </div>
 
         {/* back (match refer: blue-purple gradient card) */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-700/85 to-blue-700/85 text-white p-4 sm:p-6 [transform:rotateY(180deg)] [backface-visibility:hidden] border border-indigo-500/50">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-700/85 to-blue-700/85 text-white p-4 sm:p-6 [transform:rotateY(180deg)] [backface-visibility:hidden] border border-indigo-500/50 flex flex-col h-full">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
             <span className="text-xl">🤖</span>
             <h4 className="font-bold">AI Insight Analysis</h4>
           </div>
-          <p className="text-indigo-100 leading-relaxed text-sm mb-4">{insight}</p>
-          <div className="bg-indigo-800/60 rounded-lg p-3 border border-indigo-600/40">
+          <div className="text-indigo-100 leading-relaxed text-sm mb-4 pr-1 max-h-48 overflow-auto">
+            {insight}
+          </div>
+          <div className="bg-indigo-800/60 rounded-lg p-3 border border-indigo-600/40 flex-shrink-0">
             <div className="text-indigo-200 font-semibold text-xs mb-1">ORIGINAL HEADLINE</div>
             <div className="text-white text-sm font-medium line-clamp-2">{headline}</div>
           </div>
-          <div className="absolute bottom-3 left-0 right-0 px-4 sm:px-6">
+          <div className="mt-auto pt-3">
             <div className="flex gap-2">
               <button
                 onClick={() => setFlipped(false)}

@@ -10,12 +10,12 @@
   ],
   "beb87403-62a9-41c8-add9-ccfff145e621": [
     {
-      "id": "531474c7-44ce-48d1-b380-fc619b4d0f59",
+      "id": "38c48928-5697-4c0d-8e7b-dad955bb68e4",
       "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
-      "pledgeId": "reusable-bag",
-      "reminderType": "custom",
-      "customDate": "2025-09-25",
-      "dateAdded": "2025-09-18T13:25:07.923Z"
+      "pledgeId": "led-bulbs",
+      "reminderType": "daily",
+      "customDate": "",
+      "dateAdded": "2025-09-22T11:28:40.754Z"
     }
   ]
 }

@@ -108,9 +108,7 @@ export { app };
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== "test") {
   app.listen(port, async () => {
-    console.log(`API server listening on http://localhost:${port}`);
-    console.log(`OpenAPI docs available at http://localhost:${port}/docs`);
-    console.log(`OpenAPI spec available at http://localhost:${port}/openapi.json`);
+    // Logs reduced
 
     // Test database connection
     try {
@@ -132,12 +130,12 @@ if (process.env.NODE_ENV !== "test") {
       );
 
       // Also perform initial news fetch on startup
-      console.log("Performing initial news fetch...");
+      // Logs reduced
       performWeeklyNewsUpdate();
 
-      console.log("Weekly news updates scheduled for every Monday at 9:00 AM (Sydney time)");
+      // Logs reduced
     } else {
-      console.log("NEWS_AUTO_UPDATE=false → Skipping news cron and initial fetch");
+      // Logs reduced
     }
   });
 }
