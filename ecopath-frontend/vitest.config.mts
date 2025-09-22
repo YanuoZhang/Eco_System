@@ -20,5 +20,11 @@ export default defineConfig({
     globals: true,
     css: true,
     setupFiles: ["./vitest.setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      reportsDirectory: "./coverage",
+      all: false,
+    },
   },
 });

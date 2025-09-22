@@ -13,12 +13,18 @@
     "format:check": "npm -ws run format:check --if-present",
     "build": "npm -ws run build --if-present",
     "dev:front": "npm --workspace ecopath-frontend run dev",
-    "dev:back": "npm --workspace ecopath-backend run dev"
+    "dev:back": "npm --workspace ecopath-backend run dev",
+    "security:audit": "snyk test || npm audit || true",
+    "security:monitor": "snyk monitor",
+    "security:fix": "snyk wizard",
+    "security:scan": "./scripts/security-scan.sh",
+    "security:scan:all": "npm run security:audit && npm --workspace ecopath-backend run security:audit && npm --workspace ecopath-frontend run security:audit"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
-    "husky": "^9.0.0"
+    "husky": "^9.0.0",
+    "snyk": "^1.1280.0"
   },
   "commitlint": {
     "extends": [

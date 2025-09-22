@@ -18,7 +18,9 @@
     "pre-commit": "npm run lint:check && npm run format:check && npm run build",
     "db:init": "ts-node src/scripts/init-db.ts",
     "db:reset": "ts-node src/scripts/init-db.ts",
-    "db:view": "ts-node src/scripts/view-db.ts"
+    "db:view": "ts-node src/scripts/view-db.ts",
+    "security:audit": "snyk test || npm audit || true",
+    "security:monitor": "snyk monitor"
   },
   "keywords": [],
   "author": "",
@@ -50,6 +52,7 @@
     "@types/xml2js": "^0.4.14",
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.34.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.6.2",

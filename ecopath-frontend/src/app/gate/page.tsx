@@ -20,9 +20,8 @@ function GateForm() {
         body: JSON.stringify({ password }),
       });
       const data = (await res.json()) as { success?: boolean };
-      console.log("Login response:", { status: res.status, data, nextPath });
       if (!res.ok || !data?.success) throw new Error("Invalid password");
-      console.log("Redirecting to:", nextPath);
+      // Logging removed
       // Use window.location.href to ensure full page reload and cookie is properly set
       window.location.href = nextPath;
     } catch (err) {

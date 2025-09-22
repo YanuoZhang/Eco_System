@@ -220,12 +220,11 @@ export default function QuizResultsModal({
           </button>
           <button
             onClick={() => {
-              // Navigate to pledge page or other action
               window.location.href = "/pledge";
             }}
             className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
           >
-            Create Action Plan →
+            Take Action →
           </button>
         </div>
       </div>

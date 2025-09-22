@@ -155,6 +155,9 @@ export interface AIRecommendedPledge {
   priority: "high" | "medium" | "low";
   impactScore: number;
   reasoning?: string;
+  // Optional fields to support richer AI output and frontend mapping
+  impact?: "small" | "medium" | "large";
+  aiReason?: string;
 }
 
 export interface AIRecommendationResponse extends ApiResponse<AIRecommendedPledge[]> {

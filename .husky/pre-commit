@@ -53,4 +53,8 @@ else
   echo "   → Skipping backend tests (no changes in ecopath-backend)"
 fi
 
+# Run security audit
+echo "🔒 Running security audit..."
+npm run security:audit || exit 1
+
 echo "✅ All pre-commit checks passed!"
