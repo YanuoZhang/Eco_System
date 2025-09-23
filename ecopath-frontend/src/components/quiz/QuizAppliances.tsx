@@ -175,11 +175,14 @@ export default function QuizAppliances({
   }, [selected, usage, electricityFactor, weeksInPeriod.year]);
 
   useEffect(() => {
-    const weeklyUsageData = selected.map((ap) => ({
-      appliance: ap.name,
-      hoursPerWeek: usage[ap.id] || 0,
-      energyEfficient: false, // Default value, could be enhanced later
-    }));
+    const weeklyUsageData = selected.map((apId) => {
+      const appliance = APPLIANCES.find(ap => ap.id === apId);
+      return {
+        appliance: appliance?.name || apId,
+        hoursPerWeek: usage[apId] || 0,
+        energyEfficient: false, // Default value, could be enhanced later
+      };
+    });
 
     onChange?.({
       appliancesEmissionsKgYear: emissionsKgYear,
