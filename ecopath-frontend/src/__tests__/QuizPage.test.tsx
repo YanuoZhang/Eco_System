@@ -2,7 +2,16 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import QuizPage from "@/app/quiz/page";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/quiz" }));
+vi.mock("next/navigation", () => ({ 
+  usePathname: () => "/quiz",
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 // Mock child quiz components to focus on page integration
 vi.mock("@/components/quiz/QuizHero", () => ({
@@ -53,6 +62,8 @@ describe("QuizPage", () => {
     // simulate emissions updates
     await act(async () => {
       screen.getByText("elec").click();
+    });
+    await act(async () => {
       screen.getByText("hot").click();
     });
     // preview sums (text may be split, check node textContent)

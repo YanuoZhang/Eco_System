@@ -21,7 +21,7 @@ export default async function Home() {
           <Image
             src="/assets/home_bg.jpg"
             alt="Climate landscape background"
-            fill
+            fill={true}
             priority
             className="object-cover object-center"
           />

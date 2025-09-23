@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import QuizHero from "@/components/quiz/QuizHero";
 import QuizElectricity from "@/components/quiz/QuizElectricity";
 import QuizHotWater from "@/components/quiz/QuizHotWater";
@@ -11,6 +12,7 @@ import QuizResultsModal from "@/components/quiz/QuizResultsModal";
 import apiClient, { StateData } from "@/services/apiClient";
 
 export default function QuizPage() {
+  const router = useRouter();
   const [states, setStates] = useState<StateData[]>([]);
   const [selectedState, setSelectedState] = useState<string>("VIC");
   const [showResults, setShowResults] = useState(false);
@@ -20,6 +22,17 @@ export default function QuizPage() {
     gas?: number;
     units?: { gas?: string };
   } | null>(null);
+  
+  // Original quiz data for AI recommendations
+  const [electricity, setElectricity] = useState<number>(0);
+  const [gasMJ, setGasMJ] = useState<number>(0);
+  const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | undefined>(undefined);
+  const [hotWaterUsage, setHotWaterUsage] = useState<number>(0);
+  const [hotWaterHousehold, setHotWaterHousehold] = useState<number>(0);
+  const [appliancesUsage, setAppliancesUsage] = useState<Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>>([]);
+  const [transportModes, setTransportModes] = useState<Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>>([]);
+  
+  // Calculated emissions data
   const [electricityEmissions, setElectricityEmissions] = useState<number>(0);
   const [hotWaterEmissions, setHotWaterEmissions] = useState<number>(0);
   const [appliancesEmissions, setAppliancesEmissions] = useState<number>(0);
@@ -43,7 +56,9 @@ export default function QuizPage() {
         string,
         { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
       >;
+      modes?: Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>;
     }) => {
+      if (v.modes) setTransportModes(v.modes);
       if (typeof v.transportEmissionsKgYear === "number")
         setTransportEmissions(v.transportEmissionsKgYear);
       if (v.transportBreakdownKgYear) setTransportBreakdown(v.transportBreakdownKgYear);
@@ -95,6 +110,8 @@ export default function QuizPage() {
             factors={factors}
             onChange={(v) => {
               if (v.timeUnit) setTimeUnit(v.timeUnit);
+              if (typeof v.electricity === "number") setElectricity(v.electricity);
+              if (typeof v.gasMJ === "number") setGasMJ(v.gasMJ);
               if (typeof v.electricityEmissionsKgYear === "number")
                 setElectricityEmissions(v.electricityEmissionsKgYear);
             }}
@@ -104,6 +121,9 @@ export default function QuizPage() {
             factors={factors}
             onChange={(v) => {
               if (v.timeUnit) setTimeUnit(v.timeUnit);
+              if (v.system) setHotWaterSystem(v.system);
+              if (typeof v.usage === "number") setHotWaterUsage(v.usage);
+              if (typeof v.household === "number") setHotWaterHousehold(v.household);
               if (typeof v.hotWaterEmissionsKgYear === "number")
                 setHotWaterEmissions(v.hotWaterEmissionsKgYear);
             }}
@@ -112,6 +132,7 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={{ electricity: factors?.electricity }}
             onChange={(v) => {
+              if (v.weeklyUsage) setAppliancesUsage(v.weeklyUsage);
               if (typeof v.appliancesEmissionsKgYear === "number")
                 setAppliancesEmissions(v.appliancesEmissionsKgYear);
               if (v.applianceBreakdownKgYear) setApplianceBreakdown(v.applianceBreakdownKgYear);
@@ -129,6 +150,26 @@ export default function QuizPage() {
           // Persist quiz summary for AI suggestions and later revisit
           try {
             const payload = {
+              // Original quiz data for AI recommendations
+              location: { state: selectedState },
+              electricity: {
+                usage: electricity,
+                timeUnit,
+                household: 1, // Default household size
+              },
+              hotWater: {
+                system: hotWaterSystem,
+                usage: hotWaterUsage,
+                timeUnit,
+                household: hotWaterHousehold,
+              },
+              appliances: {
+                weeklyUsage: appliancesUsage,
+              },
+              transport: {
+                modes: transportModes,
+              },
+              // Calculated results for display
               state: selectedState,
               timeUnit,
               totals: {
@@ -142,14 +183,17 @@ export default function QuizPage() {
                   appliancesEmissions +
                   transportEmissions,
               },
-              appliances: applianceBreakdown || {},
-              transport: transportBreakdown || {},
+              applianceBreakdown: applianceBreakdown || {},
+              transportBreakdown: transportBreakdown || {},
               savedAt: new Date().toISOString(),
             };
+            
             if (typeof window !== "undefined") {
               localStorage.setItem("carbonFootprint", JSON.stringify(payload));
             }
-          } catch {}
+          } catch (e) {
+            console.error("[Quiz] Error saving to localStorage:", e);
+          }
           setShowResults(true);
         }}
       />
@@ -176,12 +220,65 @@ export default function QuizPage() {
           <p className="text-slate-600 mb-6">
             Use your footprint results to build a personalised pledge plan and set reminders.
           </p>
-          <a
-            href="/pledge"
+          <button
+            onClick={() => {
+              // Save data to localStorage before navigating
+              try {
+                const payload = {
+                  // Original quiz data for AI recommendations
+                  location: { state: selectedState },
+                  electricity: {
+                    usage: electricity,
+                    timeUnit,
+                    household: 1, // Default household size
+                  },
+                  hotWater: {
+                    system: hotWaterSystem,
+                    usage: hotWaterUsage,
+                    timeUnit,
+                    household: hotWaterHousehold,
+                  },
+                  appliances: {
+                    weeklyUsage: appliancesUsage,
+                  },
+                  transport: {
+                    modes: transportModes,
+                  },
+                  // Calculated results for display
+                  state: selectedState,
+                  timeUnit,
+                  totals: {
+                    electricityKgYear: electricityEmissions,
+                    hotWaterKgYear: hotWaterEmissions,
+                    appliancesKgYear: appliancesEmissions,
+                    transportKgYear: transportEmissions,
+                    totalKgYear:
+                      electricityEmissions +
+                      hotWaterEmissions +
+                      appliancesEmissions +
+                      transportEmissions,
+                  },
+                  applianceBreakdown: applianceBreakdown || {},
+                  transportBreakdown: transportBreakdown || {},
+                  savedAt: new Date().toISOString(),
+                };
+                
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("carbonFootprint", JSON.stringify(payload));
+                }
+                
+                // Navigate to pledge page
+                router.push("/pledge");
+              } catch (e) {
+                console.error("[Quiz] Error saving to localStorage:", e);
+                // Still navigate even if save fails
+                router.push("/pledge");
+              }
+            }}
             className="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold text-lg sm:text-xl px-10 sm:px-12 py-4 sm:py-5 rounded-full shadow-2xl transition-all duration-300 ring-4 ring-emerald-300/20"
           >
             Create My Action Plan →
-          </a>
+          </button>
         </div>
       </div>
     </div>

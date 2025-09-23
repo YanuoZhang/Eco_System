@@ -1,3 +1,7 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+
 type TimeUnit = "week" | "month" | "quarter" | "year";
 
 export default function QuizResultsModal({
@@ -26,6 +30,7 @@ export default function QuizResultsModal({
     { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
   >;
 }) {
+  const router = useRouter();
   if (!open) return null;
   const year =
     (totals?.electricityKgYear ?? 0) +
@@ -220,7 +225,7 @@ export default function QuizResultsModal({
           </button>
           <button
             onClick={() => {
-              window.location.href = "/pledge";
+              router.push("/pledge");
             }}
             className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
           >
