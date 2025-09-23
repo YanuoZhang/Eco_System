@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import QuizHero from "@/components/quiz/QuizHero";
 import QuizElectricity from "@/components/quiz/QuizElectricity";
 import QuizHotWater from "@/components/quiz/QuizHotWater";
@@ -11,6 +12,7 @@ import QuizResultsModal from "@/components/quiz/QuizResultsModal";
 import apiClient, { StateData } from "@/services/apiClient";
 
 export default function QuizPage() {
+  const router = useRouter();
   const [states, setStates] = useState<StateData[]>([]);
   const [selectedState, setSelectedState] = useState<string>("VIC");
   const [showResults, setShowResults] = useState(false);
@@ -292,11 +294,11 @@ export default function QuizPage() {
                 }
                 
                 // Navigate to pledge page
-                window.location.href = "/pledge";
+                router.push("/pledge");
               } catch (e) {
                 console.error("[Quiz] Error saving to localStorage:", e);
                 // Still navigate even if save fails
-                window.location.href = "/pledge";
+                router.push("/pledge");
               }
             }}
             className="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold text-lg sm:text-xl px-10 sm:px-12 py-4 sm:py-5 rounded-full shadow-2xl transition-all duration-300 ring-4 ring-emerald-300/20"
