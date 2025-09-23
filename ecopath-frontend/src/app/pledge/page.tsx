@@ -374,10 +374,11 @@ export default function PledgePage() {
 
   const generateBatchCalendarFile = (pledges: SavedPledge[]) => {
     const now = new Date();
-    let icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//EcoPath//Climate Pledge Reminder//EN\nMETHOD:PUBLISH`;
+    let icsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//EcoPath//Climate Pledge Reminder//EN\r\nMETHOD:PUBLISH\r\n`;
     const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const escapeText = (text: string) => text.replace(/[,\\;]/g, "\\$&").replace(/\n/g, "\\n");
     const createEvent = (title: string, description: string, date: Date, uid: string) =>
-      `\nBEGIN:VEVENT\nUID:${uid}@ecopath.com\nDTSTAMP:${formatDate(now)}\nDTSTART:${formatDate(date)}\nDTEND:${formatDate(new Date(date.getTime() + 60 * 60 * 1000))}\nSUMMARY:${title}\nDESCRIPTION:${description}\nBEGIN:VALARM\nTRIGGER:-PT15M\nACTION:DISPLAY\nDESCRIPTION:Reminder: ${title}\nEND:VALARM\nEND:VEVENT`;
+      `\r\nBEGIN:VEVENT\r\nUID:${uid}@ecopath.com\r\nDTSTAMP:${formatDate(now)}\r\nDTSTART:${formatDate(date)}\r\nDTEND:${formatDate(new Date(date.getTime() + 60 * 60 * 1000))}\r\nSUMMARY:${escapeText(title)}\r\nDESCRIPTION:${escapeText(description)}\r\nBEGIN:VALARM\r\nTRIGGER:-PT15M\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder: ${escapeText(title)}\r\nEND:VALARM\r\nEND:VEVENT\r\n`;
 
     pledges.forEach((pledge, idx) => {
       const reminderType = pledge.reminderType;
@@ -423,7 +424,7 @@ export default function PledgePage() {
         dates.forEach((d, j) => {
           const eventDate = new Date(d);
           icsContent += createEvent(
-            `EcoPath Pledge: ${pledge.title}`,
+            `Reminder: ${pledge.title}`,
             `Remember to ${pledge.title.toLowerCase()}. ${pledge.benefit}`,
             eventDate,
             `pledge-${pledge.id}-custom-${j}-${idx}`,
@@ -431,8 +432,8 @@ export default function PledgePage() {
         });
       }
     });
-    icsContent += `\nEND:VCALENDAR`;
-    const blob = new Blob([icsContent], { type: "text/calendar" });
+    icsContent += `\r\nEND:VCALENDAR`;
+    const blob = new Blob([icsContent], { type: "text/calendar; charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -743,7 +744,20 @@ export default function PledgePage() {
                         <span>
                           Reminder:{" "}
                           {pledge.reminderType === "custom"
-                            ? `On ${pledge.customDate ? new Date(pledge.customDate).toLocaleDateString() : "-"}`
+                            ? pledge.customDate
+                              ? pledge.customDate
+                                  .split(",")
+                                  .map((d) => d.trim())
+                                  .filter(Boolean)
+                                  .map((date) => {
+                                    if (date.includes(":")) {
+                                      const [start, end] = date.split(":");
+                                      return `${new Date(start).toLocaleDateString()} - ${new Date(end).toLocaleDateString()}`;
+                                    }
+                                    return new Date(date).toLocaleDateString();
+                                  })
+                                  .join(", ")
+                              : "-"
                             : pledge.reminderType}
                         </span>
                       </div>

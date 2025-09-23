@@ -16,6 +16,14 @@
       "reminderType": "daily",
       "customDate": "",
       "dateAdded": "2025-09-22T11:28:40.754Z"
+    },
+    {
+      "id": "d25ac45d-e2a3-4f41-baa1-0d7887a21e5f",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "water-bottle",
+      "reminderType": "custom",
+      "customDate": "2025-09-23",
+      "dateAdded": "2025-09-23T13:18:35.174Z"
     }
   ]
 }
