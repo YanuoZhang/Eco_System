@@ -10,6 +10,7 @@ type Props = {
       string,
       { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
     >;
+    modes?: Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>;
   }) => void;
   factors?: { electricity?: number; gas?: number; units?: { gas?: string } } | null;
 };
@@ -135,11 +136,22 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
   // Update parent component when emissions change
   useEffect(() => {
     const { totalEmissions, breakdown } = calculateTransportEmissions();
+    
+    // Convert transportData to modes array for AI recommendations
+    const modesData = Object.entries(transportData)
+      .filter(([_, mode]) => mode.enabled && mode.distance > 0)
+      .map(([key, mode]) => ({
+        mode: key as "car" | "bus" | "train" | "tram" | "bicycle" | "walking",
+        distance: mode.distance,
+        frequency: mode.frequency || 1,
+      }));
+
     onChange?.({
       transportEmissionsKgYear: totalEmissions,
       transportBreakdownKgYear: breakdown,
+      modes: modesData,
     });
-  }, [calculateTransportEmissions, onChange]);
+  }, [calculateTransportEmissions, onChange, transportData]);
 
   const handleModeChange = (
     mode: keyof TransportData,

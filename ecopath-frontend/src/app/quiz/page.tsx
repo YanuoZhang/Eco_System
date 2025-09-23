@@ -56,6 +56,7 @@ export default function QuizPage() {
       >;
       modes?: Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>;
     }) => {
+      console.log("[Quiz] Transport onChange:", v);
       if (v.modes) setTransportModes(v.modes);
       if (typeof v.transportEmissionsKgYear === "number")
         setTransportEmissions(v.transportEmissionsKgYear);
@@ -107,6 +108,7 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={factors}
             onChange={(v) => {
+              console.log("[Quiz] Electricity onChange:", v);
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (typeof v.electricity === "number") setElectricity(v.electricity);
               if (typeof v.gasMJ === "number") setGasMJ(v.gasMJ);
@@ -118,6 +120,7 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={factors}
             onChange={(v) => {
+              console.log("[Quiz] HotWater onChange:", v);
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (v.system) setHotWaterSystem(v.system);
               if (typeof v.usage === "number") setHotWaterUsage(v.usage);
@@ -130,6 +133,7 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={{ electricity: factors?.electricity }}
             onChange={(v) => {
+              console.log("[Quiz] Appliances onChange:", v);
               if (v.weeklyUsage) setAppliancesUsage(v.weeklyUsage);
               if (typeof v.appliancesEmissionsKgYear === "number")
                 setAppliancesEmissions(v.appliancesEmissionsKgYear);
@@ -181,14 +185,28 @@ export default function QuizPage() {
                   appliancesEmissions +
                   transportEmissions,
               },
-              appliances: applianceBreakdown || {},
-              transport: transportBreakdown || {},
+              applianceBreakdown: applianceBreakdown || {},
+              transportBreakdown: transportBreakdown || {},
               savedAt: new Date().toISOString(),
             };
+            
+            console.log("[Quiz] Saving to localStorage:", payload);
+            console.log("[Quiz] Original data:", {
+              electricity,
+              hotWaterSystem,
+              hotWaterUsage,
+              hotWaterHousehold,
+              appliancesUsage,
+              transportModes,
+            });
+            
             if (typeof window !== "undefined") {
               localStorage.setItem("carbonFootprint", JSON.stringify(payload));
+              console.log("[Quiz] ✅ Successfully saved to localStorage!");
             }
-          } catch {}
+          } catch (e) {
+            console.error("[Quiz] Error saving to localStorage:", e);
+          }
           setShowResults(true);
         }}
       />
@@ -215,12 +233,76 @@ export default function QuizPage() {
           <p className="text-slate-600 mb-6">
             Use your footprint results to build a personalised pledge plan and set reminders.
           </p>
-          <a
-            href="/pledge"
+          <button
+            onClick={() => {
+              // Save data to localStorage before navigating
+              try {
+                const payload = {
+                  // Original quiz data for AI recommendations
+                  location: { state: selectedState },
+                  electricity: {
+                    usage: electricity,
+                    timeUnit,
+                    household: 1, // Default household size
+                  },
+                  hotWater: {
+                    system: hotWaterSystem,
+                    usage: hotWaterUsage,
+                    timeUnit,
+                    household: hotWaterHousehold,
+                  },
+                  appliances: {
+                    weeklyUsage: appliancesUsage,
+                  },
+                  transport: {
+                    modes: transportModes,
+                  },
+                  // Calculated results for display
+                  state: selectedState,
+                  timeUnit,
+                  totals: {
+                    electricityKgYear: electricityEmissions,
+                    hotWaterKgYear: hotWaterEmissions,
+                    appliancesKgYear: appliancesEmissions,
+                    transportKgYear: transportEmissions,
+                    totalKgYear:
+                      electricityEmissions +
+                      hotWaterEmissions +
+                      appliancesEmissions +
+                      transportEmissions,
+                  },
+                  applianceBreakdown: applianceBreakdown || {},
+                  transportBreakdown: transportBreakdown || {},
+                  savedAt: new Date().toISOString(),
+                };
+                
+                console.log("[Quiz] Saving to localStorage via Create Action Plan:", payload);
+                console.log("[Quiz] Original data:", {
+                  electricity,
+                  hotWaterSystem,
+                  hotWaterUsage,
+                  hotWaterHousehold,
+                  appliancesUsage,
+                  transportModes,
+                });
+                
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("carbonFootprint", JSON.stringify(payload));
+                  console.log("[Quiz] ✅ Successfully saved to localStorage!");
+                }
+                
+                // Navigate to pledge page
+                window.location.href = "/pledge";
+              } catch (e) {
+                console.error("[Quiz] Error saving to localStorage:", e);
+                // Still navigate even if save fails
+                window.location.href = "/pledge";
+              }
+            }}
             className="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-bold text-lg sm:text-xl px-10 sm:px-12 py-4 sm:py-5 rounded-full shadow-2xl transition-all duration-300 ring-4 ring-emerald-300/20"
           >
             Create My Action Plan →
-          </a>
+          </button>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ type Props = {
       string,
       { name: string; icon: string; emissions: number; usageHoursPerWeek: number }
     >;
+    weeklyUsage?: Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>;
   }) => void;
 };
 
@@ -174,10 +175,17 @@ export default function QuizAppliances({
   }, [selected, usage, electricityFactor, weeksInPeriod.year]);
 
   useEffect(() => {
+    const weeklyUsageData = selected.map((ap) => ({
+      appliance: ap.name,
+      hoursPerWeek: usage[ap.id] || 0,
+      energyEfficient: false, // Default value, could be enhanced later
+    }));
+
     onChange?.({
       appliancesEmissionsKgYear: emissionsKgYear,
       timeUnit,
       applianceBreakdownKgYear: breakdown,
+      weeklyUsage: weeklyUsageData,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emissionsKgYear]);

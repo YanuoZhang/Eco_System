@@ -7,6 +7,9 @@ type Props = {
   onChange?: (v: {
     hotWaterEmissionsKgYear?: number;
     timeUnit?: "month" | "quarter" | "year";
+    system?: "electric" | "gas" | "solar";
+    usage?: number;
+    household?: number;
   }) => void;
   factors?: { electricity?: number; gas?: number; units?: { gas?: string } } | null;
 };
@@ -150,9 +153,14 @@ export default function QuizHotWater({
   ]);
 
   useEffect(() => {
-    onChange?.({ hotWaterEmissionsKgYear });
+    onChange?.({
+      hotWaterEmissionsKgYear,
+      system: hotWaterSystem || undefined,
+      usage: usageKnown ? Number(knownUsage) || undefined : undefined,
+      household: household || undefined,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hotWaterEmissionsKgYear]);
+  }, [hotWaterEmissionsKgYear, hotWaterSystem, knownUsage, usageKnown, household]);
 
   const unitLabel =
     currentTimeUnit === "week"
