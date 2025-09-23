@@ -176,7 +176,7 @@ export default function ClimateTimeline({ periods }: Props) {
               <Image
                 src={active?.visual || "/assets/home_bg.jpg"}
                 alt={active?.title || active?.period || "Timeline image"}
-                fill
+                fill={true}
                 sizes="(min-width: 1024px) 50vw, 100vw"
                 className="object-cover object-center"
               />
