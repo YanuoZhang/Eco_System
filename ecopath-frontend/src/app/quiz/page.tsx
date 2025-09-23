@@ -58,7 +58,6 @@ export default function QuizPage() {
       >;
       modes?: Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>;
     }) => {
-      console.log("[Quiz] Transport onChange:", v);
       if (v.modes) setTransportModes(v.modes);
       if (typeof v.transportEmissionsKgYear === "number")
         setTransportEmissions(v.transportEmissionsKgYear);
@@ -110,7 +109,6 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={factors}
             onChange={(v) => {
-              console.log("[Quiz] Electricity onChange:", v);
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (typeof v.electricity === "number") setElectricity(v.electricity);
               if (typeof v.gasMJ === "number") setGasMJ(v.gasMJ);
@@ -122,7 +120,6 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={factors}
             onChange={(v) => {
-              console.log("[Quiz] HotWater onChange:", v);
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (v.system) setHotWaterSystem(v.system);
               if (typeof v.usage === "number") setHotWaterUsage(v.usage);
@@ -135,7 +132,6 @@ export default function QuizPage() {
             timeUnit={timeUnit}
             factors={{ electricity: factors?.electricity }}
             onChange={(v) => {
-              console.log("[Quiz] Appliances onChange:", v);
               if (v.weeklyUsage) setAppliancesUsage(v.weeklyUsage);
               if (typeof v.appliancesEmissionsKgYear === "number")
                 setAppliancesEmissions(v.appliancesEmissionsKgYear);
@@ -192,19 +188,8 @@ export default function QuizPage() {
               savedAt: new Date().toISOString(),
             };
             
-            console.log("[Quiz] Saving to localStorage:", payload);
-            console.log("[Quiz] Original data:", {
-              electricity,
-              hotWaterSystem,
-              hotWaterUsage,
-              hotWaterHousehold,
-              appliancesUsage,
-              transportModes,
-            });
-            
             if (typeof window !== "undefined") {
               localStorage.setItem("carbonFootprint", JSON.stringify(payload));
-              console.log("[Quiz] ✅ Successfully saved to localStorage!");
             }
           } catch (e) {
             console.error("[Quiz] Error saving to localStorage:", e);
@@ -278,19 +263,8 @@ export default function QuizPage() {
                   savedAt: new Date().toISOString(),
                 };
                 
-                console.log("[Quiz] Saving to localStorage via Create Action Plan:", payload);
-                console.log("[Quiz] Original data:", {
-                  electricity,
-                  hotWaterSystem,
-                  hotWaterUsage,
-                  hotWaterHousehold,
-                  appliancesUsage,
-                  transportModes,
-                });
-                
                 if (typeof window !== "undefined") {
                   localStorage.setItem("carbonFootprint", JSON.stringify(payload));
-                  console.log("[Quiz] ✅ Successfully saved to localStorage!");
                 }
                 
                 // Navigate to pledge page
