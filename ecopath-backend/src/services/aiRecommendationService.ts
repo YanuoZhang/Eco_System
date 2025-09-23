@@ -185,7 +185,8 @@ export class AIRecommendationService {
       impactScore: p.impact === "high" ? 3 : p.impact === "medium" ? 2 : 1,
       aiReason: typeof jsonHint?.aiReason === "string" ? jsonHint.aiReason : undefined,
       impact:
-        typeof jsonHint?.impact === "string" && ["small", "medium", "large"].includes(jsonHint.impact)
+        typeof jsonHint?.impact === "string" &&
+        ["small", "medium", "large"].includes(jsonHint.impact)
           ? (jsonHint.impact as any)
           : undefined,
     };

@@ -22,16 +22,26 @@ export default function QuizPage() {
     gas?: number;
     units?: { gas?: string };
   } | null>(null);
-  
+
   // Original quiz data for AI recommendations
   const [electricity, setElectricity] = useState<number>(0);
   const [gasMJ, setGasMJ] = useState<number>(0);
-  const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | undefined>(undefined);
+  const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | undefined>(
+    undefined,
+  );
   const [hotWaterUsage, setHotWaterUsage] = useState<number>(0);
   const [hotWaterHousehold, setHotWaterHousehold] = useState<number>(0);
-  const [appliancesUsage, setAppliancesUsage] = useState<Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>>([]);
-  const [transportModes, setTransportModes] = useState<Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>>([]);
-  
+  const [appliancesUsage, setAppliancesUsage] = useState<
+    Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>
+  >([]);
+  const [transportModes, setTransportModes] = useState<
+    Array<{
+      mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+      distance?: number;
+      frequency?: number;
+    }>
+  >([]);
+
   // Calculated emissions data
   const [electricityEmissions, setElectricityEmissions] = useState<number>(0);
   const [hotWaterEmissions, setHotWaterEmissions] = useState<number>(0);
@@ -56,7 +66,11 @@ export default function QuizPage() {
         string,
         { name: string; icon: string; emissions: number; distance: number; fuelType?: string }
       >;
-      modes?: Array<{ mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking"; distance?: number; frequency?: number }>;
+      modes?: Array<{
+        mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+        distance?: number;
+        frequency?: number;
+      }>;
     }) => {
       if (v.modes) setTransportModes(v.modes);
       if (typeof v.transportEmissionsKgYear === "number")
@@ -187,7 +201,7 @@ export default function QuizPage() {
               transportBreakdown: transportBreakdown || {},
               savedAt: new Date().toISOString(),
             };
-            
+
             if (typeof window !== "undefined") {
               localStorage.setItem("carbonFootprint", JSON.stringify(payload));
             }
@@ -262,11 +276,11 @@ export default function QuizPage() {
                   transportBreakdown: transportBreakdown || {},
                   savedAt: new Date().toISOString(),
                 };
-                
+
                 if (typeof window !== "undefined") {
                   localStorage.setItem("carbonFootprint", JSON.stringify(payload));
                 }
-                
+
                 // Navigate to pledge page
                 router.push("/pledge");
               } catch (e) {
