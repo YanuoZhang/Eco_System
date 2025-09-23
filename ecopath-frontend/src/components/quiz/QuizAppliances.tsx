@@ -176,7 +176,7 @@ export default function QuizAppliances({
 
   useEffect(() => {
     const weeklyUsageData = selected.map((apId) => {
-      const appliance = APPLIANCES.find(ap => ap.id === apId);
+      const appliance = APPLIANCES.find((ap) => ap.id === apId);
       return {
         appliance: appliance?.name || apId,
         hoursPerWeek: usage[apId] || 0,

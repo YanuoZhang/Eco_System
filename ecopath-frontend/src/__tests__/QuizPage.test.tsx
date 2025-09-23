@@ -2,7 +2,7 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import QuizPage from "@/app/quiz/page";
 
-vi.mock("next/navigation", () => ({ 
+vi.mock("next/navigation", () => ({
   usePathname: () => "/quiz",
   useRouter: () => ({
     push: vi.fn(),

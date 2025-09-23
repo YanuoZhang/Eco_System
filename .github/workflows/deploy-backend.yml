@@ -9,20 +9,19 @@ on:
 
 jobs:
   deploy-backend:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # required so we can diff previous commit
 
-      - name: Check if backend folder changed
+      - name: Check if backend folder changed (only for PRs)
+        if: github.event_name == 'pull_request'
         id: check_backend
         run: |
-          BASE_SHA='${{ github.event.pull_request.base.sha }}'
-          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           echo "BASE_SHA=$BASE_SHA"
           echo "HEAD_SHA=$HEAD_SHA"
           if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -q '^ecopath-backend/'; then
@@ -32,24 +31,21 @@ jobs:
           fi
 
       - name: Skip if no backend changes
-        if: env.BACKEND_CHANGED == 'false'
+        if: github.event_name == 'pull_request' && env.BACKEND_CHANGED == 'false'
         run: echo "No backend changes detected. Skipping deploy." && exit 0
 
       - name: Setup SSH key
-        if: env.BACKEND_CHANGED == 'true'
         run: |
-          echo "Setting up SSH key"
           echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
       - name: Deploy to EC2 via SSH
-        if: env.BACKEND_CHANGED == 'true'
         run: |
-          echo "Deploying backend to EC2..."
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/Eco_System/ecopath-backend
-            git pull origin main
+            git fetch --all
+            git reset --hard origin/main
             npm install
             npm run build
-            pm2 restart ecopath-api || pm2 start dist/index.js --name ecopath-api
+            pm2 startOrReload ecosystem.config.js --env production
           EOF
