@@ -128,6 +128,155 @@ export const createOpenApiDoc = (port: number) => ({
         },
       },
     },
+    "/api/emissions/comparison": {
+      get: {
+        summary: "User emissions comparison (baseline vs with pledges)",
+        description:
+          "Returns baseline, withPledges, and saved emissions in kg CO2-e per year for the authenticated user.",
+        parameters: [
+          {
+            name: "state",
+            in: "query",
+            required: false,
+            schema: { type: "string", example: "VIC" },
+            description: "Optional state code to select emissions factors; defaults to VIC",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["baseline", "withPledges", "saved"],
+                  properties: {
+                    baseline: { type: "number", format: "float", example: 3200 },
+                    withPledges: { type: "number", format: "float", example: 2800 },
+                    saved: { type: "number", format: "float", example: 400 },
+                    unit: { type: "string", example: "kg CO2-e per year" },
+                    timestamp: { type: "string" },
+                    metadata: {
+                      type: "object",
+                      properties: {
+                        state: { type: "string", example: "VIC" },
+                        pledgesCount: { type: "number", example: 3 },
+                        pledgedKgPerYearReduction: { type: "number", example: 550 },
+                      },
+                    },
+                    cached: { type: "boolean" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Unauthorized" },
+          "429": { description: "Rate limited (1 request per 10 seconds)" },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/emissions/forecast-multiyear": {
+      get: {
+        summary: "Multi-year emissions forecast (baseline vs with pledges)",
+        description:
+          "Returns projected emissions for the next 5-10 years, showing both baseline growth and pledge impact over time with decay factors.",
+        parameters: [
+          {
+            name: "state",
+            in: "query",
+            required: false,
+            schema: { type: "string", example: "VIC" },
+            description: "Optional state code to select emissions factors; defaults to VIC",
+          },
+          {
+            name: "years",
+            in: "query",
+            required: false,
+            schema: { type: "integer", minimum: 1, maximum: 10, default: 5 },
+            description: "Number of years to forecast (1-10); defaults to 5",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["years", "baseline", "withPledges"],
+                  properties: {
+                    years: {
+                      type: "array",
+                      items: { type: "number" },
+                      example: [2025, 2026, 2027, 2028, 2029],
+                      description: "Array of forecast years",
+                    },
+                    baseline: {
+                      type: "array",
+                      items: { type: "number", format: "float" },
+                      example: [3200, 3250, 3300, 3350, 3400],
+                      description: "Projected baseline emissions per year (with growth)",
+                    },
+                    withPledges: {
+                      type: "array",
+                      items: { type: "number", format: "float" },
+                      example: [2800, 2850, 2900, 2950, 3000],
+                      description: "Projected emissions with pledges applied (with decay factors)",
+                    },
+                    unit: { type: "string", example: "kg CO2-e per year" },
+                    timestamp: { type: "string" },
+                    metadata: {
+                      type: "object",
+                      properties: {
+                        state: { type: "string", example: "VIC" },
+                        pledgesCount: { type: "number", example: 3 },
+                        forecastYears: { type: "number", example: 5 },
+                        totalBaselineReduction: { type: "number", example: 200 },
+                        totalPledgeReduction: { type: "number", example: 1500 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Invalid years parameter (must be 1-10)" },
+          "401": { description: "Unauthorized" },
+          "429": { description: "Rate limited (1 request per 30 seconds)" },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/emissions/by-pledge": {
+      get: {
+        summary: "Per-pledge annual CO2 savings for authenticated user",
+        description:
+          "Returns an array of objects with pledge name and estimated kg CO2 saved per year, aggregated across duplicates.",
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    required: ["name", "saving"],
+                    properties: {
+                      name: { type: "string", example: "Use LED bulbs" },
+                      saving: { type: "number", example: 120 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Unauthorized" },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
     "/api/timeline": {
       get: {
         summary: "Climate timeline data",

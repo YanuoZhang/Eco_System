@@ -3,6 +3,7 @@
 import { pool } from "../config/database";
 import { EnergyData, TransportData, FactorOverrides } from "../types";
 import { calculateEnergyEmissions, EMISSIONS_FACTORS } from "../utils/emissions";
+import { UserPledgesService } from "./userPledgesService";
 
 // DB-backed factors helpers
 export async function getDbElectricityFactorKgPerKwh(state: string): Promise<number | null> {
@@ -146,4 +147,170 @@ export async function calculateTotalEmissions(
   }
 
   return { totalEmissions, breakdown };
+}
+
+// --- Comparison calculators ---
+
+// Reasonable default baseline assumptions for a typical household (annualized)
+const DEFAULT_BASELINE = {
+  electricityKwhPerYear: 5000, // kWh/year
+  gasMjPerYear: 20000, // MJ/year
+  carKmPerYear: 12000, // km/year
+} as const;
+
+export async function calculateBaselineEmissions(userId: string, state: string) {
+  // For now, baseline is derived from defaults; can be replaced with user profile later
+  const energy = {
+    electricity: DEFAULT_BASELINE.electricityKwhPerYear,
+    gas: DEFAULT_BASELINE.gasMjPerYear,
+    timeUnit: "year" as const,
+  };
+  const transport = {
+    mode: "car" as const,
+    distance: DEFAULT_BASELINE.carKmPerYear,
+    timeUnit: "year" as const,
+    frequency: 1,
+  };
+
+  const { totalEmissions } = await calculateTotalEmissions(energy, transport, state);
+  return Math.round(totalEmissions);
+}
+
+export async function calculateWithPledgesEmissions(
+  userId: string,
+  state: string,
+  pledgedKgPerYearReduction: number,
+) {
+  const baseline = await calculateBaselineEmissions(userId, state);
+  const withPledges = Math.max(0, baseline - pledgedKgPerYearReduction);
+  return {
+    baseline,
+    withPledges,
+    saved: baseline - withPledges,
+  };
+}
+
+export function calculateSavedEmissions(baseline: number, withPledges: number) {
+  return Math.max(0, Math.round(baseline - withPledges));
+}
+
+// --- Multi-year forecast calculators ---
+
+export interface MultiYearForecast {
+  years: number[];
+  baseline: number[];
+  withPledges: number[];
+  unit: string;
+  timestamp: string;
+  metadata: {
+    state: string;
+    pledgesCount: number;
+    forecastYears: number;
+    totalBaselineReduction: number;
+    totalPledgeReduction: number;
+  };
+}
+
+// Pledge impact factors and decay rates over time
+const PLEDGE_IMPACT_FACTORS = {
+  // Energy category pledges
+  energy: {
+    baseReduction: 200, // kg CO2-e per year
+    decayRate: 0.02, // 2% effectiveness decay per year
+    maxYears: 10,
+  },
+  // Transport category pledges  
+  transport: {
+    baseReduction: 300, // kg CO2-e per year
+    decayRate: 0.01, // 1% effectiveness decay per year (transport habits more stable)
+    maxYears: 10,
+  },
+  // Lifestyle category pledges
+  lifestyle: {
+    baseReduction: 150, // kg CO2-e per year
+    decayRate: 0.03, // 3% effectiveness decay per year (habits may change)
+    maxYears: 8,
+  },
+  // Default for other categories
+  default: {
+    baseReduction: 100, // kg CO2-e per year
+    decayRate: 0.025, // 2.5% effectiveness decay per year
+    maxYears: 8,
+  },
+} as const;
+
+// Baseline emissions growth rate (accounting for population growth, economic factors)
+const BASELINE_GROWTH_RATE = 0.015; // 1.5% annual growth
+
+export async function generateMultiYearForecast(
+  userId: string,
+  state: string,
+  forecastYears: number = 5,
+): Promise<MultiYearForecast> {
+  // Validate forecast years
+  const years = Math.min(Math.max(forecastYears, 1), 10);
+  
+  // Get current baseline
+  const currentBaseline = await calculateBaselineEmissions(userId, state);
+  
+  // Get user pledges and categorize them
+  const pledges = UserPledgesService.list(userId);
+  
+  // Generate year array
+  const currentYear = new Date().getFullYear();
+  const yearArray = Array.from({ length: years }, (_, i) => currentYear + i + 1);
+  
+  // Calculate baseline progression (with growth)
+  const baselineProgression = yearArray.map((year, index) => {
+    const yearsFromNow = index + 1;
+    return Math.round(currentBaseline * Math.pow(1 + BASELINE_GROWTH_RATE, yearsFromNow));
+  });
+  
+  // Calculate pledge impact over time for each category
+  const pledgeImpactsByYear = yearArray.map((year, index) => {
+    const yearsFromNow = index + 1;
+    let totalPledgeReduction = 0;
+    
+    for (const pledge of pledges) {
+      // Get pledge category (default to 'default' if not found)
+      const category = (pledge as any).category || 'default';
+      const factors = PLEDGE_IMPACT_FACTORS[category as keyof typeof PLEDGE_IMPACT_FACTORS] || PLEDGE_IMPACT_FACTORS.default;
+      
+      // Check if pledge is still effective
+      if (yearsFromNow <= factors.maxYears) {
+        // Apply decay rate: effectiveness decreases over time
+        const decayFactor = Math.pow(1 - factors.decayRate, yearsFromNow - 1);
+        const yearlyReduction = factors.baseReduction * decayFactor;
+        totalPledgeReduction += yearlyReduction;
+      }
+    }
+    
+    return Math.round(totalPledgeReduction);
+  });
+  
+  // Calculate withPledges progression
+  const withPledgesProgression = yearArray.map((_, index) => {
+    const baseline = baselineProgression[index];
+    const pledgeReduction = pledgeImpactsByYear[index];
+    return Math.max(0, baseline - pledgeReduction);
+  });
+  
+  // Calculate totals for metadata
+  const totalBaselineReduction = baselineProgression[baselineProgression.length - 1] - currentBaseline;
+  const totalPledgeReduction = pledgeImpactsByYear.reduce((sum, reduction) => sum + reduction, 0);
+  
+  return {
+    years: yearArray,
+    baseline: baselineProgression,
+    withPledges: withPledgesProgression,
+    unit: "kg CO2-e per year",
+    timestamp: new Date().toISOString(),
+    metadata: {
+      state,
+      pledgesCount: pledges.length,
+      forecastYears: years,
+      totalBaselineReduction: Math.round(totalBaselineReduction),
+      totalPledgeReduction: Math.round(totalPledgeReduction),
+    },
+  };
 }

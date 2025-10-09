@@ -10,6 +10,10 @@ import {
   getDbCarKgPerKm,
 } from "../services/emissionsService";
 import { EMISSIONS_FACTORS } from "../utils/emissions";
+import { requireUser } from "../middleware/auth";
+import { UserPledgesService } from "../services/userPledgesService";
+import { PledgesService } from "../services/pledgesService";
+import { calculateBaselineEmissions, calculateSavedEmissions, generateMultiYearForecast } from "../services/emissionsService";
 
 const router = Router();
 
@@ -286,3 +290,188 @@ router.get("/supported-units", (_req: Request, res: Response) => {
 });
 
 export default router;
+
+// In-memory per-user cache and rate limit tracker
+const comparisonCache = new Map<string, { data: any; expiresAt: number }>();
+const lastRequestAt = new Map<string, number>();
+
+// GET /api/emissions/comparison
+router.get("/comparison", requireUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+    const state = (req.query.state as string) || "VIC"; // optional, default VIC
+
+    // Rate limit: 1 request per 10s per user
+    const now = Date.now();
+    const prev = lastRequestAt.get(userId) || 0;
+    if (now - prev < 10_000) {
+      return res.status(429).json({
+        error: "Too Many Requests",
+        message: "Please wait before requesting emissions comparison again",
+        retryAfterSeconds: Math.ceil((10_000 - (now - prev)) / 1000),
+        timestamp: new Date().toISOString(),
+      });
+    }
+    lastRequestAt.set(userId, now);
+
+    // Cache lookup
+    const key = `${userId}:${state}`;
+    const cached = comparisonCache.get(key);
+    if (cached && cached.expiresAt > now) {
+      return res.json({ ...cached.data, cached: true });
+    }
+
+    // Retrieve user pledges and estimate annual CO2 reduction
+    const pledges = UserPledgesService.list(userId);
+    // Simple heuristic: parse numbers like "Reduce 300kg CO2/year" if present on pledge
+    // Falls back to a small per-pledge constant if metadata missing
+    let pledgedKgPerYearReduction = 0;
+    for (const p of pledges) {
+      const meta = p as any;
+      const text: string | undefined = meta?.estimatedCO2Reduction || meta?.co2 || meta?.impact;
+      if (text) {
+        const m = String(text).match(/(\d+(?:\.\d+)?)\s*(kg|t)/i);
+        if (m) {
+          const val = parseFloat(m[1]);
+          const unit = m[2].toLowerCase();
+          pledgedKgPerYearReduction += unit === "t" ? val * 1000 : val;
+          continue;
+        }
+      }
+      pledgedKgPerYearReduction += 50; // default 50 kg/year if not specified
+    }
+
+    const baseline = await calculateBaselineEmissions(userId, state);
+    const withPledges = Math.max(0, baseline - Math.round(pledgedKgPerYearReduction));
+    const saved = calculateSavedEmissions(baseline, withPledges);
+
+    const response = {
+      baseline,
+      withPledges,
+      saved,
+      unit: "kg CO2-e per year",
+      timestamp: new Date().toISOString(),
+      metadata: {
+        state,
+        pledgesCount: pledges.length,
+        pledgedKgPerYearReduction: Math.round(pledgedKgPerYearReduction),
+      },
+    };
+
+    // Cache for 10s
+    comparisonCache.set(key, { data: response, expiresAt: Date.now() + 10_000 });
+
+    return res.json(response);
+  } catch (error) {
+    console.error("Error in emissions comparison:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to compute emissions comparison",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /api/emissions/by-pledge - per-pledge estimated annual CO2 savings
+router.get("/by-pledge", requireUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+
+    // Fetch user's saved pledges (in-memory backing with file persistence)
+    const userPledges = UserPledgesService.list(userId);
+
+    if (!userPledges.length) {
+      return res.json([]);
+    }
+
+    // Aggregate savings by pledge title
+    const savingsByName = new Map<string, number>();
+
+    for (const up of userPledges) {
+      const pledge = await PledgesService.getPledgeById(up.pledgeId);
+      // Skip if pledge definition not found
+      if (!pledge) continue;
+
+      const name = pledge.title || up.title || up.pledgeId;
+
+      // Try to parse estimatedCO2Reduction like "Reduce 300kg CO2/year" or "300 kg"
+      let savingKg = 0;
+      if (pledge.estimatedCO2Reduction) {
+        const m = String(pledge.estimatedCO2Reduction).match(/(\d+(?:\.\d+)?)\s*(kg|t)/i);
+        if (m) {
+          const val = parseFloat(m[1]);
+          const unit = m[2].toLowerCase();
+          savingKg = unit === "t" ? val * 1000 : val;
+        }
+      }
+
+      // Fallback coefficients by category if not specified
+      if (!savingKg) {
+        const category = pledge.category || "default";
+        const fallback: Record<string, number> = {
+          energy: 120, // e.g., LED bulbs or thermostat tweaks
+          transport: 350, // e.g., public transport / cycling
+          lifestyle: 90, // e.g., cold-wash laundry / reduce food waste
+          default: 100,
+        };
+        savingKg = fallback[category] ?? fallback.default;
+      }
+
+      // Aggregate duplicates by summing
+      savingsByName.set(name, (savingsByName.get(name) || 0) + Math.round(savingKg));
+    }
+
+    const result = Array.from(savingsByName.entries()).map(([name, saving]) => ({ name, saving }));
+    return res.json(result);
+  } catch (error) {
+    console.error("Error generating per-pledge savings:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to compute per-pledge savings",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /api/emissions/forecast-multiyear
+router.get("/forecast-multiyear", requireUser, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId as string;
+    const state = (req.query.state as string) || "VIC"; // optional, default VIC
+    const years = parseInt((req.query.years as string) || "5", 10); // optional, default 5
+
+    // Validate years parameter
+    if (years < 1 || years > 10) {
+      return res.status(400).json({
+        error: "Invalid years parameter",
+        message: "Years must be between 1 and 10",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Rate limit: 1 request per 30s per user (longer than comparison due to complexity)
+    const now = Date.now();
+    const prev = lastRequestAt.get(userId) || 0;
+    if (now - prev < 30_000) {
+      return res.status(429).json({
+        error: "Too Many Requests",
+        message: "Please wait before requesting multi-year forecast again",
+        retryAfterSeconds: Math.ceil((30_000 - (now - prev)) / 1000),
+        timestamp: new Date().toISOString(),
+      });
+    }
+    lastRequestAt.set(userId, now);
+
+    // Generate forecast
+    const forecast = await generateMultiYearForecast(userId, state, years);
+
+    return res.json(forecast);
+  } catch (error) {
+    console.error("Error in multi-year emissions forecast:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to generate multi-year forecast",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
