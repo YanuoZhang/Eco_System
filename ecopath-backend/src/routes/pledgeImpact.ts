@@ -1,7 +1,8 @@
 // src/routes/pledgeImpact.ts
 import { Router, Request, Response } from "express";
-import axios from "axios";
 import { computeImpactForState } from "../services/pledgeImpactService";
+import { predictionCache } from "../services/predictionCache";
+import { getPledgeImpact } from "../data/pledgeImpacts";
 
 const router = Router();
 
@@ -28,28 +29,31 @@ router.post("/impact", async (req: Request, res: Response) => {
         .json({ success: false, error: "state_code, population, pledges[] are required" });
     }
 
-    // 1️⃣ 调 Gemini：估算每个 pledge 的减排效果
-    const aiOut = await computeImpactForState(state_code, population, pledges);
+    // 1️⃣ 使用预定义值快速计算减排效果（避免慢速Gemini调用）
+    const impacts = pledges.map((p) => {
+      const impactData = getPledgeImpact(p.title, p.category);
+      return {
+        title: p.title,
+        per_person_kg_per_year: impactData.per_person_kg_per_year,
+        confidence: impactData.confidence,
+        rationale: impactData.rationale,
+        scenarios: [0.3, 0.5, 1.0].map((rate) => ({
+          adoption_rate: rate,
+          reduction_mt_total: (impactData.per_person_kg_per_year * population * rate) / 1e9,
+        })),
+      };
+    });
 
     // 计算 pledge 总减排量 (kg/人/年)
-    const total_per_person = aiOut.impacts.reduce(
-      (acc, p) => acc + (p.per_person_kg_per_year || 0),
-      0,
-    );
+    const total_per_person = impacts.reduce((acc, p) => acc + p.per_person_kg_per_year, 0);
 
     // 默认采纳率 50%
     const adoption_rate = 0.5;
     // 每年总减排量 (Mt CO₂)
     const reduction_mt_per_year = (total_per_person * population * adoption_rate) / 1e9;
 
-    // 2️⃣ 调 ML 服务获取未来 10 年的预测
-    const mlResponse = await axios.post("http://127.0.0.1:8001/predict");
-    const predictions = mlResponse.data?.predictions || [];
-
-    // 只取指定州
-    const statePredictions = predictions.filter(
-      (p: any) => p.state_id === state_code.toUpperCase(),
-    );
+    // 2️⃣ 从缓存获取ML预测（避免重复调用ML服务）
+    const statePredictions = await predictionCache.getPredictionsForState(state_code);
 
     if (!statePredictions.length) {
       return res
@@ -90,9 +94,9 @@ router.post("/impact", async (req: Request, res: Response) => {
       adoption_rate,
       average_baseline_mt: Number(avgBaseLine.toFixed(3)),
       average_adjusted_mt: Number(avgAdjusted.toFixed(3)),
-      reduction_percentage: Number(reduction_percentage.toFixed(2)), // 👈 新增字段
+      reduction_percentage: Number(reduction_percentage.toFixed(2)),
       yearly_data: adjustedPredictions,
-      impacts: aiOut.impacts,
+      impacts: impacts,
       summary: `Predicted ${adjustedPredictions.length} years for ${state_code} (2026–2036)`,
     });
   } catch (e: any) {
