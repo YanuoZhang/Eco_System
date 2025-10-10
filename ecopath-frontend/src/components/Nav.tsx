@@ -55,6 +55,14 @@ const routeColors: Record<string, Palette> = {
     hoverClass: "hover:text-white",
     activeClass: "text-white",
   },
+  "/visualize": {
+    bg: "rgb(88, 28, 135)",
+    border: "rgba(147,51,234,0.35)",
+    brandClass: "text-purple-200",
+    linkClass: "text-purple-100",
+    hoverClass: "hover:text-white",
+    activeClass: "text-white",
+  },
 };
 
 export default function Nav() {
@@ -84,6 +92,9 @@ export default function Nav() {
               </Link>
               <Link href="/pledge" className={`${linkBase} ${isActive("/pledge")}`}>
                 My Pledge
+              </Link>
+              <Link href="/visualize" className={`${linkBase} ${isActive("/visualize")}`}>
+                Visualize Impact
               </Link>
               <Link href="/info" className={`${linkBase} ${isActive("/info")}`}>
                 Info
