@@ -36,6 +36,7 @@ venv/
 .venv/
 **/venv/
 **/.venv/
+**/__pycache__/
 # Machine learning model files
 *.joblib
 *.pkl
