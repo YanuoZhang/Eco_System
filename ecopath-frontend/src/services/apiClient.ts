@@ -227,6 +227,15 @@ class ApiService {
       userId,
     });
   }
+
+  // Pledge Impact Prediction
+  async getPledgeImpact(body: {
+    state_code: string;
+    population: number;
+    pledges: Array<{ title: string; category?: string; description?: string }>;
+  }) {
+    return this.requestWithBody(`/api/pledge/impact`, "POST", body);
+  }
 }
 
 export const apiClient = new ApiService();

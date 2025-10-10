@@ -8,8 +8,8 @@ export interface PledgeImpactInput {
 }
 
 export interface ImpactScenario {
-  adoption_rate: number;        // 比如 0.3 / 0.5 / 1.0
-  reduction_mt_total: number;   // Mt CO2 / year
+  adoption_rate: number; // 比如 0.3 / 0.5 / 1.0
+  reduction_mt_total: number; // Mt CO2 / year
 }
 
 export interface PledgeImpactRow {
@@ -33,7 +33,7 @@ export interface PledgeImpactResponse {
 export async function computeImpactForState(
   state_code: string,
   population: number,
-  pledges: PledgeImpactInput[]
+  pledges: PledgeImpactInput[],
 ): Promise<PledgeImpactResponse> {
   const impacts: PledgeImpactRow[] = [];
 

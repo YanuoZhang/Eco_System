@@ -9,7 +9,6 @@ const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-pro" });
 console.log("🔑 GEMINI_API_KEY exists?", !!process.env.GEMINI_API_KEY);
 
-
 export async function summarizeText(text: string): Promise<string> {
   try {
     const prompt = `Summarize this news in 2-3 sentences, focusing on the climate impacts:\n\n${text}`;
@@ -80,7 +79,6 @@ export interface PledgeAIEstimate {
   confidence: number; // 0..1
   rationale: string;
 }
-
 
 export async function estimatePledgeReduction(input: PledgeInputForAI): Promise<PledgeAIEstimate> {
   const prompt = `
@@ -181,4 +179,3 @@ Description: ${input.description || "N/A"}
     };
   }
 }
-

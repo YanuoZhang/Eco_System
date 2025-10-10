@@ -34,7 +34,7 @@ router.post("/impact", async (req: Request, res: Response) => {
     // 计算 pledge 总减排量 (kg/人/年)
     const total_per_person = aiOut.impacts.reduce(
       (acc, p) => acc + (p.per_person_kg_per_year || 0),
-      0
+      0,
     );
 
     // 默认采纳率 50%
@@ -48,7 +48,7 @@ router.post("/impact", async (req: Request, res: Response) => {
 
     // 只取指定州
     const statePredictions = predictions.filter(
-      (p: any) => p.state_id === state_code.toUpperCase()
+      (p: any) => p.state_id === state_code.toUpperCase(),
     );
 
     if (!statePredictions.length) {
@@ -60,7 +60,7 @@ router.post("/impact", async (req: Request, res: Response) => {
     // 3️⃣ 计算每一年的 adjusted
     const adjustedPredictions = statePredictions.map((p: any) => {
       const base = Number(
-        p.predicted_emission_mt?.predicted_emission_mt ?? p.predicted_emission_mt ?? 0
+        p.predicted_emission_mt?.predicted_emission_mt ?? p.predicted_emission_mt ?? 0,
       );
       return {
         year: p.year,
@@ -72,16 +72,12 @@ router.post("/impact", async (req: Request, res: Response) => {
 
     // 4️⃣ 汇总平均值
     const avgBaseLine =
-      adjustedPredictions.reduce(
-        (sum: number, rec: any) => sum + Number(rec.baseline_mt || 0),
-        0
-      ) / adjustedPredictions.length;
+      adjustedPredictions.reduce((sum: number, rec: any) => sum + Number(rec.baseline_mt || 0), 0) /
+      adjustedPredictions.length;
 
     const avgAdjusted =
-      adjustedPredictions.reduce(
-        (sum: number, rec: any) => sum + Number(rec.adjusted_mt || 0),
-        0
-      ) / adjustedPredictions.length;
+      adjustedPredictions.reduce((sum: number, rec: any) => sum + Number(rec.adjusted_mt || 0), 0) /
+      adjustedPredictions.length;
 
     // 5️⃣ 计算减排百分比
     const reduction_percentage = ((avgBaseLine - avgAdjusted) / avgBaseLine) * 100;

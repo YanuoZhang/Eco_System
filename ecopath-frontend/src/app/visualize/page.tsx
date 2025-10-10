@@ -8,6 +8,30 @@ type SavedPledge = {
   id: string;
   title?: string;
   impact?: "small" | "medium" | "large";
+  category?: string;
+};
+
+type PredictionData = {
+  success: boolean;
+  state_code: string;
+  population: number;
+  adoption_rate: number;
+  average_baseline_mt: number;
+  average_adjusted_mt: number;
+  reduction_percentage: number;
+  yearly_data: Array<{
+    year: number;
+    baseline_mt: number;
+    reduction_mt: number;
+    adjusted_mt: number;
+  }>;
+  impacts: Array<{
+    title: string;
+    per_person_kg_per_year: number;
+    confidence: number;
+    rationale: string;
+  }>;
+  summary: string;
 };
 
 // Pledge savings lookup (kg CO2/year)
@@ -19,11 +43,22 @@ const PLEDGE_SAVINGS_KG_YEAR: Record<string, number> = {
   "public-transport": 840,
 };
 
+// Pledge title and category mapping
+const PLEDGE_METADATA: Record<string, { title: string; icon: string; category: string }> = {
+  "bike-transport": { title: "Bike to Work Twice Weekly", icon: "🚴", category: "TRANSPORT" },
+  "led-bulbs": { title: "Switch to LED Bulbs", icon: "💡", category: "ENERGY" },
+  "meatless-monday": { title: "Meatless Monday", icon: "🥗", category: "FOOD" },
+  "public-transport": { title: "Use Public Transport", icon: "🚌", category: "TRANSPORT" },
+  "air-dry": { title: "Air Dry Clothes", icon: "👕", category: "ENERGY" },
+};
+
 export default function VisualizePage() {
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string>("anonymous");
   const [savedPledges, setSavedPledges] = useState<SavedPledge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [predictionData, setPredictionData] = useState<PredictionData | null>(null);
+  const [selectedState] = useState("VIC");
   const [animatedNumbers, setAnimatedNumbers] = useState({
     personalSavings: 0,
     baselineEmissions: 0,
@@ -67,6 +102,42 @@ export default function VisualizePage() {
       cancelled = true;
     };
   }, [userId]);
+
+  // Fetch AI predictions when pledges are loaded
+  useEffect(() => {
+    if (savedPledges.length === 0 || !mounted) return;
+
+    const fetchPredictions = async () => {
+      try {
+        const pledgesForAPI = savedPledges.map((p) => ({
+          title: PLEDGE_METADATA[p.id]?.title || p.id,
+          category: PLEDGE_METADATA[p.id]?.category || "OTHER",
+        }));
+
+        // Victoria population (example)
+        const statePopulation: Record<string, number> = {
+          VIC: 6700000,
+          NSW: 8200000,
+          QLD: 5200000,
+          SA: 1800000,
+          WA: 2800000,
+          TAS: 570000,
+        };
+
+        const response = await apiClient.getPledgeImpact({
+          state_code: selectedState,
+          population: statePopulation[selectedState] || 6700000,
+          pledges: pledgesForAPI,
+        });
+
+        setPredictionData(response as PredictionData);
+      } catch (error) {
+        console.error("Failed to fetch predictions:", error);
+      }
+    };
+
+    fetchPredictions();
+  }, [savedPledges, selectedState, mounted]);
 
   const totalSavedKgYear = savedPledges.reduce(
     (sum, p) => sum + (PLEDGE_SAVINGS_KG_YEAR[p.id] || 0),
@@ -149,26 +220,27 @@ export default function VisualizePage() {
     .sort((a, b) => b.saved - a.saved)
     .slice(0, 6);
 
-  // Chart data for personal forecast
-  const chartYears = [
-    "2020",
-    "2021",
-    "2022",
-    "2023",
-    "2024",
-    "2025",
+  // Chart data for personal forecast - use AI predictions if available
+  const chartYears = predictionData?.yearly_data?.map((d) => String(d.year)) || [
     "2026",
     "2027",
     "2028",
     "2029",
     "2030",
     "2031",
+    "2032",
+    "2033",
+    "2034",
+    "2035",
+    "2036",
   ];
-  const baselineData = [
-    15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200,
-  ];
-  const actualData = [
-    15200, 14180, 13095, 12972, 12538, 12005, 11785, 11462, 11148, 10925, 10708, 10385,
+
+  const baselineData = predictionData?.yearly_data?.map((d) =>
+    Math.round(d.baseline_mt * 1000),
+  ) || [15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200];
+
+  const actualData = predictionData?.yearly_data?.map((d) => Math.round(d.adjusted_mt * 1000)) || [
+    14180, 13095, 12972, 12538, 12005, 11785, 11462, 11148, 10925, 10708, 10385,
   ];
 
   const communityData = {
@@ -314,7 +386,7 @@ export default function VisualizePage() {
                   Annual CO₂ Emissions Forecast
                 </h3>
                 <div className="relative h-64 flex items-end justify-between gap-2">
-                  {chartYears.map((year, index) => (
+                  {chartYears.map((year: string, index: number) => (
                     <div key={year} className="flex-1 flex flex-col items-center">
                       <div className="relative w-full h-48 flex items-end justify-center gap-1">
                         {/* Baseline bar */}
