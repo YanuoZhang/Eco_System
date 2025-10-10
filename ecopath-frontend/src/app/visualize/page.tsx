@@ -235,13 +235,15 @@ export default function VisualizePage() {
     "2036",
   ];
 
+  // Convert Mt to per-person kg: Mt * 1,000,000,000 kg / population
+  const statePopulation = 6700000; // VIC population
   const baselineData = predictionData?.yearly_data?.map((d) =>
-    Math.round(d.baseline_mt * 1000),
+    Math.round((d.baseline_mt * 1000000000) / statePopulation),
   ) || [15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200];
 
-  const actualData = predictionData?.yearly_data?.map((d) => Math.round(d.adjusted_mt * 1000)) || [
-    14180, 13095, 12972, 12538, 12005, 11785, 11462, 11148, 10925, 10708, 10385,
-  ];
+  const actualData = predictionData?.yearly_data?.map((d) =>
+    Math.round((d.adjusted_mt * 1000000000) / statePopulation),
+  ) || [14180, 13095, 12972, 12538, 12005, 11785, 11462, 11148, 10925, 10708, 10385];
 
   const communityData = {
     totalSavings: 125000,
