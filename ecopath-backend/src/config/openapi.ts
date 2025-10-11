@@ -277,6 +277,331 @@ export const createOpenApiDoc = (port: number) => ({
         },
       },
     },
+    "/api/community/footprint": {
+      get: {
+        summary: "Community footprint data",
+        description:
+          "Returns aggregated CO2 savings, active member count, and category breakdown for the entire community.",
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["totalCO2SavedKg", "activeMembers", "categories"],
+                  properties: {
+                    totalCO2SavedKg: {
+                      type: "number",
+                      example: 125000,
+                      description: "Total CO2 saved by community in kg",
+                    },
+                    activeMembers: {
+                      type: "number",
+                      example: 4700,
+                      description: "Number of users with at least one completed pledge",
+                    },
+                    categories: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        required: ["name", "kg", "percentage"],
+                        properties: {
+                          name: { type: "string", example: "Transport" },
+                          kg: { type: "number", example: 43000 },
+                          percentage: { type: "number", example: 34 },
+                        },
+                      },
+                      example: [
+                        { name: "Transport", kg: 43000, percentage: 34 },
+                        { name: "Energy", kg: 35000, percentage: 28 },
+                        { name: "Diet", kg: 28000, percentage: 22 },
+                        { name: "Water", kg: 19000, percentage: 16 },
+                      ],
+                      description: "Category breakdown with percentages (sums to 100%)",
+                    },
+                    lastUpdated: {
+                      type: "string",
+                      format: "date-time",
+                      description: "When the data was last calculated",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/community/refresh": {
+      post: {
+        summary: "Refresh community data (admin)",
+        description: "Force refresh of community footprint data, bypassing cache.",
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    message: { type: "string" },
+                    data: {
+                      type: "object",
+                      description: "Refreshed community footprint data",
+                    },
+                    timestamp: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/users/me/impact-summary": {
+      get: {
+        summary: "User's climate impact summary",
+        description:
+          "Returns authenticated user's comprehensive climate impact data including pledges, CO2 savings, reduction percentage, equivalent metrics, and community context.",
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["activePledges", "co2SavedKg", "reductionPercent", "equivalents"],
+                  properties: {
+                    activePledges: {
+                      type: "number",
+                      example: 5,
+                      description: "Number of completed pledges by the user",
+                    },
+                    co2SavedKg: {
+                      type: "number",
+                      example: 2300,
+                      description: "Total CO2 saved by user's pledges in kg",
+                    },
+                    reductionPercent: {
+                      type: "number",
+                      example: 15,
+                      description: "Percentage reduction compared to baseline emissions (0-100%)",
+                    },
+                    equivalents: {
+                      type: "object",
+                      properties: {
+                        treesPlanted: {
+                          type: "number",
+                          example: 106,
+                          description: "Equivalent number of trees planted",
+                        },
+                        milesNotDriven: {
+                          type: "number",
+                          example: 1000,
+                          description: "Equivalent miles not driven",
+                        },
+                        ledBulbs: {
+                          type: "number",
+                          example: 850,
+                          description: "Equivalent LED bulbs replacing incandescent",
+                        },
+                      },
+                    },
+                    communityCO2SavedKg: {
+                      type: "number",
+                      example: 125000,
+                      description: "Total CO2 saved by entire community",
+                    },
+                    completedPledges: {
+                      type: "array",
+                      items: { type: "string" },
+                      example: ["Bike to Work Twice Weekly", "Switch to LED Bulbs", "Meatless Monday"],
+                      description: "List of completed pledge titles",
+                    },
+                    lastUpdated: {
+                      type: "string",
+                      format: "date-time",
+                      description: "When the summary was last calculated",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Unauthorized" },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/share-link": {
+      get: {
+        summary: "Generate shareable link with optional QR code",
+        description:
+          "Creates a shareable link with optional user tracking (anonymized) and QR code generation. No PII is exposed in referral codes.",
+        parameters: [
+          {
+            name: "userId",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+            description: "Optional user ID for referral tracking (will be hashed)",
+          },
+          {
+            name: "campaign",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+            description: "Optional campaign identifier",
+          },
+          {
+            name: "qr",
+            in: "query",
+            required: false,
+            schema: { type: "boolean", default: false },
+            description: "Whether to include QR code data URL",
+          },
+          {
+            name: "landingPage",
+            in: "query",
+            required: false,
+            schema: { type: "string", default: "/" },
+            description: "Landing page path (e.g., /quiz, /start)",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        url: { type: "string", example: "https://ecopath.me/?ref=abc123&source=qr_share" },
+                        qrCodeDataUrl: { type: "string", example: "data:image/png;base64,..." },
+                        referralCode: { type: "string", example: "abc123def" },
+                      },
+                    },
+                    timestamp: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/share-link/qr": {
+      get: {
+        summary: "Generate public QR code (no tracking)",
+        description: "Creates a QR code for the specified landing page without any user tracking.",
+        parameters: [
+          {
+            name: "landingPage",
+            in: "query",
+            required: false,
+            schema: { type: "string", default: "/" },
+            description: "Landing page path",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        qrCodeDataUrl: { type: "string" },
+                        url: { type: "string" },
+                      },
+                    },
+                    timestamp: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/share-link/track": {
+      post: {
+        summary: "Track referral click",
+        description: "Records a click on a referral link for analytics.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["referralCode"],
+                properties: {
+                  referralCode: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Click tracked successfully" },
+          "400": { description: "Missing referralCode" },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
+    "/api/share-link/analytics/{referralCode}": {
+      get: {
+        summary: "Get referral analytics",
+        description: "Returns click count and creation time for a referral code.",
+        parameters: [
+          {
+            name: "referralCode",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        clicks: { type: "number" },
+                        createdAt: { type: "string" },
+                      },
+                    },
+                    timestamp: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "404": { description: "Referral code not found" },
+          "500": { description: "Internal server error" },
+        },
+      },
+    },
     "/api/timeline": {
       get: {
         summary: "Climate timeline data",
