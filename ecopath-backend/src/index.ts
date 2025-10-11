@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { createOpenApiDoc } from "./config/openapi";
 import { performWeeklyNewsUpdate } from "./services/newsService";
 import pledgeImpactRouter from "./routes/pledgeImpact";
+import populationRouter from "./routes/population";
 import { predictionCache } from "./services/predictionCache";
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use(express.static("public"));
 app.use("/api", apiRoutes);
 
 app.use("/api/pledge", pledgeImpactRouter);
+app.use("/api/population", populationRouter);
 
 // Root endpoint
 app.get("/", (_req: Request, res: Response) => {

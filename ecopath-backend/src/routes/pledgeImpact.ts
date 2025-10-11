@@ -1,6 +1,6 @@
 // src/routes/pledgeImpact.ts
 import { Router, Request, Response } from "express";
-import { computeImpactForState } from "../services/pledgeImpactService";
+// import { computeImpactForState } from "../services/pledgeImpactService";
 import { predictionCache } from "../services/predictionCache";
 import { getPledgeImpact } from "../data/pledgeImpacts";
 

@@ -236,6 +236,29 @@ class ApiService {
   }) {
     return this.requestWithBody(`/api/pledge/impact`, "POST", body);
   }
+
+  // Population API methods
+  async getStatePopulation(state: string): Promise<{
+    state_id: string;
+    state_name: string;
+    abbreviation: string;
+    year: number;
+    population: number;
+  }> {
+    return this.request(`/api/population?state=${state}`);
+  }
+
+  async getLatestPopulationData(): Promise<
+    Array<{
+      state_id: string;
+      state_name: string;
+      abbreviation: string;
+      year: number;
+      population: number;
+    }>
+  > {
+    return this.request("/api/population/latest");
+  }
 }
 
 export const apiClient = new ApiService();

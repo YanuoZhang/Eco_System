@@ -58,7 +58,8 @@ export default function VisualizePage() {
   const [savedPledges, setSavedPledges] = useState<SavedPledge[]>([]);
   const [loading, setLoading] = useState(true);
   const [predictionData, setPredictionData] = useState<PredictionData | null>(null);
-  const [selectedState] = useState("VIC");
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [statePopulation, setStatePopulation] = useState<number | null>(null); // Start with null
   const [animatedNumbers, setAnimatedNumbers] = useState({
     personalSavings: 0,
     baselineEmissions: 0,
@@ -67,6 +68,25 @@ export default function VisualizePage() {
     communityMembers: 0,
   });
 
+  // Fetch real population data for a state
+  const fetchStatePopulation = async (state: string) => {
+    try {
+      const populationData = await apiClient.getStatePopulation(state);
+      console.log(
+        `Fetched population for ${state}:`,
+        populationData.population,
+        typeof populationData.population,
+      );
+      // Ensure population is a number
+      const population = parseInt(String(populationData.population));
+      setStatePopulation(population);
+    } catch (error) {
+      console.warn(`Failed to fetch population for ${state}, using default`, error);
+      // Set fallback value
+      setStatePopulation(6700000);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
 
@@ -74,7 +94,32 @@ export default function VisualizePage() {
     try {
       const uid = localStorage.getItem("ecopath_uid") || "anonymous";
       setUserId(uid);
-    } catch {}
+
+      // Get user's selected state from quiz carbonFootprint data
+      try {
+        const carbonFootprintData = localStorage.getItem("carbonFootprint");
+        if (carbonFootprintData) {
+          const parsed = JSON.parse(carbonFootprintData);
+          const state = parsed?.location?.state;
+          if (state) {
+            setSelectedState(state);
+            // Fetch real population data for this state
+            fetchStatePopulation(state);
+          } else {
+            setSelectedState("VIC");
+            fetchStatePopulation("VIC");
+          }
+        } else {
+          setSelectedState("VIC");
+          fetchStatePopulation("VIC");
+        }
+      } catch {
+        setSelectedState("VIC");
+        fetchStatePopulation("VIC");
+      }
+    } catch {
+      setSelectedState("VIC");
+    }
   }, []);
 
   useEffect(() => {
@@ -105,7 +150,7 @@ export default function VisualizePage() {
 
   // Fetch AI predictions when pledges are loaded
   useEffect(() => {
-    if (savedPledges.length === 0 || !mounted) return;
+    if (savedPledges.length === 0 || !mounted || !selectedState || !statePopulation) return;
 
     const fetchPredictions = async () => {
       try {
@@ -114,19 +159,30 @@ export default function VisualizePage() {
           category: PLEDGE_METADATA[p.id]?.category || "OTHER",
         }));
 
-        // Victoria population (example)
-        const statePopulation: Record<string, number> = {
-          VIC: 6700000,
-          NSW: 8200000,
-          QLD: 5200000,
-          SA: 1800000,
-          WA: 2800000,
-          TAS: 570000,
-        };
+        console.log("API Call Parameters:", {
+          selectedState,
+          statePopulation,
+          pledgesForAPI,
+          savedPledges: savedPledges.length,
+        });
+
+        // Validate required parameters
+        if (!selectedState) {
+          console.error("selectedState is null/undefined");
+          return;
+        }
+        if (statePopulation === null || statePopulation <= 0) {
+          console.error("statePopulation is invalid:", statePopulation);
+          return;
+        }
+        if (pledgesForAPI.length === 0) {
+          console.error("pledgesForAPI is empty");
+          return;
+        }
 
         const response = await apiClient.getPledgeImpact({
           state_code: selectedState,
-          population: statePopulation[selectedState] || 6700000,
+          population: statePopulation,
           pledges: pledgesForAPI,
         });
 
@@ -137,7 +193,7 @@ export default function VisualizePage() {
     };
 
     fetchPredictions();
-  }, [savedPledges, selectedState, mounted]);
+  }, [savedPledges, selectedState, statePopulation, mounted]);
 
   const totalSavedKgYear = savedPledges.reduce(
     (sum, p) => sum + (PLEDGE_SAVINGS_KG_YEAR[p.id] || 0),
@@ -236,13 +292,14 @@ export default function VisualizePage() {
   ];
 
   // Convert Mt to per-person kg: Mt * 1,000,000,000 kg / population
-  const statePopulation = 6700000; // VIC population
+  // statePopulation is now fetched from real database data
+  const population = statePopulation || 6700000; // Fallback to default
   const baselineData = predictionData?.yearly_data?.map((d) =>
-    Math.round((d.baseline_mt * 1000000000) / statePopulation),
+    Math.round((d.baseline_mt * 1000000000) / population),
   ) || [15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200];
 
   const actualData = predictionData?.yearly_data?.map((d) =>
-    Math.round((d.adjusted_mt * 1000000000) / statePopulation),
+    Math.round((d.adjusted_mt * 1000000000) / population),
   ) || [14180, 13095, 12972, 12538, 12005, 11785, 11462, 11148, 10925, 10708, 10385];
 
   const communityData = {
@@ -309,7 +366,8 @@ export default function VisualizePage() {
               <h2 className="text-2xl font-bold text-white mb-4">Start Your Climate Journey</h2>
               <p className="text-slate-300 mb-8 max-w-2xl mx-auto">
                 Complete at least one pledge to see your personalized impact visualization and
-                AI-powered climate forecast.
+                AI-powered climate forecast. Your state information will be automatically used from
+                your quiz results.
               </p>
               <Link
                 href="/pledge"
@@ -336,6 +394,17 @@ export default function VisualizePage() {
                   Based on your pledges, here&apos;s how your carbon footprint will evolve over the
                   next year
                 </p>
+                {predictionData && (
+                  <div className="mt-4 inline-flex items-center gap-2 bg-purple-500/20 backdrop-blur-sm rounded-full px-4 py-2 border border-purple-400/30">
+                    <span className="text-sm text-purple-200">
+                      Showing predictions for {selectedState} with{" "}
+                      {(population / 1000000).toFixed(1)}M population
+                      <span className="block text-xs text-purple-300 mt-1">
+                        (State automatically selected from your quiz results)
+                      </span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Summary Cards */}

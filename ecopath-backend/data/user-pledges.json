@@ -40,6 +40,46 @@
       "reminderType": "daily",
       "customDate": "",
       "dateAdded": "2025-10-07T01:33:08.887Z"
+    },
+    {
+      "id": "65c82b92-5b8d-4a26-a739-e0e6f38e1b22",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "reduce-meat-intake",
+      "reminderType": "daily",
+      "customDate": "",
+      "dateAdded": "2025-10-10T10:27:59.344Z"
+    },
+    {
+      "id": "97c8d06a-a468-4165-bbf3-c4cae908c22d",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "switch-to-green-energy",
+      "reminderType": "daily",
+      "customDate": "",
+      "dateAdded": "2025-10-10T10:27:59.344Z"
+    },
+    {
+      "id": "c5a6723e-0f6a-4341-8494-a7ee2301825f",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "swap-one-car-trip",
+      "reminderType": "daily",
+      "customDate": "",
+      "dateAdded": "2025-10-10T10:27:59.344Z"
+    },
+    {
+      "id": "4e9ae1e7-5cea-4782-bc48-777469255ea0",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "review-green-banking",
+      "reminderType": "daily",
+      "customDate": "",
+      "dateAdded": "2025-10-10T10:27:59.344Z"
+    },
+    {
+      "id": "fad45602-b5f6-4553-8bd9-e15dc1dd67e5",
+      "userId": "beb87403-62a9-41c8-add9-ccfff145e621",
+      "pledgeId": "avoid-single-use-items",
+      "reminderType": "daily",
+      "customDate": "",
+      "dateAdded": "2025-10-10T10:27:59.344Z"
     }
   ]
 }
