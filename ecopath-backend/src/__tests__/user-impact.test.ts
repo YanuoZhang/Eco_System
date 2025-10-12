@@ -309,8 +309,8 @@ describe("UserImpactService", () => {
 
       const summary = await UserImpactService.getUserImpactSummary("user1");
 
-      // Should use fallback value for transport category (350kg)
-      expect(summary.co2SavedKg).toBe(350);
+      // Should use unified calculation value for transport category (150kg)
+      expect(summary.co2SavedKg).toBe(150);
     });
 
     it("should parse different CO2 reduction formats", async () => {

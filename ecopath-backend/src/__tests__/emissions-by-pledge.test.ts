@@ -41,9 +41,30 @@ describe("GET /api/emissions/by-pledge", () => {
 
   it("should aggregate savings per pledge and sum duplicates", async () => {
     vi.mocked(UserPledgesService.list).mockReturnValue([
-      { id: "1", userId, pledgeId: "p1", dateAdded: new Date().toISOString() } as any,
-      { id: "2", userId, pledgeId: "p1", dateAdded: new Date().toISOString() } as any,
-      { id: "3", userId, pledgeId: "p2", dateAdded: new Date().toISOString() } as any,
+      {
+        id: "1",
+        userId,
+        pledgeId: "p1",
+        title: "Use LED bulbs",
+        category: "energy",
+        dateAdded: new Date().toISOString(),
+      } as any,
+      {
+        id: "2",
+        userId,
+        pledgeId: "p1",
+        title: "Use LED bulbs",
+        category: "energy",
+        dateAdded: new Date().toISOString(),
+      } as any,
+      {
+        id: "3",
+        userId,
+        pledgeId: "p2",
+        title: "Public transport",
+        category: "transport",
+        dateAdded: new Date().toISOString(),
+      } as any,
     ]);
 
     vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
@@ -75,14 +96,21 @@ describe("GET /api/emissions/by-pledge", () => {
       .set("Authorization", `Bearer ${userId}`);
 
     expect(res.status).toBe(200);
-    // p1 appears twice -> 120 + 120 = 240
-    expect(res.body).toContainEqual({ name: "Use LED bulbs", saving: 240 });
-    expect(res.body).toContainEqual({ name: "Public transport", saving: 350 });
+    // p1 appears twice -> 150 + 150 = 300 (unified calculation for LED bulbs)
+    expect(res.body).toContainEqual({ name: "Use LED bulbs", saving: 300 });
+    expect(res.body).toContainEqual({ name: "Public transport", saving: 1000 });
   });
 
   it("should fallback to category defaults when no estimatedCO2Reduction", async () => {
     vi.mocked(UserPledgesService.list).mockReturnValue([
-      { id: "1", userId, pledgeId: "p3", dateAdded: new Date().toISOString() } as any,
+      {
+        id: "1",
+        userId,
+        pledgeId: "p3",
+        title: "Cold wash laundry",
+        category: "lifestyle",
+        dateAdded: new Date().toISOString(),
+      } as any,
     ]);
 
     vi.mocked(PledgesService.getPledgeById).mockResolvedValue({
@@ -99,6 +127,6 @@ describe("GET /api/emissions/by-pledge", () => {
       .set("Authorization", `Bearer ${userId}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toContainEqual({ name: "Cold wash laundry", saving: 90 });
+    expect(res.body).toContainEqual({ name: "Cold wash laundry", saving: 180 });
   });
 });

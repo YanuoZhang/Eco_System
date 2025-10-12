@@ -1,95 +1,8 @@
 // Emissions routes
 
 import { Router, Request, Response } from "express";
+import { calculatePledgeImpact as unifiedCalculatePledgeImpact } from "../utils/pledgeCalculator";
 
-/**
- * Universal pledge impact calculation system
- * Supports any pledge by analyzing title keywords and category
- */
-function calculatePledgeImpact(title: string, category: string, baseline: number): number {
-  // Energy-related keywords and their impact percentages
-  const energyKeywords = [
-    { keywords: ["led", "bulb", "light"], impact: 0.09 }, // 9% of baseline
-    { keywords: ["air-dry", "laundry", "dryer"], impact: 0.08 }, // 8% of baseline
-    { keywords: ["unplug", "standby", "phantom"], impact: 0.07 }, // 7% of baseline
-    { keywords: ["thermostat", "heating", "cooling"], impact: 0.038 }, // 3.8% of baseline
-    { keywords: ["appliance", "efficient", "energy star"], impact: 0.05 }, // 5% of baseline
-    { keywords: ["solar", "renewable"], impact: 0.15 }, // 15% of baseline
-  ];
-
-  // Water-related keywords (order matters - more specific first)
-  const waterKeywords = [
-    { keywords: ["shower"], impact: 0.03 }, // 3% of baseline
-    { keywords: ["dishwasher", "washing", "cold water"], impact: 0.02 }, // 2% of baseline
-    { keywords: ["leak", "faucet"], impact: 0.01 }, // 1% of baseline
-    { keywords: ["water"], impact: 0.01 }, // 1% of baseline (general water usage)
-  ];
-
-  // Transport-related keywords
-  const transportKeywords = [
-    { keywords: ["bike", "cycling"], impact: 0.12 }, // 12% of baseline
-    { keywords: ["walk", "walking"], impact: 0.08 }, // 8% of baseline
-    { keywords: ["public", "transit", "bus", "train"], impact: 0.15 }, // 15% of baseline
-    { keywords: ["carpool", "ride"], impact: 0.06 }, // 6% of baseline
-    { keywords: ["drive", "car", "fuel", "efficient"], impact: 0.05 }, // 5% of baseline
-    { keywords: ["electric", "vehicle", "ev"], impact: 0.2 }, // 20% of baseline
-  ];
-
-  // Food-related keywords
-  const foodKeywords = [
-    { keywords: ["meatless", "vegetarian", "vegan"], impact: 0.04 }, // 4% of baseline
-    { keywords: ["local", "organic"], impact: 0.02 }, // 2% of baseline
-    { keywords: ["waste", "compost"], impact: 0.015 }, // 1.5% of baseline
-  ];
-
-  // Waste-related keywords
-  const wasteKeywords = [
-    { keywords: ["recycle", "recycling"], impact: 0.01 }, // 1% of baseline
-    { keywords: ["plastic", "bottle", "reusable"], impact: 0.01 }, // 1% of baseline
-    { keywords: ["zero", "waste"], impact: 0.03 }, // 3% of baseline
-  ];
-
-  // Lifestyle-related keywords
-  const lifestyleKeywords = [
-    { keywords: ["digital", "paperless"], impact: 0.005 }, // 0.5% of baseline
-    { keywords: ["repair", "fix"], impact: 0.01 }, // 1% of baseline
-    { keywords: ["second-hand", "used"], impact: 0.02 }, // 2% of baseline
-  ];
-
-  // Check for keyword matches in order of priority
-  const allKeywordGroups = [
-    ...energyKeywords.map((k) => ({ ...k, type: "energy" })),
-    ...waterKeywords.map((k) => ({ ...k, type: "water" })),
-    ...transportKeywords.map((k) => ({ ...k, type: "transport" })),
-    ...foodKeywords.map((k) => ({ ...k, type: "food" })),
-    ...wasteKeywords.map((k) => ({ ...k, type: "waste" })),
-    ...lifestyleKeywords.map((k) => ({ ...k, type: "lifestyle" })),
-  ];
-
-  // Find matching keywords
-  for (const keywordGroup of allKeywordGroups) {
-    for (const keyword of keywordGroup.keywords) {
-      if (title.includes(keyword)) {
-        return Math.round(baseline * keywordGroup.impact);
-      }
-    }
-  }
-
-  // Fallback to category-based calculation if no keywords match
-  const categoryImpacts = {
-    energy: 0.05, // 5% of baseline
-    water: 0.02, // 2% of baseline
-    transport: 0.1, // 10% of baseline
-    food: 0.03, // 3% of baseline
-    waste: 0.01, // 1% of baseline
-    lifestyle: 0.01, // 1% of baseline
-    daily: 0.01, // 1% of baseline
-    other: 0.01, // 1% of baseline
-  };
-
-  const categoryImpact = categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
-  return Math.round(baseline * categoryImpact);
-}
 import { pool } from "../config/database";
 import { EmissionsCalculationRequest, EmissionsCalculationResponse } from "../types";
 import {
@@ -101,7 +14,6 @@ import {
 import { EMISSIONS_FACTORS } from "../utils/emissions";
 import { requireUser } from "../middleware/auth";
 import { UserPledgesService } from "../services/userPledgesService";
-import { PledgesService } from "../services/pledgesService";
 import {
   calculateBaselineEmissions,
   calculateSavedEmissions,
@@ -492,9 +404,8 @@ router.get("/comparison", requireUser, async (req: Request, res: Response) => {
       const title = (pledge as any).title?.toLowerCase() || "";
       const category = (pledge as any).category?.toLowerCase() || "other";
 
-      // Universal pledge impact calculation system
-      // This system supports any pledge by analyzing title keywords and category
-      const savingsPerPledge = calculatePledgeImpact(title, category, baseline);
+      // Use unified pledge calculation logic
+      const savingsPerPledge = unifiedCalculatePledgeImpact(title, category);
 
       pledgedKgPerYearReduction += savingsPerPledge;
     }
@@ -533,52 +444,38 @@ router.get("/comparison", requireUser, async (req: Request, res: Response) => {
 router.get("/by-pledge", requireUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId as string;
+    console.log(`🔍 Fetching pledge savings for user: ${userId}`);
 
     // Fetch user's saved pledges from database
     const userPledges = await UserPledgesService.list(userId);
+    console.log(
+      `📊 Found ${userPledges.length} user pledges:`,
+      userPledges.map((p) => ({ title: p.title, category: p.category })),
+    );
 
     if (!userPledges.length) {
+      console.log(`⚠️ No pledges found for user ${userId}`);
       return res.json([]);
     }
 
-    // Aggregate savings by pledge title
+    // Aggregate savings by pledge title using direct calculation
     const savingsByName = new Map<string, number>();
 
     for (const up of userPledges) {
-      const pledge = await PledgesService.getPledgeById(up.pledgeId);
-      // Skip if pledge definition not found
-      if (!pledge) continue;
+      const name = up.title || up.pledgeId;
+      const category = up.category || "default";
 
-      const name = pledge.title || up.title || up.pledgeId;
+      // Use unified pledge calculation logic
+      const savingKg = unifiedCalculatePledgeImpact(name, category);
 
-      // Try to parse estimatedCO2Reduction like "Reduce 300kg CO2/year" or "300 kg"
-      let savingKg = 0;
-      if (pledge.estimatedCO2Reduction) {
-        const m = String(pledge.estimatedCO2Reduction).match(/(\d+(?:\.\d+)?)\s*(kg|t)/i);
-        if (m) {
-          const val = parseFloat(m[1]);
-          const unit = m[2].toLowerCase();
-          savingKg = unit === "t" ? val * 1000 : val;
-        }
-      }
-
-      // Fallback coefficients by category if not specified
-      if (!savingKg) {
-        const category = pledge.category || "default";
-        const fallback: Record<string, number> = {
-          energy: 120, // e.g., LED bulbs or thermostat tweaks
-          transport: 350, // e.g., public transport / cycling
-          lifestyle: 90, // e.g., cold-wash laundry / reduce food waste
-          default: 100,
-        };
-        savingKg = fallback[category] ?? fallback.default;
-      }
+      console.log(`💰 Calculating savings for "${name}" (${category}): ${savingKg} kg`);
 
       // Aggregate duplicates by summing
       savingsByName.set(name, (savingsByName.get(name) || 0) + Math.round(savingKg));
     }
 
     const result = Array.from(savingsByName.entries()).map(([name, saving]) => ({ name, saving }));
+    console.log(`✅ Returning pledge savings:`, result);
     return res.json(result);
   } catch (error) {
     console.error("Error generating per-pledge savings:", error);

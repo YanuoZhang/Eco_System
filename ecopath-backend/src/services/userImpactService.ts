@@ -3,6 +3,7 @@
 import { UserPledgesService } from "./userPledgesService";
 import { PledgesService } from "./pledgesService";
 import { CommunityService } from "./communityService";
+import { calculatePledgeImpact } from "../utils/pledgeCalculator";
 
 export interface UserImpactSummary {
   activePledges: number;
@@ -96,18 +97,10 @@ export class UserImpactService {
       }
     }
 
-    // Fallback to category defaults
-    const categoryDefaults: Record<string, number> = {
-      transport: 350,
-      energy: 120,
-      diet: 200,
-      water: 80,
-      lifestyle: 90,
-      waste: 60,
-      other: 100,
-    };
-
-    return categoryDefaults[pledge.category] || categoryDefaults.other;
+    // Use unified calculation logic
+    const title = pledge.title?.toLowerCase() || "";
+    const category = pledge.category?.toLowerCase() || "other";
+    return calculatePledgeImpact(title, category);
   }
 
   /**

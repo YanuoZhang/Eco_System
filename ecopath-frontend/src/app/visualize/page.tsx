@@ -54,6 +54,12 @@ export default function VisualizePage() {
       savings?: number;
     }>;
   } | null>(null);
+  const [pledgeSavings, setPledgeSavings] = useState<
+    Array<{
+      name: string;
+      saving: number;
+    }>
+  >([]);
   const [animatedNumbers, setAnimatedNumbers] = useState({
     personalSavings: 0,
     baselineEmissions: 0,
@@ -157,6 +163,30 @@ export default function VisualizePage() {
         setSavedPledges([]);
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // Fetch individual pledge savings data
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!userId || userId === "anonymous") {
+        return;
+      }
+      try {
+        const savingsData = await apiClient.getPledgeSavings(userId);
+        if (!cancelled) {
+          setPledgeSavings(savingsData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch pledge savings:", error);
+        if (!cancelled) {
+          setPledgeSavings([]);
+        }
       }
     })();
     return () => {
@@ -331,7 +361,7 @@ export default function VisualizePage() {
     );
   };
 
-  // Create pledge display cards (for UI only - actual savings come from backend)
+  // Create pledge display cards using real savings data from backend
   const breakdownCards = savedPledges
     .map((p) => {
       const labelMap: Record<string, { title: string; icon: string }> = {
@@ -343,12 +373,26 @@ export default function VisualizePage() {
         "water-bottle": { title: "Reusable Water Bottle", icon: "💧" },
         recycle: { title: "Recycle More", icon: "♻️" },
         solar: { title: "Install Solar Panels", icon: "☀️" },
+        "grow-herbs": { title: "Grow Herbs at Home", icon: "🌿" },
+        "take-showers": { title: "Take 5-minute Showers", icon: "🚿" },
+        "switch-led": { title: "Switch to LED Bulbs", icon: "💡" },
+        "air-dry-laundry": { title: "Air-Dry One Load of Laundry", icon: "👕" },
+        "carry-water-bottle": { title: "Carry a Water Bottle", icon: "💧" },
       };
+
+      // Find the actual savings for this pledge from the backend data
+      const pledgeData = pledgeSavings.find(
+        (ps) =>
+          ps.name.toLowerCase() === (p.title || p.id).toLowerCase() ||
+          ps.name.toLowerCase().includes((p.title || p.id).toLowerCase()) ||
+          (p.title || p.id).toLowerCase().includes(ps.name.toLowerCase()),
+      );
+
+      const actualSavings = pledgeData ? pledgeData.saving : 0;
+
       return {
         id: p.id,
-        saved: emissionsComparison
-          ? Math.round(emissionsComparison.saved / Math.max(savedPledges.length, 1))
-          : 0,
+        saved: actualSavings,
         ...(labelMap[p.id] || { title: p.title || p.id, icon: "✨" }),
       };
     })

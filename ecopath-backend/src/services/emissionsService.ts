@@ -5,6 +5,7 @@ import { EnergyData, TransportData, FactorOverrides } from "../types";
 import { calculateEnergyEmissions, EMISSIONS_FACTORS } from "../utils/emissions";
 import { UserPledgesService } from "./userPledgesService";
 import { predictionCache } from "./predictionCache";
+import { calculatePledgeImpact } from "../utils/pledgeCalculator";
 // Note: Using database pledges directly instead of pledgeImpacts.ts
 
 // DB-backed factors helpers
@@ -243,66 +244,14 @@ export async function generateMultiYearForecast(
               `📊 Calculating personal savings based on quiz baseline: ${quizData.totals.totalKgYear} kg/year`,
             );
 
-            // Calculate pledge impact using the same logic as emissions.ts
-            const calculatePledgeImpact = (
-              title: string,
-              category: string,
-              baseline: number,
-            ): number => {
-              // Energy-related keywords
-              if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
-                return Math.round(baseline * 0.09); // 9% of baseline
-              }
-              if (
-                title.includes("air-dry") ||
-                title.includes("laundry") ||
-                title.includes("dryer")
-              ) {
-                return Math.round(baseline * 0.08); // 8% of baseline
-              }
-
-              // Water-related keywords
-              if (title.includes("shower")) {
-                return Math.round(baseline * 0.03); // 3% of baseline
-              }
-              if (title.includes("water")) {
-                return Math.round(baseline * 0.01); // 1% of baseline
-              }
-
-              // Transport-related keywords
-              if (title.includes("bike") || title.includes("cycling")) {
-                return Math.round(baseline * 0.12); // 12% of baseline
-              }
-              if (title.includes("walk") || title.includes("walking")) {
-                return Math.round(baseline * 0.08); // 8% of baseline
-              }
-
-              // Fallback to category-based calculation
-              const categoryImpacts = {
-                energy: 0.05, // 5% of baseline
-                water: 0.02, // 2% of baseline
-                transport: 0.1, // 10% of baseline
-                food: 0.03, // 3% of baseline
-                waste: 0.01, // 1% of baseline
-                lifestyle: 0.01, // 1% of baseline
-                daily: 0.01, // 1% of baseline
-                other: 0.01, // 1% of baseline
-              };
-              const categoryImpact =
-                categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
-              return Math.round(baseline * categoryImpact);
-            };
+            // Use unified pledge calculation logic
 
             // Calculate personal savings based on quiz baseline
             let personalSavings = 0;
             for (const pledge of pledges) {
               const title = (pledge as any).title?.toLowerCase() || "";
               const category = (pledge as any).category?.toLowerCase() || "other";
-              personalSavings += calculatePledgeImpact(
-                title,
-                category,
-                quizData.totals.totalKgYear,
-              );
+              personalSavings += calculatePledgeImpact(title, category);
             }
 
             return personalSavings;
@@ -326,47 +275,7 @@ export async function generateMultiYearForecast(
         ? parseInt(String(popResult.rows[0].population))
         : 6700000;
 
-      // Calculate total pledge reduction per person per year using database pledges
-      // Use the same intelligent calculation as emissions.ts
-      const calculatePledgeImpact = (title: string, category: string, baseline: number): number => {
-        // Energy-related keywords
-        if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
-          return Math.round(baseline * 0.09); // 9% of baseline
-        }
-        if (title.includes("air-dry") || title.includes("laundry") || title.includes("dryer")) {
-          return Math.round(baseline * 0.08); // 8% of baseline
-        }
-
-        // Water-related keywords
-        if (title.includes("shower")) {
-          return Math.round(baseline * 0.03); // 3% of baseline
-        }
-        if (title.includes("water")) {
-          return Math.round(baseline * 0.01); // 1% of baseline
-        }
-
-        // Transport-related keywords
-        if (title.includes("bike") || title.includes("cycling")) {
-          return Math.round(baseline * 0.12); // 12% of baseline
-        }
-        if (title.includes("walk") || title.includes("walking")) {
-          return Math.round(baseline * 0.08); // 8% of baseline
-        }
-
-        // Fallback to category-based calculation
-        const categoryImpacts = {
-          energy: 0.05, // 5% of baseline
-          water: 0.02, // 2% of baseline
-          transport: 0.1, // 10% of baseline
-          food: 0.03, // 3% of baseline
-          waste: 0.01, // 1% of baseline
-          lifestyle: 0.01, // 1% of baseline
-          daily: 0.01, // 1% of baseline
-          other: 0.01, // 1% of baseline
-        };
-        const categoryImpact = categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
-        return Math.round(baseline * categoryImpact);
-      };
+      // Calculate total pledge reduction using unified calculation logic
 
       // Extract years and convert ML predictions to per-person kg
       const yearArray = mlPredictions.slice(0, years).map((p) => p.year);
@@ -378,17 +287,13 @@ export async function generateMultiYearForecast(
         return Math.round((emissionMt * 1000000000) / statePopulation);
       });
 
-      // Calculate total pledge reduction using personal quiz baseline if available
-      const personalBaselineForSavings =
-        quizData && quizData.totals && quizData.totals.totalKgYear
-          ? quizData.totals.totalKgYear
-          : baselineProgression[0];
+      // Calculate total pledge reduction using unified calculation logic
 
       let totalPledgeReductionKgPerYear = 0;
       for (const pledge of pledges) {
         const title = (pledge as any).title?.toLowerCase() || "";
         const category = (pledge as any).category?.toLowerCase() || "other";
-        const savingsPerPledge = calculatePledgeImpact(title, category, personalBaselineForSavings);
+        const savingsPerPledge = calculatePledgeImpact(title, category);
         totalPledgeReductionKgPerYear += savingsPerPledge;
       }
 
@@ -401,12 +306,8 @@ export async function generateMultiYearForecast(
           const title = (pledge as any).title?.toLowerCase() || "";
           const category = (pledge as any).category?.toLowerCase() || "other";
 
-          // Use personal quiz baseline for savings calculation, not ML baseline
-          let baseSavingsPerPledge = calculatePledgeImpact(
-            title,
-            category,
-            personalBaselineForSavings,
-          );
+          // Use unified pledge calculation logic
+          let baseSavingsPerPledge = calculatePledgeImpact(title, category);
 
           // Apply decay rate: effectiveness decreases over time (2-3% per year)
           const decayRate = category === "transport" ? 0.01 : 0.025; // Transport habits more stable
@@ -542,50 +443,13 @@ export async function generateMultiYearForecast(
   const currentSaved =
     quizData && quizData.totals && quizData.totals.totalKgYear
       ? (() => {
-          // Recalculate personal savings for fallback case
-          const calculatePledgeImpact = (
-            title: string,
-            category: string,
-            baseline: number,
-          ): number => {
-            if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
-              return Math.round(baseline * 0.09);
-            }
-            if (title.includes("air-dry") || title.includes("laundry") || title.includes("dryer")) {
-              return Math.round(baseline * 0.08);
-            }
-            if (title.includes("shower")) {
-              return Math.round(baseline * 0.03);
-            }
-            if (title.includes("water")) {
-              return Math.round(baseline * 0.01);
-            }
-            if (title.includes("bike") || title.includes("cycling")) {
-              return Math.round(baseline * 0.12);
-            }
-            if (title.includes("walk") || title.includes("walking")) {
-              return Math.round(baseline * 0.08);
-            }
-            const categoryImpacts = {
-              energy: 0.05,
-              water: 0.02,
-              transport: 0.1,
-              food: 0.03,
-              waste: 0.01,
-              lifestyle: 0.01,
-              daily: 0.01,
-              other: 0.01,
-            };
-            const categoryImpact =
-              categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
-            return Math.round(baseline * categoryImpact);
-          };
+          // Use unified pledge calculation logic
 
           let personalSavings = 0;
           for (const pledge of pledges) {
             const title = (pledge as any).title?.toLowerCase() || "";
             const category = (pledge as any).category?.toLowerCase() || "other";
-            personalSavings += calculatePledgeImpact(title, category, quizData.totals.totalKgYear);
+            personalSavings += calculatePledgeImpact(title, category);
           }
           return personalSavings;
         })()

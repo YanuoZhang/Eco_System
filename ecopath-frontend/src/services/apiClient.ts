@@ -390,6 +390,20 @@ class ApiService {
       },
     });
   }
+
+  // Per-pledge savings API
+  async getPledgeSavings(userId: string): Promise<
+    Array<{
+      name: string;
+      saving: number;
+    }>
+  > {
+    return this.request("/api/emissions/by-pledge", {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
+  }
 }
 
 export const apiClient = new ApiService();

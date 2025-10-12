@@ -130,9 +130,9 @@ describe("CommunityService", () => {
 
       const footprint = await CommunityService.refreshCommunityData();
 
-      // Should use fallback value for energy category (120)
-      expect(footprint.totalCO2SavedKg).toBe(120);
-      expect(footprint.categories[0].kg).toBe(120);
+      // Should use unified calculation value for energy category (150)
+      expect(footprint.totalCO2SavedKg).toBe(150);
+      expect(footprint.categories[0].kg).toBe(150);
     });
 
     it("should parse CO2 reduction values correctly", async () => {
@@ -141,7 +141,7 @@ describe("CommunityService", () => {
         { input: "1.5t CO2/year", expected: 1500 },
         { input: "250 kg", expected: 250 },
         { input: "2T", expected: 2000 },
-        { input: "invalid format", expected: 350 }, // fallback for transport category
+        { input: "invalid format", expected: 150 }, // fallback for transport category using unified logic
       ];
 
       for (const testCase of testCases) {
