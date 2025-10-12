@@ -30,7 +30,7 @@ export function requireUser(req: Request, res: Response, next: NextFunction) {
     // Attach to request for downstream usage
     (req as any).userId = userId;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({
       error: "Unauthorized",
       message: "Invalid authorization header",

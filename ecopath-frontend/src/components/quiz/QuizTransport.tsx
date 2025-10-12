@@ -179,7 +179,7 @@ export default function QuizTransport({
 
     // Convert transportData to modes array for AI recommendations
     const modesData = Object.entries(transportData)
-      .filter(([_, mode]) => mode.enabled && mode.distance > 0)
+      .filter(([, mode]) => mode.enabled && mode.distance > 0)
       .map(([key, mode]) => ({
         mode: key as "car" | "bus" | "train" | "tram" | "bicycle" | "walking",
         distance: mode.distance,
@@ -530,7 +530,7 @@ export default function QuizTransport({
                   <div>Active modes: {getActiveModesCount()} types</div>
                   <div>Total weekly distance: {getTotalWeeklyDistance().toFixed(1)} km</div>
                   {Object.entries(transportData)
-                    .filter(([_, mode]) => mode.enabled && mode.distance > 0)
+                    .filter(([, mode]) => mode.enabled && mode.distance > 0)
                     .map(([mode, data]) => {
                       const annualDistance = data.distance * (data.frequency || 1) * 52.143;
                       let emissionFactor = 0;

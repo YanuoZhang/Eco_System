@@ -1,6 +1,5 @@
 // Community footprint aggregation service
 
-import { UserPledgesService } from "./userPledgesService";
 import { PledgesService } from "./pledgesService";
 
 export interface CommunityFootprint {

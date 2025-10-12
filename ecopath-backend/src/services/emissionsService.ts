@@ -5,7 +5,7 @@ import { EnergyData, TransportData, FactorOverrides } from "../types";
 import { calculateEnergyEmissions, EMISSIONS_FACTORS } from "../utils/emissions";
 import { UserPledgesService } from "./userPledgesService";
 import { predictionCache } from "./predictionCache";
-import { getPledgeImpact } from "../data/pledgeImpacts";
+// Note: Using database pledges directly instead of pledgeImpacts.ts
 
 // DB-backed factors helpers
 export async function getDbElectricityFactorKgPerKwh(state: string): Promise<number | null> {
@@ -204,42 +204,20 @@ export interface MultiYearForecast {
   withPledges: number[];
   unit: string;
   timestamp: string;
+  currentBaseline?: number;
+  currentWithPledges?: number;
+  currentSaved?: number;
   metadata: {
     state: string;
     pledgesCount: number;
     forecastYears: number;
     totalBaselineReduction: number;
     totalPledgeReduction: number;
+    source?: string;
   };
 }
 
-// Pledge impact factors and decay rates over time
-const PLEDGE_IMPACT_FACTORS = {
-  // Energy category pledges
-  energy: {
-    baseReduction: 200, // kg CO2-e per year
-    decayRate: 0.02, // 2% effectiveness decay per year
-    maxYears: 10,
-  },
-  // Transport category pledges
-  transport: {
-    baseReduction: 300, // kg CO2-e per year
-    decayRate: 0.01, // 1% effectiveness decay per year (transport habits more stable)
-    maxYears: 10,
-  },
-  // Lifestyle category pledges
-  lifestyle: {
-    baseReduction: 150, // kg CO2-e per year
-    decayRate: 0.03, // 3% effectiveness decay per year (habits may change)
-    maxYears: 8,
-  },
-  // Default for other categories
-  default: {
-    baseReduction: 100, // kg CO2-e per year
-    decayRate: 0.025, // 2.5% effectiveness decay per year
-    maxYears: 8,
-  },
-} as const;
+// Note: Pledge impact calculations now use database pledges directly
 
 // Baseline emissions growth rate (accounting for population growth, economic factors)
 const BASELINE_GROWTH_RATE = 0.015; // 1.5% annual growth
@@ -248,6 +226,7 @@ export async function generateMultiYearForecast(
   userId: string,
   state: string,
   forecastYears: number = 5,
+  quizData?: any,
 ): Promise<MultiYearForecast> {
   // Validate forecast years
   const years = Math.min(Math.max(forecastYears, 1), 10);
@@ -256,7 +235,81 @@ export async function generateMultiYearForecast(
   const pledges = await UserPledgesService.list(userId);
 
   try {
-    // 🔥 Use real ML predictions for state-level baseline
+    // 🎯 Use ML predictions for baseline, but calculate saved values based on quiz data if available
+    const personalSavingsPerYear =
+      quizData && quizData.totals && quizData.totals.totalKgYear
+        ? (() => {
+            console.log(
+              `📊 Calculating personal savings based on quiz baseline: ${quizData.totals.totalKgYear} kg/year`,
+            );
+
+            // Calculate pledge impact using the same logic as emissions.ts
+            const calculatePledgeImpact = (
+              title: string,
+              category: string,
+              baseline: number,
+            ): number => {
+              // Energy-related keywords
+              if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
+                return Math.round(baseline * 0.09); // 9% of baseline
+              }
+              if (
+                title.includes("air-dry") ||
+                title.includes("laundry") ||
+                title.includes("dryer")
+              ) {
+                return Math.round(baseline * 0.08); // 8% of baseline
+              }
+
+              // Water-related keywords
+              if (title.includes("shower")) {
+                return Math.round(baseline * 0.03); // 3% of baseline
+              }
+              if (title.includes("water")) {
+                return Math.round(baseline * 0.01); // 1% of baseline
+              }
+
+              // Transport-related keywords
+              if (title.includes("bike") || title.includes("cycling")) {
+                return Math.round(baseline * 0.12); // 12% of baseline
+              }
+              if (title.includes("walk") || title.includes("walking")) {
+                return Math.round(baseline * 0.08); // 8% of baseline
+              }
+
+              // Fallback to category-based calculation
+              const categoryImpacts = {
+                energy: 0.05, // 5% of baseline
+                water: 0.02, // 2% of baseline
+                transport: 0.1, // 10% of baseline
+                food: 0.03, // 3% of baseline
+                waste: 0.01, // 1% of baseline
+                lifestyle: 0.01, // 1% of baseline
+                daily: 0.01, // 1% of baseline
+                other: 0.01, // 1% of baseline
+              };
+              const categoryImpact =
+                categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
+              return Math.round(baseline * categoryImpact);
+            };
+
+            // Calculate personal savings based on quiz baseline
+            let personalSavings = 0;
+            for (const pledge of pledges) {
+              const title = (pledge as any).title?.toLowerCase() || "";
+              const category = (pledge as any).category?.toLowerCase() || "other";
+              personalSavings += calculatePledgeImpact(
+                title,
+                category,
+                quizData.totals.totalKgYear,
+              );
+            }
+
+            return personalSavings;
+          })()
+        : null;
+
+    // 🔥 Fallback to ML predictions for state-level baseline
     const mlPredictions = await predictionCache.getPredictionsForState(state);
 
     if (mlPredictions.length > 0) {
@@ -273,15 +326,47 @@ export async function generateMultiYearForecast(
         ? parseInt(String(popResult.rows[0].population))
         : 6700000;
 
-      // Calculate total pledge reduction per person per year using real impact values
-      let totalPledgeReductionKgPerYear = 0;
-      for (const pledge of pledges) {
-        const pledgeData = getPledgeImpact(
-          (pledge as any).title || (pledge as any).id,
-          (pledge as any).category || "OTHER",
-        );
-        totalPledgeReductionKgPerYear += pledgeData.per_person_kg_per_year;
-      }
+      // Calculate total pledge reduction per person per year using database pledges
+      // Use the same intelligent calculation as emissions.ts
+      const calculatePledgeImpact = (title: string, category: string, baseline: number): number => {
+        // Energy-related keywords
+        if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
+          return Math.round(baseline * 0.09); // 9% of baseline
+        }
+        if (title.includes("air-dry") || title.includes("laundry") || title.includes("dryer")) {
+          return Math.round(baseline * 0.08); // 8% of baseline
+        }
+
+        // Water-related keywords
+        if (title.includes("shower")) {
+          return Math.round(baseline * 0.03); // 3% of baseline
+        }
+        if (title.includes("water")) {
+          return Math.round(baseline * 0.01); // 1% of baseline
+        }
+
+        // Transport-related keywords
+        if (title.includes("bike") || title.includes("cycling")) {
+          return Math.round(baseline * 0.12); // 12% of baseline
+        }
+        if (title.includes("walk") || title.includes("walking")) {
+          return Math.round(baseline * 0.08); // 8% of baseline
+        }
+
+        // Fallback to category-based calculation
+        const categoryImpacts = {
+          energy: 0.05, // 5% of baseline
+          water: 0.02, // 2% of baseline
+          transport: 0.1, // 10% of baseline
+          food: 0.03, // 3% of baseline
+          waste: 0.01, // 1% of baseline
+          lifestyle: 0.01, // 1% of baseline
+          daily: 0.01, // 1% of baseline
+          other: 0.01, // 1% of baseline
+        };
+        const categoryImpact = categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
+        return Math.round(baseline * categoryImpact);
+      };
 
       // Extract years and convert ML predictions to per-person kg
       const yearArray = mlPredictions.slice(0, years).map((p) => p.year);
@@ -293,10 +378,45 @@ export async function generateMultiYearForecast(
         return Math.round((emissionMt * 1000000000) / statePopulation);
       });
 
-      // Calculate withPledges by subtracting user's pledge reductions
-      const withPledgesProgression = baselineProgression.map((baseline) =>
-        Math.max(0, baseline - Math.round(totalPledgeReductionKgPerYear)),
-      );
+      // Calculate total pledge reduction using personal quiz baseline if available
+      const personalBaselineForSavings =
+        quizData && quizData.totals && quizData.totals.totalKgYear
+          ? quizData.totals.totalKgYear
+          : baselineProgression[0];
+
+      let totalPledgeReductionKgPerYear = 0;
+      for (const pledge of pledges) {
+        const title = (pledge as any).title?.toLowerCase() || "";
+        const category = (pledge as any).category?.toLowerCase() || "other";
+        const savingsPerPledge = calculatePledgeImpact(title, category, personalBaselineForSavings);
+        totalPledgeReductionKgPerYear += savingsPerPledge;
+      }
+
+      // Calculate withPledges using time-decaying pledge effectiveness from database
+      const withPledgesProgression = baselineProgression.map((baseline, yearIndex) => {
+        let yearlyPledgeReduction = 0;
+
+        // Calculate pledge reduction for this specific year (with decay)
+        for (const pledge of pledges) {
+          const title = (pledge as any).title?.toLowerCase() || "";
+          const category = (pledge as any).category?.toLowerCase() || "other";
+
+          // Use personal quiz baseline for savings calculation, not ML baseline
+          let baseSavingsPerPledge = calculatePledgeImpact(
+            title,
+            category,
+            personalBaselineForSavings,
+          );
+
+          // Apply decay rate: effectiveness decreases over time (2-3% per year)
+          const decayRate = category === "transport" ? 0.01 : 0.025; // Transport habits more stable
+          const decayFactor = Math.pow(1 - decayRate, yearIndex);
+          const yearlyReduction = baseSavingsPerPledge * decayFactor;
+          yearlyPledgeReduction += yearlyReduction;
+        }
+
+        return Math.max(0, baseline - Math.round(yearlyPledgeReduction));
+      });
 
       // Calculate current baseline for metadata
       const currentBaseline = baselineProgression[0] || 15200;
@@ -304,18 +424,26 @@ export async function generateMultiYearForecast(
         baselineProgression[baselineProgression.length - 1] - currentBaseline;
       const totalPledgeReduction = Math.round(totalPledgeReductionKgPerYear * years);
 
+      // Use personal quiz savings if available, otherwise use ML-based savings
+      const currentSaved = personalSavingsPerYear || Math.round(totalPledgeReductionKgPerYear);
+      const currentWithPledges = currentBaseline - currentSaved;
+
       return {
         years: yearArray,
         baseline: baselineProgression,
         withPledges: withPledgesProgression,
         unit: "kg CO2-e per year",
         timestamp: new Date().toISOString(),
+        currentBaseline,
+        currentWithPledges,
+        currentSaved,
         metadata: {
           state,
           pledgesCount: pledges.length,
           forecastYears: years,
           totalBaselineReduction: Math.round(totalBaselineReduction),
           totalPledgeReduction: Math.round(totalPledgeReduction),
+          source: personalSavingsPerYear ? "quiz" : "ml",
         },
       };
     }
@@ -337,25 +465,61 @@ export async function generateMultiYearForecast(
     return Math.round(currentBaseline * Math.pow(1 + BASELINE_GROWTH_RATE, yearsFromNow));
   });
 
-  // Calculate pledge impact over time for each category
+  // Calculate pledge impact over time using database pledges
   const pledgeImpactsByYear = yearArray.map((year, index) => {
     const yearsFromNow = index + 1;
     let totalPledgeReduction = 0;
 
     for (const pledge of pledges) {
-      // Get pledge category (default to 'default' if not found)
-      const category = (pledge as any).category || "default";
-      const factors =
-        PLEDGE_IMPACT_FACTORS[category as keyof typeof PLEDGE_IMPACT_FACTORS] ||
-        PLEDGE_IMPACT_FACTORS.default;
+      const title = (pledge as any).title?.toLowerCase() || "";
+      const category = (pledge as any).category?.toLowerCase() || "other";
+      let baseSavingsPerPledge = 300; // default
 
-      // Check if pledge is still effective
-      if (yearsFromNow <= factors.maxYears) {
-        // Apply decay rate: effectiveness decreases over time
-        const decayFactor = Math.pow(1 - factors.decayRate, yearsFromNow - 1);
-        const yearlyReduction = factors.baseReduction * decayFactor;
-        totalPledgeReduction += yearlyReduction;
+      // Use intelligent calculation based on pledge title (same logic as above)
+      if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
+        baseSavingsPerPledge = Math.round(currentBaseline * 0.12 * 0.75);
+      } else if (
+        title.includes("air-dry") ||
+        title.includes("laundry") ||
+        title.includes("dryer")
+      ) {
+        baseSavingsPerPledge = Math.round(currentBaseline * 0.08);
+      } else if (title.includes("shower") || title.includes("water")) {
+        baseSavingsPerPledge = Math.round(currentBaseline * 0.15);
+      } else if (title.includes("bottle") || title.includes("water")) {
+        baseSavingsPerPledge = 150;
+      } else {
+        // Fallback to category-based calculation
+        switch (category) {
+          case "transport":
+            baseSavingsPerPledge = Math.round(currentBaseline * 0.1);
+            break;
+          case "energy":
+            baseSavingsPerPledge = Math.round(currentBaseline * 0.05);
+            break;
+          case "food":
+            baseSavingsPerPledge = 400;
+            break;
+          case "water":
+            baseSavingsPerPledge = Math.round(currentBaseline * 0.08);
+            break;
+          case "lifestyle":
+            baseSavingsPerPledge = 150;
+            break;
+          case "daily":
+            baseSavingsPerPledge = 150;
+            break;
+          case "waste":
+            baseSavingsPerPledge = 200;
+            break;
+        }
       }
+
+      // Apply decay rate: effectiveness decreases over time (2-3% per year)
+      const decayRate = category === "transport" ? 0.01 : 0.025; // Transport habits more stable
+      const decayFactor = Math.pow(1 - decayRate, yearsFromNow - 1);
+      const yearlyReduction = baseSavingsPerPledge * decayFactor;
+      totalPledgeReduction += yearlyReduction;
     }
 
     return Math.round(totalPledgeReduction);
@@ -373,18 +537,78 @@ export async function generateMultiYearForecast(
     baselineProgression[baselineProgression.length - 1] - currentBaseline;
   const totalPledgeReduction = pledgeImpactsByYear.reduce((sum, reduction) => sum + reduction, 0);
 
+  // Use personal quiz savings if available, otherwise use fallback savings
+  const fallbackSaved = Math.round(pledgeImpactsByYear[0]);
+  const currentSaved =
+    quizData && quizData.totals && quizData.totals.totalKgYear
+      ? (() => {
+          // Recalculate personal savings for fallback case
+          const calculatePledgeImpact = (
+            title: string,
+            category: string,
+            baseline: number,
+          ): number => {
+            if (title.includes("led") || title.includes("bulb") || title.includes("light")) {
+              return Math.round(baseline * 0.09);
+            }
+            if (title.includes("air-dry") || title.includes("laundry") || title.includes("dryer")) {
+              return Math.round(baseline * 0.08);
+            }
+            if (title.includes("shower")) {
+              return Math.round(baseline * 0.03);
+            }
+            if (title.includes("water")) {
+              return Math.round(baseline * 0.01);
+            }
+            if (title.includes("bike") || title.includes("cycling")) {
+              return Math.round(baseline * 0.12);
+            }
+            if (title.includes("walk") || title.includes("walking")) {
+              return Math.round(baseline * 0.08);
+            }
+            const categoryImpacts = {
+              energy: 0.05,
+              water: 0.02,
+              transport: 0.1,
+              food: 0.03,
+              waste: 0.01,
+              lifestyle: 0.01,
+              daily: 0.01,
+              other: 0.01,
+            };
+            const categoryImpact =
+              categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
+            return Math.round(baseline * categoryImpact);
+          };
+
+          let personalSavings = 0;
+          for (const pledge of pledges) {
+            const title = (pledge as any).title?.toLowerCase() || "";
+            const category = (pledge as any).category?.toLowerCase() || "other";
+            personalSavings += calculatePledgeImpact(title, category, quizData.totals.totalKgYear);
+          }
+          return personalSavings;
+        })()
+      : fallbackSaved;
+
+  const currentWithPledges = currentBaseline - currentSaved;
+
   return {
     years: yearArray,
     baseline: baselineProgression,
     withPledges: withPledgesProgression,
     unit: "kg CO2-e per year",
     timestamp: new Date().toISOString(),
+    currentBaseline,
+    currentWithPledges,
+    currentSaved,
     metadata: {
       state,
       pledgesCount: pledges.length,
       forecastYears: years,
       totalBaselineReduction: Math.round(totalBaselineReduction),
       totalPledgeReduction: Math.round(totalPledgeReduction),
+      source: quizData && quizData.totals && quizData.totals.totalKgYear ? "quiz" : "fallback",
     },
   };
 }

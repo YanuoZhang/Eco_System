@@ -1,12 +1,6 @@
 import { randomUUID } from "crypto";
 import { pool } from "../config/database";
-import {
-  RescheduleUserPledgeRequest,
-  SaveUserPledgesRequest,
-  UserPledge,
-  CompletePledgeRequest,
-} from "../types";
-import { CompletedPledgesService } from "./completedPledgesService";
+import { RescheduleUserPledgeRequest, SaveUserPledgesRequest, UserPledge } from "../types";
 
 /**
  * UserPledgesService - Database-backed service for managing user pledges
@@ -155,7 +149,7 @@ export class UserPledgesService {
         return { success: false, message: "Pledge not found" };
       }
 
-      const pledgeRow = pledgeResult.rows[0];
+      // const pledgeRow = pledgeResult.rows[0];
 
       // Mark as achievement by updating the record
       const updateQuery = `

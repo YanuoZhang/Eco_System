@@ -10,7 +10,6 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { createOpenApiDoc } from "./config/openapi";
 import { performWeeklyNewsUpdate } from "./services/newsService";
 import populationRouter from "./routes/population";
-import communityRouter from "./routes/community";
 import userStatsRouter from "./routes/userStats";
 import { predictionCache } from "./services/predictionCache";
 
@@ -52,7 +51,6 @@ app.use(express.static("public"));
 app.use("/api", apiRoutes);
 
 app.use("/api/population", populationRouter);
-app.use("/api/community", communityRouter);
 app.use("/api/user-stats", userStatsRouter);
 
 // Root endpoint
@@ -129,7 +127,7 @@ if (process.env.NODE_ENV !== "test") {
     // Warm up prediction cache
     try {
       await predictionCache.warmUp();
-    } catch (error) {
+    } catch {
       console.warn("Failed to warm up prediction cache. Will fetch on first request.");
     }
 

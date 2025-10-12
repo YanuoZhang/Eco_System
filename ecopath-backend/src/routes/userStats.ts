@@ -15,13 +15,12 @@ router.get("/impact", requireUser, async (req: Request, res: Response) => {
     const pledgesQuery = `
       SELECT 
         up.id,
-        up.pledge_id,
-        p.title,
-        p.category,
+        up.title,
+        up.category,
         up.created_at,
-        up.completed_at
+        up.completed_at,
+        up.is_achievement
       FROM user_pledges up
-      JOIN pledges p ON up.pledge_id = p.id
       WHERE up.user_id = $1
       ORDER BY up.created_at DESC
     `;
@@ -30,20 +29,20 @@ router.get("/impact", requireUser, async (req: Request, res: Response) => {
 
     // Calculate estimated savings based on pledge types
     const estimatedSavings = userPledges.reduce((total: number, pledge: any) => {
-      const category = pledge.category;
+      const category = pledge.category?.toLowerCase();
       let savingsPerPledge = 300; // default
 
       switch (category) {
-        case "TRANSPORT":
+        case "transport":
           savingsPerPledge = 680;
           break;
-        case "ENERGY":
+        case "energy":
           savingsPerPledge = 420;
           break;
-        case "FOOD":
+        case "food":
           savingsPerPledge = 600;
           break;
-        case "WATER":
+        case "water":
           savingsPerPledge = 180;
           break;
       }
@@ -102,13 +101,15 @@ router.get("/impact", requireUser, async (req: Request, res: Response) => {
 // Helper function to get savings per category
 function getCategorySavings(category: string): number {
   const savingsMap: Record<string, number> = {
-    TRANSPORT: 680,
-    ENERGY: 420,
-    FOOD: 600,
-    WATER: 180,
-    WASTE: 300,
+    transport: 680,
+    energy: 420,
+    food: 600,
+    water: 180,
+    waste: 300,
+    general: 300,
+    daily: 300,
   };
-  return savingsMap[category] || 300;
+  return savingsMap[category?.toLowerCase()] || 300;
 }
 
 export default router;

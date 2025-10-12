@@ -30,40 +30,49 @@ router.get("/stats", async (req: Request, res: Response) => {
     // Get pledge categories breakdown
     const categoriesQuery = `
       SELECT 
-        p.category,
+        up.category,
         COUNT(*) as count,
         ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) as percentage
       FROM user_pledges up
-      JOIN pledges p ON up.pledge_id = p.id
       WHERE up.created_at >= NOW() - INTERVAL '1 year'
-      GROUP BY p.category
+        AND up.category IS NOT NULL
+      GROUP BY up.category
       ORDER BY count DESC
     `;
     const categoriesResult = await pool.query(categoriesQuery);
 
-    const topPledges = categoriesResult.rows.map((row: any) => ({
-      type: row.category,
-      percentage: parseFloat(row.percentage),
-      count: parseInt(row.count),
-      color: getCategoryColor(row.category),
-    }));
+    // Map topPledges with calculated savings per category
+    const topPledges = categoriesResult.rows.map((row: any) => {
+      const category = row.category;
+      const count = parseInt(row.count);
+      const savingsPerPledge = getCategorySavings(category);
+      const totalSavings = count * savingsPerPledge;
+
+      return {
+        type: category,
+        percentage: parseFloat(row.percentage),
+        count: count,
+        color: getCategoryColor(category),
+        savings: totalSavings, // Add savings field
+      };
+    });
 
     // Estimate total CO2 savings based on pledge types
     const savingsQuery = `
       SELECT 
-        p.category,
+        up.category,
         COUNT(*) as count,
         CASE 
-          WHEN p.category = 'TRANSPORT' THEN COUNT(*) * 680
-          WHEN p.category = 'ENERGY' THEN COUNT(*) * 420
-          WHEN p.category = 'FOOD' THEN COUNT(*) * 600
-          WHEN p.category = 'WATER' THEN COUNT(*) * 180
+          WHEN up.category = 'transport' THEN COUNT(*) * 680
+          WHEN up.category = 'energy' THEN COUNT(*) * 420
+          WHEN up.category = 'food' THEN COUNT(*) * 600
+          WHEN up.category = 'water' THEN COUNT(*) * 180
           ELSE COUNT(*) * 300
         END as estimated_savings_kg
       FROM user_pledges up
-      JOIN pledges p ON up.pledge_id = p.id
       WHERE up.created_at >= NOW() - INTERVAL '1 year'
-      GROUP BY p.category
+        AND up.category IS NOT NULL
+      GROUP BY up.category
     `;
     const savingsResult = await pool.query(savingsQuery);
     const totalSavings = savingsResult.rows.reduce(
@@ -74,14 +83,14 @@ router.get("/stats", async (req: Request, res: Response) => {
     const response = {
       totalUsers,
       totalPledges,
-      totalSavings: Math.round(totalSavings / 1000), // Convert to tons
+      totalSavings, // Keep in kg for consistency with frontend expectations
       topPledges,
       lastUpdated: new Date().toISOString(),
       dataSource: "database",
     };
 
     console.log(
-      `✅ Community stats: ${totalUsers} users, ${totalPledges} pledges, ${response.totalSavings} tons saved`,
+      `✅ Community stats: ${totalUsers} users, ${totalPledges} pledges, ${Math.round(totalSavings / 1000)} tons saved`,
     );
     return res.json(response);
   } catch (error) {
@@ -102,8 +111,30 @@ function getCategoryColor(category: string): string {
     FOOD: "bg-orange-500",
     WATER: "bg-cyan-500",
     WASTE: "bg-purple-500",
+    // Add lowercase variants
+    transport: "bg-emerald-500",
+    energy: "bg-blue-500",
+    food: "bg-orange-500",
+    water: "bg-cyan-500",
+    waste: "bg-purple-500",
+    general: "bg-gray-500",
+    daily: "bg-indigo-500",
   };
   return colorMap[category] || "bg-gray-500";
+}
+
+// Helper function to get savings per category (same as in userStats)
+function getCategorySavings(category: string): number {
+  const savingsMap: Record<string, number> = {
+    transport: 680,
+    energy: 420,
+    food: 600,
+    water: 180,
+    waste: 300,
+    general: 300,
+    daily: 300,
+  };
+  return savingsMap[category?.toLowerCase()] || 300;
 }
 
 export default router;

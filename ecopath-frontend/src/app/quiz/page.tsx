@@ -26,7 +26,6 @@ export default function QuizPage() {
 
   // Original quiz data for AI recommendations
   const [electricity, setElectricity] = useState<number>(0);
-  const [gasMJ, setGasMJ] = useState<number>(0);
   const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | undefined>(
     undefined,
   );
@@ -233,7 +232,6 @@ export default function QuizPage() {
             onChange={(v) => {
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (typeof v.electricity === "number") setElectricity(v.electricity);
-              if (typeof v.gasMJ === "number") setGasMJ(v.gasMJ);
               if (typeof v.electricityEmissionsKgYear === "number")
                 setElectricityEmissions(v.electricityEmissionsKgYear);
             }}
@@ -300,6 +298,8 @@ export default function QuizPage() {
               transport: {
                 modes: transportModes,
               },
+              // Emission factors for scientific calculations
+              factors: factors,
               // Calculated results for display
               state: selectedState,
               timeUnit,
@@ -313,6 +313,25 @@ export default function QuizPage() {
                   hotWaterEmissions +
                   appliancesEmissions +
                   transportEmissions,
+                // Add all time units for consistency
+                totalKgMonth:
+                  (electricityEmissions +
+                    hotWaterEmissions +
+                    appliancesEmissions +
+                    transportEmissions) /
+                  12,
+                totalKgWeek:
+                  (electricityEmissions +
+                    hotWaterEmissions +
+                    appliancesEmissions +
+                    transportEmissions) /
+                  52.143,
+                totalKgQuarter:
+                  (electricityEmissions +
+                    hotWaterEmissions +
+                    appliancesEmissions +
+                    transportEmissions) /
+                  4,
               },
               applianceBreakdown: applianceBreakdown || {},
               transportBreakdown: transportBreakdown || {},

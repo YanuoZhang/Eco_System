@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState, useRef } from "react";
-import { getTimeUnitLabel, formatEmissions } from "../../utils/timeUnits";
+import { formatEmissions } from "../../utils/timeUnits";
 
 type TimeUnit = "week" | "month" | "quarter" | "year";
 
@@ -230,7 +230,7 @@ export default function QuizAppliances({
     console.log("[QuizAppliances] Total:", { kwhPerYear, electricityFactor, totalEmissions });
 
     return { emissionsKgYear: totalEmissions, breakdown: map };
-  }, [selected, usage, electricityFactor, weeksInPeriod.year]);
+  }, [selected, usage, electricityFactor, weeksInPeriod.year, factors, timeUnit]);
 
   useEffect(() => {
     const weeklyUsageData = selected.map((apId) => {

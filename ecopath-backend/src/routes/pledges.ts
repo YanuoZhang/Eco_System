@@ -8,7 +8,6 @@ import {
   SaveUserPledgesRequest,
 } from "../types";
 import { UserPledgesService } from "../services/userPledgesService";
-import { CompletedPledgesService } from "../services/completedPledgesService";
 
 const router = Router();
 

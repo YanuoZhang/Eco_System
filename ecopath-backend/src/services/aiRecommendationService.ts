@@ -251,7 +251,7 @@ export class AIRecommendationService {
     return ["Complete more quiz sections to improve personalization"];
   }
 
-  private static buildPrompt(quizData: QuizData, insights: string[], pledges: Pledge[]): string {
+  private static buildPrompt(quizData: QuizData, insights: string[], _pledges: Pledge[]): string {
     return [
       `Create specific, actionable climate pledges based on: ${insights.join(", ")}.`,
       `Generate concrete actions that users can implement immediately and set reminders for.`,

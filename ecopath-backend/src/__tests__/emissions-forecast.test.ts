@@ -256,6 +256,7 @@ describe("Multi-year Emissions Forecast", () => {
         forecastYears: 5,
         totalBaselineReduction: expect.any(Number),
         totalPledgeReduction: expect.any(Number),
+        source: "ml",
       });
 
       expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);

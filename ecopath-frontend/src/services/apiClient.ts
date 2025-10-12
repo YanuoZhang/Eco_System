@@ -286,12 +286,13 @@ class ApiService {
   async getCommunityStats(): Promise<{
     totalUsers: number;
     totalPledges: number;
-    totalSavings: number;
+    totalSavings: number; // in kg
     topPledges: Array<{
       type: string;
       percentage: number;
       count: number;
       color: string;
+      savings: number; // in kg
     }>;
     lastUpdated: string;
     dataSource: string;
@@ -330,6 +331,7 @@ class ApiService {
   async getEmissionsComparison(
     state: string = "VIC",
     userId: string = "anonymous",
+    quizData?: unknown,
   ): Promise<{
     baseline: number;
     withPledges: number;
@@ -342,7 +344,11 @@ class ApiService {
       pledgedKgPerYearReduction: number;
     };
   }> {
-    return this.request(`/api/emissions/comparison?state=${state}`, {
+    let url = `/api/emissions/comparison?state=${state}`;
+    if (quizData) {
+      url += `&quizData=${encodeURIComponent(JSON.stringify(quizData))}`;
+    }
+    return this.request(url, {
       headers: {
         "x-user-id": userId,
       },
@@ -354,6 +360,7 @@ class ApiService {
     state: string = "VIC",
     years: number = 5,
     userId: string = "anonymous",
+    quizData?: unknown,
   ): Promise<{
     userId: string;
     state: string;
@@ -373,7 +380,11 @@ class ApiService {
       generatedAt: string;
     };
   }> {
-    return this.request(`/api/emissions/forecast-multiyear?state=${state}&years=${years}`, {
+    let url = `/api/emissions/forecast-multiyear?state=${state}&years=${years}`;
+    if (quizData) {
+      url += `&quizData=${encodeURIComponent(JSON.stringify(quizData))}`;
+    }
+    return this.request(url, {
       headers: {
         "x-user-id": userId,
       },

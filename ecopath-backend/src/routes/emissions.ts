@@ -1,6 +1,95 @@
 // Emissions routes
 
 import { Router, Request, Response } from "express";
+
+/**
+ * Universal pledge impact calculation system
+ * Supports any pledge by analyzing title keywords and category
+ */
+function calculatePledgeImpact(title: string, category: string, baseline: number): number {
+  // Energy-related keywords and their impact percentages
+  const energyKeywords = [
+    { keywords: ["led", "bulb", "light"], impact: 0.09 }, // 9% of baseline
+    { keywords: ["air-dry", "laundry", "dryer"], impact: 0.08 }, // 8% of baseline
+    { keywords: ["unplug", "standby", "phantom"], impact: 0.07 }, // 7% of baseline
+    { keywords: ["thermostat", "heating", "cooling"], impact: 0.038 }, // 3.8% of baseline
+    { keywords: ["appliance", "efficient", "energy star"], impact: 0.05 }, // 5% of baseline
+    { keywords: ["solar", "renewable"], impact: 0.15 }, // 15% of baseline
+  ];
+
+  // Water-related keywords (order matters - more specific first)
+  const waterKeywords = [
+    { keywords: ["shower"], impact: 0.03 }, // 3% of baseline
+    { keywords: ["dishwasher", "washing", "cold water"], impact: 0.02 }, // 2% of baseline
+    { keywords: ["leak", "faucet"], impact: 0.01 }, // 1% of baseline
+    { keywords: ["water"], impact: 0.01 }, // 1% of baseline (general water usage)
+  ];
+
+  // Transport-related keywords
+  const transportKeywords = [
+    { keywords: ["bike", "cycling"], impact: 0.12 }, // 12% of baseline
+    { keywords: ["walk", "walking"], impact: 0.08 }, // 8% of baseline
+    { keywords: ["public", "transit", "bus", "train"], impact: 0.15 }, // 15% of baseline
+    { keywords: ["carpool", "ride"], impact: 0.06 }, // 6% of baseline
+    { keywords: ["drive", "car", "fuel", "efficient"], impact: 0.05 }, // 5% of baseline
+    { keywords: ["electric", "vehicle", "ev"], impact: 0.2 }, // 20% of baseline
+  ];
+
+  // Food-related keywords
+  const foodKeywords = [
+    { keywords: ["meatless", "vegetarian", "vegan"], impact: 0.04 }, // 4% of baseline
+    { keywords: ["local", "organic"], impact: 0.02 }, // 2% of baseline
+    { keywords: ["waste", "compost"], impact: 0.015 }, // 1.5% of baseline
+  ];
+
+  // Waste-related keywords
+  const wasteKeywords = [
+    { keywords: ["recycle", "recycling"], impact: 0.01 }, // 1% of baseline
+    { keywords: ["plastic", "bottle", "reusable"], impact: 0.01 }, // 1% of baseline
+    { keywords: ["zero", "waste"], impact: 0.03 }, // 3% of baseline
+  ];
+
+  // Lifestyle-related keywords
+  const lifestyleKeywords = [
+    { keywords: ["digital", "paperless"], impact: 0.005 }, // 0.5% of baseline
+    { keywords: ["repair", "fix"], impact: 0.01 }, // 1% of baseline
+    { keywords: ["second-hand", "used"], impact: 0.02 }, // 2% of baseline
+  ];
+
+  // Check for keyword matches in order of priority
+  const allKeywordGroups = [
+    ...energyKeywords.map((k) => ({ ...k, type: "energy" })),
+    ...waterKeywords.map((k) => ({ ...k, type: "water" })),
+    ...transportKeywords.map((k) => ({ ...k, type: "transport" })),
+    ...foodKeywords.map((k) => ({ ...k, type: "food" })),
+    ...wasteKeywords.map((k) => ({ ...k, type: "waste" })),
+    ...lifestyleKeywords.map((k) => ({ ...k, type: "lifestyle" })),
+  ];
+
+  // Find matching keywords
+  for (const keywordGroup of allKeywordGroups) {
+    for (const keyword of keywordGroup.keywords) {
+      if (title.includes(keyword)) {
+        return Math.round(baseline * keywordGroup.impact);
+      }
+    }
+  }
+
+  // Fallback to category-based calculation if no keywords match
+  const categoryImpacts = {
+    energy: 0.05, // 5% of baseline
+    water: 0.02, // 2% of baseline
+    transport: 0.1, // 10% of baseline
+    food: 0.03, // 3% of baseline
+    waste: 0.01, // 1% of baseline
+    lifestyle: 0.01, // 1% of baseline
+    daily: 0.01, // 1% of baseline
+    other: 0.01, // 1% of baseline
+  };
+
+  const categoryImpact = categoryImpacts[category as keyof typeof categoryImpacts] || 0.01;
+  return Math.round(baseline * categoryImpact);
+}
 import { pool } from "../config/database";
 import { EmissionsCalculationRequest, EmissionsCalculationResponse } from "../types";
 import {
@@ -18,7 +107,7 @@ import {
   calculateSavedEmissions,
   generateMultiYearForecast,
 } from "../services/emissionsService";
-import { getPledgeImpact } from "../data/pledgeImpacts";
+// Note: Using database pledges directly instead of pledgeImpacts.ts
 import { predictionCache } from "../services/predictionCache";
 
 const router = Router();
@@ -358,6 +447,9 @@ router.get("/comparison", requireUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId as string;
     const state = (req.query.state as string) || "VIC"; // optional, default VIC
+    const quizData = req.query.quizData
+      ? JSON.parse(decodeURIComponent(req.query.quizData as string))
+      : null;
 
     // Rate limit: 1 request per 1s per user (very relaxed for development)
     const now = Date.now();
@@ -379,21 +471,34 @@ router.get("/comparison", requireUser, async (req: Request, res: Response) => {
       return res.json({ ...cached.data, cached: true });
     }
 
+    // Use user's personal carbon footprint from quiz results as baseline
+    let baseline: number;
+    if (quizData && quizData.totals && quizData.totals.totalKgYear) {
+      // Use personal quiz data as baseline
+      baseline = quizData.totals.totalKgYear;
+      console.log(`📊 Using personal quiz baseline: ${baseline} kg/year`);
+    } else {
+      // Fallback to ML predictions
+      baseline = await calculateUserPersonalBaseline(userId, state);
+      console.log(`📊 Using ML prediction baseline: ${baseline} kg/year`);
+    }
+
     // Retrieve user pledges and calculate real CO2 reduction using scientific values
     const pledges = await UserPledgesService.list(userId);
 
-    // Calculate total pledge reduction using real impact values from pledgeImpacts.ts
+    // Calculate total pledge reduction using universal calculation system
     let pledgedKgPerYearReduction = 0;
     for (const pledge of pledges) {
-      const pledgeData = getPledgeImpact(
-        (pledge as any).title || (pledge as any).pledgeId,
-        (pledge as any).category || "OTHER",
-      );
-      pledgedKgPerYearReduction += pledgeData.per_person_kg_per_year;
+      const title = (pledge as any).title?.toLowerCase() || "";
+      const category = (pledge as any).category?.toLowerCase() || "other";
+
+      // Universal pledge impact calculation system
+      // This system supports any pledge by analyzing title keywords and category
+      const savingsPerPledge = calculatePledgeImpact(title, category, baseline);
+
+      pledgedKgPerYearReduction += savingsPerPledge;
     }
 
-    // Use user's personal carbon footprint from quiz results as baseline
-    const baseline = await calculateUserPersonalBaseline(userId, state);
     const withPledges = Math.max(0, baseline - Math.round(pledgedKgPerYearReduction));
     const saved = calculateSavedEmissions(baseline, withPledges);
 
@@ -491,6 +596,9 @@ router.get("/forecast-multiyear", requireUser, async (req: Request, res: Respons
     const userId = (req as any).userId as string;
     const state = (req.query.state as string) || "VIC"; // optional, default VIC
     const years = parseInt((req.query.years as string) || "5", 10); // optional, default 5
+    const quizData = req.query.quizData
+      ? JSON.parse(decodeURIComponent(req.query.quizData as string))
+      : null;
 
     // Validate years parameter
     if (years < 1 || years > 10) {
@@ -514,10 +622,33 @@ router.get("/forecast-multiyear", requireUser, async (req: Request, res: Respons
     }
     lastRequestAt.set(userId, now);
 
-    // Generate forecast
-    const forecast = await generateMultiYearForecast(userId, state, years);
+    // Generate forecast (pass quizData if available)
+    const forecast = await generateMultiYearForecast(userId, state, years, quizData);
 
-    return res.json(forecast);
+    // Transform to match frontend expectations
+    const yearlyForecast = forecast.years.map((year, index) => ({
+      year,
+      baseline: forecast.baseline[index],
+      withPledges: forecast.withPledges[index],
+      saved: forecast.baseline[index] - forecast.withPledges[index],
+    }));
+
+    const response = {
+      userId,
+      state,
+      forecastYears: years,
+      currentBaseline: forecast.baseline[0] || 0,
+      currentWithPledges: forecast.withPledges[0] || 0,
+      currentSaved: forecast.baseline[0] - forecast.withPledges[0] || 0,
+      yearlyForecast,
+      metadata: {
+        pledgesCount: forecast.metadata.pledgesCount,
+        pledgedKgPerYearReduction: forecast.metadata.totalPledgeReduction,
+        generatedAt: forecast.timestamp,
+      },
+    };
+
+    return res.json(response);
   } catch (error) {
     console.error("Error in multi-year emissions forecast:", error);
     return res.status(500).json({
