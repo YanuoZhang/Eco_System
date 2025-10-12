@@ -47,8 +47,26 @@ describe("GET /api/emissions/by-pledge", () => {
     ]);
 
     vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-      if (id === "p1") return { id: "p1", title: "Use LED bulbs", category: "energy", estimatedCO2Reduction: "120kg CO2/year", isPublic: true, createdAt: "", updatedAt: "" } as any;
-      if (id === "p2") return { id: "p2", title: "Public transport", category: "transport", estimatedCO2Reduction: "350kg CO2/year", isPublic: true, createdAt: "", updatedAt: "" } as any;
+      if (id === "p1")
+        return {
+          id: "p1",
+          title: "Use LED bulbs",
+          category: "energy",
+          estimatedCO2Reduction: "120kg CO2/year",
+          isPublic: true,
+          createdAt: "",
+          updatedAt: "",
+        } as any;
+      if (id === "p2")
+        return {
+          id: "p2",
+          title: "Public transport",
+          category: "transport",
+          estimatedCO2Reduction: "350kg CO2/year",
+          isPublic: true,
+          createdAt: "",
+          updatedAt: "",
+        } as any;
       return undefined;
     });
 
@@ -84,5 +102,3 @@ describe("GET /api/emissions/by-pledge", () => {
     expect(res.body).toContainEqual({ name: "Cold wash laundry", saving: 90 });
   });
 });
-
-

@@ -11,55 +11,53 @@ type SavedPledge = {
   category?: string;
 };
 
-type PredictionData = {
-  success: boolean;
-  state_code: string;
-  population: number;
-  adoption_rate: number;
-  average_baseline_mt: number;
-  average_adjusted_mt: number;
-  reduction_percentage: number;
-  yearly_data: Array<{
-    year: number;
-    baseline_mt: number;
-    reduction_mt: number;
-    adjusted_mt: number;
-  }>;
-  impacts: Array<{
-    title: string;
-    per_person_kg_per_year: number;
-    confidence: number;
-    rationale: string;
-  }>;
-  summary: string;
-};
-
-// Pledge savings lookup (kg CO2/year)
-const PLEDGE_SAVINGS_KG_YEAR: Record<string, number> = {
-  "bike-transport": 520,
-  "meatless-monday": 600,
-  "led-bulbs": 180,
-  "air-dry": 300,
-  "public-transport": 840,
-};
-
-// Pledge title and category mapping
-const PLEDGE_METADATA: Record<string, { title: string; icon: string; category: string }> = {
-  "bike-transport": { title: "Bike to Work Twice Weekly", icon: "🚴", category: "TRANSPORT" },
-  "led-bulbs": { title: "Switch to LED Bulbs", icon: "💡", category: "ENERGY" },
-  "meatless-monday": { title: "Meatless Monday", icon: "🥗", category: "FOOD" },
-  "public-transport": { title: "Use Public Transport", icon: "🚌", category: "TRANSPORT" },
-  "air-dry": { title: "Air Dry Clothes", icon: "👕", category: "ENERGY" },
-};
+// Note: All data now comes from real APIs - no more hardcoded values
 
 export default function VisualizePage() {
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string>("anonymous");
   const [savedPledges, setSavedPledges] = useState<SavedPledge[]>([]);
   const [loading, setLoading] = useState(true);
-  const [predictionData, setPredictionData] = useState<PredictionData | null>(null);
+  // Note: predictionData removed - now using unified emissions APIs
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [statePopulation, setStatePopulation] = useState<number | null>(null); // Start with null
+  const [emissionsComparison, setEmissionsComparison] = useState<{
+    baseline: number;
+    withPledges: number;
+    saved: number;
+    metadata: {
+      state: string;
+      pledgesCount: number;
+      pledgedKgPerYearReduction: number;
+    };
+  } | null>(null);
+  const [emissionsForecast, setEmissionsForecast] = useState<{
+    yearlyForecast: Array<{
+      year: number;
+      baseline: number;
+      withPledges: number;
+      saved: number;
+    }>;
+  } | null>(null);
+  const [communityStats, setCommunityStats] = useState<{
+    totalUsers: number;
+    totalPledges: number;
+    totalSavings: number;
+    topPledges: Array<{
+      type: string;
+      percentage: number;
+      count: number;
+      color: string;
+      savings?: number;
+    }>;
+  } | null>(null);
+  const [userImpactStats, setUserImpactStats] = useState<{
+    totalPledges: number;
+    completedPledges: number;
+    completionRate: number;
+    estimatedSavingsKg: number;
+    estimatedSavingsTons: number;
+  } | null>(null);
   const [animatedNumbers, setAnimatedNumbers] = useState({
     personalSavings: 0,
     baselineEmissions: 0,
@@ -148,76 +146,115 @@ export default function VisualizePage() {
     };
   }, [userId]);
 
-  // Fetch AI predictions when pledges are loaded
+  // Fetch real emissions data using new unified APIs
   useEffect(() => {
-    if (savedPledges.length === 0 || !mounted || !selectedState || !statePopulation) return;
+    if (savedPledges.length === 0 || !mounted || !selectedState || !userId) return;
 
-    const fetchPredictions = async () => {
+    // Add debounce to prevent rapid successive calls
+    const timeoutId = setTimeout(async () => {
       try {
-        const pledgesForAPI = savedPledges.map((p) => ({
-          title: PLEDGE_METADATA[p.id]?.title || p.id,
-          category: PLEDGE_METADATA[p.id]?.category || "OTHER",
-        }));
-
-        console.log("API Call Parameters:", {
+        console.log("📊 Fetching real emissions data for:", {
           selectedState,
-          statePopulation,
-          pledgesForAPI,
-          savedPledges: savedPledges.length,
+          pledgesCount: savedPledges.length,
+          userId,
         });
 
-        // Validate required parameters
-        if (!selectedState) {
-          console.error("selectedState is null/undefined");
-          return;
-        }
-        if (statePopulation === null || statePopulation <= 0) {
-          console.error("statePopulation is invalid:", statePopulation);
-          return;
-        }
-        if (pledgesForAPI.length === 0) {
-          console.error("pledgesForAPI is empty");
-          return;
+        // Try to use personal carbon footprint from localStorage first
+        let personalBaseline = null;
+        try {
+          const carbonFootprintData = localStorage.getItem("carbonFootprint");
+          console.log(
+            "🔍 localStorage carbonFootprint data:",
+            carbonFootprintData ? "exists" : "not found",
+          );
+          if (carbonFootprintData) {
+            const data = JSON.parse(carbonFootprintData);
+            console.log("📊 Parsed carbonFootprint data:", data);
+
+            // Get annual baseline from quiz data
+            personalBaseline = data.totals?.totalKgYear;
+            console.log(
+              "✅ Found personal carbon footprint in localStorage:",
+              personalBaseline,
+              "kg/year",
+            );
+
+            // Log time unit specific values for debugging
+            if (data.timeUnit) {
+              console.log("🕐 Quiz time unit:", data.timeUnit);
+              console.log("📊 Time unit breakdown:", {
+                year: data.totals?.totalKgYear,
+                month: data.totals?.totalKgMonth,
+                week: data.totals?.totalKgWeek,
+                quarter: data.totals?.totalKgQuarter,
+              });
+            }
+          }
+        } catch (error) {
+          console.warn("⚠️ Failed to read carbon footprint from localStorage:", error);
         }
 
-        const response = await apiClient.getPledgeImpact({
-          state_code: selectedState,
-          population: statePopulation,
-          pledges: pledgesForAPI,
-        });
+        // Fetch emissions comparison data (individual level)
+        const comparisonResponse = await apiClient.getEmissionsComparison(selectedState, userId);
+        console.log("✅ Emissions comparison response:", comparisonResponse);
 
-        setPredictionData(response as PredictionData);
+        // Override baseline with personal data if available
+        if (personalBaseline && comparisonResponse) {
+          const personalComparison = {
+            ...comparisonResponse,
+            baseline: personalBaseline,
+            withPledges: Math.max(0, personalBaseline - comparisonResponse.saved),
+            saved: comparisonResponse.saved,
+          };
+          console.log("🎯 Using personal baseline:", personalComparison);
+          setEmissionsComparison(personalComparison);
+        } else {
+          setEmissionsComparison(comparisonResponse);
+        }
+
+        // Add small delay between API calls to respect rate limits
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Fetch multi-year forecast data (individual level) - use 10 years to match ML data
+        const forecastResponse = await apiClient.getEmissionsForecast(selectedState, 10, userId);
+        console.log("✅ Emissions forecast response:", forecastResponse);
+        setEmissionsForecast(forecastResponse);
+
+        // Fetch real community statistics
+        const communityResponse = await apiClient.getCommunityStats();
+        console.log("✅ Community stats response:", communityResponse);
+        setCommunityStats(communityResponse);
+
+        // Fetch real user impact statistics
+        const userStatsResponse = await apiClient.getUserImpactStats(userId);
+        console.log("✅ User impact stats response:", userStatsResponse);
+        setUserImpactStats(userStatsResponse);
+
+        // Note: All data now comes from real database APIs
       } catch (error) {
-        console.error("Failed to fetch predictions:", error);
+        console.error("❌ Error fetching emissions data:", error);
       }
-    };
+    }, 500); // 500ms debounce
 
-    fetchPredictions();
-  }, [savedPledges, selectedState, statePopulation, mounted]);
+    return () => clearTimeout(timeoutId);
+  }, [savedPledges, selectedState, userId, mounted]);
 
-  const totalSavedKgYear = savedPledges.reduce(
-    (sum, p) => sum + (PLEDGE_SAVINGS_KG_YEAR[p.id] || 0),
-    0,
-  );
-
-  const BASELINE_KG_YEAR = 15200;
-  const withPledgesKgYear = Math.max(BASELINE_KG_YEAR - totalSavedKgYear, 0);
-
+  // Update animated numbers when API data arrives
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !emissionsComparison || !communityStats) return;
 
     const timer = setTimeout(() => {
       setAnimatedNumbers({
-        personalSavings: totalSavedKgYear,
-        baselineEmissions: BASELINE_KG_YEAR,
-        actualEmissions: withPledgesKgYear,
-        communitySavings: 125000,
-        communityMembers: 4700,
+        personalSavings: emissionsComparison.saved,
+        baselineEmissions: emissionsComparison.baseline,
+        actualEmissions: emissionsComparison.withPledges,
+        communitySavings: communityStats.totalSavings,
+        communityMembers: communityStats.totalUsers,
       });
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [mounted, totalSavedKgYear, withPledgesKgYear]);
+  }, [mounted, emissionsComparison, communityStats]);
 
   const AnimatedNumber = ({
     value,
@@ -258,6 +295,11 @@ export default function VisualizePage() {
     );
   };
 
+  // Calculate average saved per pledge from real API data
+  const avgSavedPerPledge = emissionsComparison
+    ? Math.round(emissionsComparison.saved / Math.max(savedPledges.length, 1))
+    : 200;
+
   const breakdownCards = savedPledges
     .map((p) => {
       const labelMap: Record<string, { title: string; icon: string }> = {
@@ -266,18 +308,20 @@ export default function VisualizePage() {
         "meatless-monday": { title: "Meatless Monday", icon: "🥗" },
         "public-transport": { title: "Use Public Transport", icon: "🚌" },
         "air-dry": { title: "Air Dry Clothes", icon: "👕" },
+        "water-bottle": { title: "Reusable Water Bottle", icon: "💧" },
+        recycle: { title: "Recycle More", icon: "♻️" },
+        solar: { title: "Install Solar Panels", icon: "☀️" },
       };
       return {
         id: p.id,
-        saved: PLEDGE_SAVINGS_KG_YEAR[p.id] || 0,
-        ...(labelMap[p.id] || { title: p.id, icon: "✨" }),
+        saved: avgSavedPerPledge, // Use calculated average from real API data
+        ...(labelMap[p.id] || { title: p.title || p.id, icon: "✨" }),
       };
     })
-    .sort((a, b) => b.saved - a.saved)
     .slice(0, 6);
 
-  // Chart data for personal forecast - use AI predictions if available
-  const chartYears = predictionData?.yearly_data?.map((d) => String(d.year)) || [
+  // Chart data for personal forecast - use real API data if available (10 years)
+  const chartYears = emissionsForecast?.yearlyForecast?.map((d) => String(d.year)) || [
     "2026",
     "2027",
     "2028",
@@ -288,30 +332,27 @@ export default function VisualizePage() {
     "2033",
     "2034",
     "2035",
-    "2036",
   ];
 
-  // Convert Mt to per-person kg: Mt * 1,000,000,000 kg / population
-  // statePopulation is now fetched from real database data
-  const population = statePopulation || 6700000; // Fallback to default
-  const baselineData = predictionData?.yearly_data?.map((d) =>
-    Math.round((d.baseline_mt * 1000000000) / population),
-  ) || [15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200, 15200];
+  // Use real forecast data from new API, with minimal fallback for loading states
+  const baselineData =
+    emissionsForecast?.yearlyForecast?.map((d) => d.baseline) || Array(10).fill(0); // Minimal fallback - all zeros for loading state
 
-  const actualData = predictionData?.yearly_data?.map((d) =>
-    Math.round((d.adjusted_mt * 1000000000) / population),
-  ) || [14180, 13095, 12972, 12538, 12005, 11785, 11462, 11148, 10925, 10708, 10385];
+  const actualData =
+    emissionsForecast?.yearlyForecast?.map((d) => d.withPledges) || Array(10).fill(0); // Minimal fallback - all zeros for loading state
 
-  const communityData = {
-    totalSavings: 125000,
-    members: 4700,
-    topPledges: [
-      { type: "Transport", percentage: 34, savings: 42500, color: "bg-emerald-500" },
-      { type: "Energy", percentage: 28, savings: 35000, color: "bg-blue-500" },
-      { type: "Diet", percentage: 22, savings: 27500, color: "bg-orange-500" },
-      { type: "Water", percentage: 16, savings: 20000, color: "bg-cyan-500" },
-    ],
-  };
+  // Use real community data from API, with fallback
+  const communityData = communityStats
+    ? {
+        totalSavings: communityStats.totalSavings,
+        members: communityStats.totalUsers,
+        topPledges: communityStats.topPledges,
+      }
+    : {
+        totalSavings: 0,
+        members: 0,
+        topPledges: [],
+      };
 
   if (!mounted) {
     return (
@@ -394,13 +435,13 @@ export default function VisualizePage() {
                   Based on your pledges, here&apos;s how your carbon footprint will evolve over the
                   next year
                 </p>
-                {predictionData && (
-                  <div className="mt-4 inline-flex items-center gap-2 bg-purple-500/20 backdrop-blur-sm rounded-full px-4 py-2 border border-purple-400/30">
-                    <span className="text-sm text-purple-200">
-                      Showing predictions for {selectedState} with{" "}
-                      {(population / 1000000).toFixed(1)}M population
-                      <span className="block text-xs text-purple-300 mt-1">
-                        (State automatically selected from your quiz results)
+                {emissionsComparison && (
+                  <div className="mt-4 inline-flex items-center gap-2 bg-emerald-500/20 backdrop-blur-sm rounded-full px-4 py-2 border border-emerald-400/30">
+                    <span className="text-sm text-emerald-200">
+                      🤖 Real ML-powered predictions for {selectedState}
+                      {statePopulation && ` (${(statePopulation / 1000000).toFixed(1)}M people)`}
+                      <span className="block text-xs text-emerald-300 mt-1">
+                        Using machine learning models trained on real emission data (2026-2036)
                       </span>
                     </span>
                   </div>
@@ -589,11 +630,11 @@ export default function VisualizePage() {
                         <div className="text-right">
                           <div className="text-emerald-400 font-bold">
                             <AnimatedNumber
-                              value={Math.round(pledge.savings / 1000)}
+                              value={Math.round((pledge.savings || 0) / 1000)}
                               suffix=" tons"
                             />
                           </div>
-                          <div className="text-slate-400 text-sm">{pledge.percentage}%</div>
+                          <div className="text-slate-400 text-sm">{pledge.percentage || 0}%</div>
                         </div>
                       </div>
                     ))}
@@ -611,8 +652,8 @@ export default function VisualizePage() {
                       {communityData.topPledges.map((pledge, index) => {
                         const previousPercentages = communityData.topPledges
                           .slice(0, index)
-                          .reduce((sum, p) => sum + p.percentage, 0);
-                        const strokeDasharray = `${pledge.percentage * 3.14} ${314 - pledge.percentage * 3.14}`;
+                          .reduce((sum, p) => sum + (p.percentage || 0), 0);
+                        const strokeDasharray = `${(pledge.percentage || 0) * 3.14} ${314 - (pledge.percentage || 0) * 3.14}`;
                         const strokeDashoffset = `-${previousPercentages * 3.14}`;
 
                         return (
@@ -709,16 +750,18 @@ export default function VisualizePage() {
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-400 mb-1">
-                      {Math.round(totalSavedKgYear / 1000)}.
-                      {Math.round((totalSavedKgYear % 1000) / 100)}
+                      {Math.round((emissionsComparison?.saved || 0) / 1000)}.
+                      {Math.round(((emissionsComparison?.saved || 0) % 1000) / 100)}
                     </div>
                     <p className="text-slate-300 text-sm">Tons CO₂ Saved</p>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-purple-400 mb-1">
-                      {Math.round(
-                        ((BASELINE_KG_YEAR - withPledgesKgYear) / BASELINE_KG_YEAR) * 100,
-                      )}
+                      {emissionsComparison
+                        ? Math.round(
+                            (emissionsComparison.saved / emissionsComparison.baseline) * 100,
+                          )
+                        : 0}
                       %
                     </div>
                     <p className="text-slate-300 text-sm">Reduction</p>
@@ -734,21 +777,21 @@ export default function VisualizePage() {
                     <div className="text-center">
                       <div className="text-2xl mb-2">🌳</div>
                       <div className="text-xl font-bold text-emerald-400">
-                        {Math.round(totalSavedKgYear / 22)}
+                        {Math.round((emissionsComparison?.saved || 0) / 22)}
                       </div>
                       <p className="text-slate-300 text-sm">Trees planted for a year</p>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl mb-2">🚗</div>
                       <div className="text-xl font-bold text-blue-400">
-                        {Math.round(totalSavedKgYear / 4.6 / 1000)}k
+                        {Math.round((emissionsComparison?.saved || 0) / 4.6 / 1000)}k
                       </div>
                       <p className="text-slate-300 text-sm">Miles not driven</p>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl mb-2">💡</div>
                       <div className="text-xl font-bold text-yellow-400">
-                        {Math.round(totalSavedKgYear / 0.4)}
+                        {Math.round((emissionsComparison?.saved || 0) / 0.4)}
                       </div>
                       <p className="text-slate-300 text-sm">LED bulbs switched</p>
                     </div>
@@ -813,9 +856,9 @@ export default function VisualizePage() {
                 </blockquote>
                 <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
                   Your {savedPledges.length} pledges are already making a difference. You&apos;ve
-                  prevented {Math.round(totalSavedKgYear / 1000)}.
-                  {Math.round((totalSavedKgYear % 1000) / 100)} tons of CO₂ from entering our
-                  atmosphere, and you&apos;re part of a community that&apos;s saved{" "}
+                  prevented {Math.round((emissionsComparison?.saved || 0) / 1000)}.
+                  {Math.round(((emissionsComparison?.saved || 0) % 1000) / 100)} tons of CO₂ from
+                  entering our atmosphere, and you&apos;re part of a community that&apos;s saved{" "}
                   {Math.round(communityData.totalSavings / 1000)} tons collectively.
                 </p>
                 <p className="text-xl text-emerald-300 font-semibold mb-8">

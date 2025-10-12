@@ -31,7 +31,7 @@ export class CommunityService {
   static async getCommunityFootprint(): Promise<CommunityFootprint> {
     const cacheKey = "community_footprint";
     const now = Date.now();
-    
+
     // Check cache
     const cached = communityCache.get(cacheKey);
     if (cached && cached.expiresAt > now) {
@@ -40,7 +40,7 @@ export class CommunityService {
 
     // Generate fresh data
     const data = await this.generateCommunityFootprint();
-    
+
     // Cache for 24 hours
     communityCache.set(cacheKey, {
       data,
@@ -55,7 +55,7 @@ export class CommunityService {
    */
   static async refreshCommunityData(): Promise<CommunityFootprint> {
     const data = await this.generateCommunityFootprint();
-    
+
     // Update cache
     communityCache.set("community_footprint", {
       data,
@@ -72,7 +72,7 @@ export class CommunityService {
     // Get all user pledges from the in-memory store
     // In a real implementation, this would query a database
     const allUserPledges = this.getAllUserPledges();
-    
+
     if (allUserPledges.length === 0) {
       return this.getEmptyFootprint();
     }
@@ -142,7 +142,7 @@ export class CommunityService {
    */
   private static calculateCategoryPercentages(
     categoryTotals: Map<string, number>,
-    totalCO2Kg: number
+    totalCO2Kg: number,
   ): CommunityCategoryData[] {
     if (totalCO2Kg === 0) {
       return [];
@@ -199,15 +199,19 @@ export class CommunityService {
   /**
    * Get all user pledges (simulated - in production, query database)
    */
-  private static getAllUserPledges(): Array<{ userId: string; pledgeId: string; dateAdded: string }> {
+  private static getAllUserPledges(): Array<{
+    userId: string;
+    pledgeId: string;
+    dateAdded: string;
+  }> {
     // This is a simplified implementation for the in-memory store
     // In production, this would query the database for all user pledges
     const allPledges: Array<{ userId: string; pledgeId: string; dateAdded: string }> = [];
-    
+
     // For now, return empty array - this would be populated from database
     // In a real implementation, you'd have something like:
     // return await database.query('SELECT userId, pledgeId, dateAdded FROM user_pledges');
-    
+
     return allPledges;
   }
 

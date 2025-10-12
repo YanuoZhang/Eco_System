@@ -53,7 +53,7 @@ describe("Share Link API", () => {
     it("should handle errors gracefully", async () => {
       // Mock ShareLinkService to throw error
       vi.spyOn(ShareLinkService, "generateShareLink").mockRejectedValueOnce(
-        new Error("QR generation failed")
+        new Error("QR generation failed"),
       );
 
       const res = await request(app).get("/api/share-link");
@@ -89,9 +89,7 @@ describe("Share Link API", () => {
       const referralCode = generateRes.body.data.referralCode;
 
       // Track a click
-      const res = await request(app)
-        .post("/api/share-link/track")
-        .send({ referralCode });
+      const res = await request(app).post("/api/share-link/track").send({ referralCode });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -186,10 +184,10 @@ describe("ShareLinkService", () => {
 
     it("should generate different referral codes for same user at different times", async () => {
       const result1 = await ShareLinkService.generateShareLink({ userId: "user1" });
-      
+
       // Wait a tiny bit to ensure different timestamp
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       const result2 = await ShareLinkService.generateShareLink({ userId: "user1" });
 
       expect(result1.referralCode).not.toBe(result2.referralCode);

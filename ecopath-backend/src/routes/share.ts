@@ -39,7 +39,7 @@ router.get("/share-link", async (req: Request, res: Response) => {
 router.get("/share-link/qr", async (req: Request, res: Response) => {
   try {
     const landingPage = (req.query.landingPage as string) || "/";
-    
+
     const qrCodeDataUrl = await ShareLinkService.generatePublicQRCode(landingPage);
 
     res.json({

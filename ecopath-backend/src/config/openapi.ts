@@ -419,7 +419,11 @@ export const createOpenApiDoc = (port: number) => ({
                     completedPledges: {
                       type: "array",
                       items: { type: "string" },
-                      example: ["Bike to Work Twice Weekly", "Switch to LED Bulbs", "Meatless Monday"],
+                      example: [
+                        "Bike to Work Twice Weekly",
+                        "Switch to LED Bulbs",
+                        "Meatless Monday",
+                      ],
                       description: "List of completed pledge titles",
                     },
                     lastUpdated: {
@@ -484,7 +488,10 @@ export const createOpenApiDoc = (port: number) => ({
                     data: {
                       type: "object",
                       properties: {
-                        url: { type: "string", example: "https://ecopath.me/?ref=abc123&source=qr_share" },
+                        url: {
+                          type: "string",
+                          example: "https://ecopath.me/?ref=abc123&source=qr_share",
+                        },
                         qrCodeDataUrl: { type: "string", example: "data:image/png;base64,..." },
                         referralCode: { type: "string", example: "abc123def" },
                       },

@@ -207,24 +207,35 @@ export default function PledgePage() {
             reminderType?: string;
             customDate?: string;
             dateAdded?: string;
+            title?: string;
+            category?: string;
+            isAchievement?: boolean;
           }>;
         };
         if (!resp?.success || !resp.data) return;
+
+        // Filter only active pledges (not achievements)
+        const activePledges = resp.data.filter((r) => !r.isAchievement);
+
         const mapMeta = (pledgeId: string): Partial<Pledge> => pledgeMetaById.get(pledgeId) || {};
-        const list: SavedPledge[] = resp.data.map((r) => ({
-          id: r.pledgeId,
-          recordId: r.id,
-          reminderType: r.reminderType as SavedPledge["reminderType"],
-          customDate: r.customDate,
-          dateAdded: r.dateAdded,
-          // fill meta if known
-          benefit: "",
-          category: "",
-          icon: "",
-          impact: "small",
-          title: "",
-          ...mapMeta(r.pledgeId),
-        }));
+        const list: SavedPledge[] = activePledges.map((r) => {
+          // Use title from backend, or pledgeId as fallback
+          const pledgeId = r.title || r.pledgeId;
+          return {
+            id: pledgeId,
+            recordId: r.id,
+            reminderType: r.reminderType as SavedPledge["reminderType"],
+            customDate: r.customDate,
+            dateAdded: r.dateAdded,
+            // Use data from backend first, then fill meta if known
+            title: r.title || "",
+            category: r.category || "",
+            benefit: "",
+            icon: "",
+            impact: "small",
+            ...mapMeta(pledgeId),
+          };
+        });
         if (!cancelled) setSavedPledges(list);
       } catch {}
     })();
@@ -235,7 +246,9 @@ export default function PledgePage() {
 
   useEffect(() => {
     if (!hasCompletedQuiz) return;
-    if (activeTab !== "ai" && aiSuggestedPledges.length > 0) return;
+    // Only load if we don't have suggestions yet
+    if (aiSuggestedPledges.length > 0) return;
+
     let cancelled = false;
     (async () => {
       try {
@@ -247,7 +260,11 @@ export default function PledgePage() {
           return;
         }
         const quizData = JSON.parse(raw);
-        const resp = (await apiClient.getAiRecommendations(quizData)) as {
+
+        const resp = (await apiClient.getAiRecommendations({
+          quizData,
+          // Removed timestamp to allow caching based on quiz content
+        })) as {
           success: boolean;
           data?: unknown;
         };
@@ -283,11 +300,13 @@ export default function PledgePage() {
         };
 
         const rawData: unknown = resp?.data;
+
         const list: AiRecommendation[] = isAiRecommendationArray(rawData)
           ? rawData
           : hasRecommendationsArray(rawData)
             ? rawData.recommendations
             : [];
+
         if (resp?.success && list.length > 0) {
           const mapped: Pledge[] = list.map((r) => ({
             id: r.id,
@@ -312,8 +331,7 @@ export default function PledgePage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasCompletedQuiz, activeTab]);
+  }, [hasCompletedQuiz, aiSuggestedPledges.length]);
 
   const getCurrentPledges = () => (activeTab === "public" ? publicPledges : aiSuggestedPledges);
 
@@ -457,6 +475,8 @@ export default function PledgePage() {
         userId,
         pledges: newSaved.map((p) => ({
           pledgeId: p.id,
+          title: p.title,
+          category: p.category,
           reminderType: p.reminderType,
           customDate: p.customDate,
         })),
@@ -469,23 +489,28 @@ export default function PledgePage() {
           reminderType?: string;
           customDate?: string;
           dateAdded?: string;
+          title?: string;
+          category?: string;
         }>;
       };
       if (resp?.success) {
         // Merge server-added records
         const added = (resp.data || []).map((r) => {
-          const meta = [...publicPledges, ...aiSuggestedPledges].find((m) => m.id === r.pledgeId);
+          const pledgeId = r.title || r.pledgeId;
+          const meta = [...publicPledges, ...aiSuggestedPledges].find(
+            (m) => m.id === pledgeId || m.title === r.title,
+          );
           return {
-            id: r.pledgeId,
+            id: pledgeId,
             recordId: r.id,
             reminderType: r.reminderType as SavedPledge["reminderType"],
             customDate: r.customDate,
             dateAdded: r.dateAdded,
+            title: r.title || meta?.title || pledgeId,
+            category: r.category || meta?.category || "",
             benefit: meta?.benefit || "",
-            category: meta?.category || "",
             icon: meta?.icon || "",
             impact: meta?.impact || "small",
-            title: meta?.title || r.pledgeId,
           } as SavedPledge;
         });
         const existingByRecord = new Set(savedPledges.map((s) => s.recordId));
@@ -633,7 +658,10 @@ export default function PledgePage() {
                 <div className="text-center text-red-600 py-8">{aiError}</div>
               )}
               {!aiLoading && !aiError && aiSuggestedPledges.length === 0 && (
-                <div className="text-center text-slate-600 py-8">No suggestions yet.</div>
+                <div className="text-center text-slate-600 py-8">
+                  <div>No suggestions yet.</div>
+                  <div className="text-sm mt-2 opacity-60"></div>
+                </div>
               )}
             </>
           )}
@@ -831,7 +859,7 @@ export default function PledgePage() {
                 </div>
                 <div className="mt-6">
                   <Link
-                    href="/future-impact"
+                    href="/visualize"
                     className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 text-white font-bold px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer inline-flex items-center gap-3 whitespace-nowrap"
                   >
                     <span className="text-xl">🔮</span>

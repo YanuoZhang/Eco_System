@@ -34,8 +34,8 @@ export class UserImpactService {
    */
   static async getUserImpactSummary(userId: string): Promise<UserImpactSummary> {
     // Get user pledges
-    const userPledges = UserPledgesService.list(userId);
-    
+    const userPledges = await UserPledgesService.list(userId);
+
     if (userPledges.length === 0) {
       return this.getEmptyImpactSummary();
     }

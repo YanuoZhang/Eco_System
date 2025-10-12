@@ -1,9 +1,15 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { formatEmissions } from "../../utils/timeUnits";
 
 type Props = {
   open?: boolean;
   onToggle?: () => void;
   timeUnit?: "week" | "month" | "quarter" | "year";
+  initialModes?: Array<{
+    mode: "car" | "bus" | "train" | "tram" | "bicycle" | "walking";
+    distance?: number;
+    frequency?: number;
+  }>;
   onChange?: (v: {
     transportEmissionsKgYear?: number;
     transportBreakdownKgYear?: Record<
@@ -36,13 +42,20 @@ interface TransportData {
   cycling: TransportMode;
 }
 
-export default function QuizTransport({ open = true, onToggle, onChange }: Props) {
+export default function QuizTransport({
+  open = true,
+  onToggle,
+  timeUnit,
+  initialModes,
+  onChange,
+}: Props) {
   const [localOpen, setLocalOpen] = useState(open);
   const isOpen = onToggle ? open : localOpen;
+  const initializedRef = useRef(false);
 
   const handleToggle = () => (onToggle ? onToggle() : setLocalOpen((v) => !v));
 
-  // Transport modes state
+  // Transport modes state - simplified
   const [transportData, setTransportData] = useState<TransportData>({
     car: { enabled: false, distance: 0, fuelType: "petrol", vehicleType: "medium" },
     bus: { enabled: false, distance: 0, frequency: 1 },
@@ -51,6 +64,29 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
     walking: { enabled: false, distance: 0 },
     cycling: { enabled: false, distance: 0 },
   });
+
+  // Initialize from props only once
+  useEffect(() => {
+    if (initialModes && initialModes.length > 0 && !initializedRef.current) {
+      console.log("[QuizTransport] Initializing with modes:", initialModes);
+      setTransportData((prev) => {
+        const newData = { ...prev };
+        initialModes.forEach((mode) => {
+          const key = mode.mode === "bicycle" ? "cycling" : mode.mode;
+          if (key in newData) {
+            newData[key as keyof TransportData] = {
+              ...newData[key as keyof TransportData],
+              enabled: true,
+              distance: mode.distance || 0,
+              frequency: mode.frequency || 1,
+            };
+          }
+        });
+        return newData;
+      });
+      initializedRef.current = true;
+    }
+  }, [initialModes]);
 
   // Note: time unit configuration is currently not used by the UI/logic
 
@@ -162,6 +198,7 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
     field: keyof TransportMode,
     value: string | number | boolean,
   ) => {
+    console.log("[QuizTransport] handleModeChange:", { mode, field, value });
     setTransportData((prev) => ({
       ...prev,
       [mode]: {
@@ -234,13 +271,11 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                       <p className="text-sm text-slate-600">km/week</p>
                     </div>
                   </div>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={transportData.car.enabled}
-                      onChange={(e) => handleModeChange("car", "enabled", e.target.checked)}
-                      className="sr-only"
-                    />
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange("car", "enabled", !transportData.car.enabled)}
+                    className="flex items-center cursor-pointer focus:outline-none"
+                  >
                     <div
                       className={`w-12 h-6 rounded-full transition-colors duration-200 ${
                         transportData.car.enabled ? "bg-green-500" : "bg-gray-300"
@@ -253,7 +288,7 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                         } translate-y-0.5`}
                       ></div>
                     </div>
-                  </label>
+                  </button>
                 </div>
 
                 {transportData.car.enabled && (
@@ -265,12 +300,13 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                       <div className="relative">
                         <input
                           type="number"
-                          value={transportData.car.distance}
-                          onChange={(e) =>
-                            handleModeChange("car", "distance", parseFloat(e.target.value) || 0)
-                          }
+                          value={transportData.car.distance || ""}
+                          onChange={(e) => {
+                            console.log("[QuizTransport] Car distance input:", e.target.value);
+                            handleModeChange("car", "distance", parseFloat(e.target.value) || 0);
+                          }}
                           className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          placeholder="0"
+                          placeholder="Enter km/week"
                           data-testid="car-distance"
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">
@@ -336,20 +372,18 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                         <p className="text-sm text-slate-600">km/week</p>
                       </div>
                     </div>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={transportData[transport.key as keyof TransportData].enabled}
-                        onChange={(e) =>
-                          handleModeChange(
-                            transport.key as keyof TransportData,
-                            "enabled",
-                            e.target.checked,
-                          )
-                        }
-                        className="sr-only"
-                        data-testid={transport.key === "bus" ? "bus-toggle" : undefined}
-                      />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleModeChange(
+                          transport.key as keyof TransportData,
+                          "enabled",
+                          !transportData[transport.key as keyof TransportData].enabled,
+                        )
+                      }
+                      className="flex items-center cursor-pointer focus:outline-none"
+                      data-testid={transport.key === "bus" ? "bus-toggle" : undefined}
+                    >
                       <div
                         className={`w-12 h-6 rounded-full transition-colors duration-200 ${
                           transportData[transport.key as keyof TransportData].enabled
@@ -365,7 +399,7 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                           } translate-y-0.5`}
                         ></div>
                       </div>
-                    </label>
+                    </button>
                   </div>
 
                   {transportData[transport.key as keyof TransportData].enabled && (
@@ -377,7 +411,9 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                         <div className="relative">
                           <input
                             type="number"
-                            value={transportData[transport.key as keyof TransportData].distance}
+                            value={
+                              transportData[transport.key as keyof TransportData].distance || ""
+                            }
                             onChange={(e) =>
                               handleModeChange(
                                 transport.key as keyof TransportData,
@@ -386,7 +422,7 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                               )
                             }
                             className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="0"
+                            placeholder="Enter km/week"
                             data-testid={transport.key === "bus" ? "bus-distance" : undefined}
                           />
                           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">
@@ -417,20 +453,18 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                         <p className="text-sm text-slate-600">km/week</p>
                       </div>
                     </div>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={transportData[transport.key as keyof TransportData].enabled}
-                        onChange={(e) =>
-                          handleModeChange(
-                            transport.key as keyof TransportData,
-                            "enabled",
-                            e.target.checked,
-                          )
-                        }
-                        className="sr-only"
-                        data-testid={transport.key === "walking" ? "walking-toggle" : undefined}
-                      />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleModeChange(
+                          transport.key as keyof TransportData,
+                          "enabled",
+                          !transportData[transport.key as keyof TransportData].enabled,
+                        )
+                      }
+                      className="flex items-center cursor-pointer focus:outline-none"
+                      data-testid={transport.key === "walking" ? "walking-toggle" : undefined}
+                    >
                       <div
                         className={`w-12 h-6 rounded-full transition-colors duration-200 ${
                           transportData[transport.key as keyof TransportData].enabled
@@ -446,7 +480,7 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                           } translate-y-0.5`}
                         ></div>
                       </div>
-                    </label>
+                    </button>
                   </div>
 
                   {transportData[transport.key as keyof TransportData].enabled && (
@@ -458,7 +492,9 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                         <div className="relative">
                           <input
                             type="number"
-                            value={transportData[transport.key as keyof TransportData].distance}
+                            value={
+                              transportData[transport.key as keyof TransportData].distance || ""
+                            }
                             onChange={(e) =>
                               handleModeChange(
                                 transport.key as keyof TransportData,
@@ -467,7 +503,7 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                               )
                             }
                             className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            placeholder="0"
+                            placeholder="Enter km/week"
                             data-testid={
                               transport.key === "walking" ? "walking-distance" : undefined
                             }
@@ -482,6 +518,62 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                 </div>
               ))}
             </div>
+
+            {/* Calculation details */}
+            {getActiveModesCount() > 0 && (
+              <details className="mt-4 bg-white/70 rounded-lg p-3 border border-green-200">
+                <summary className="text-sm font-medium text-green-700 cursor-pointer">
+                  Calculation details
+                </summary>
+                <div className="mt-2 text-xs text-slate-700 space-y-1">
+                  <div>Calculation: Distance (km/week) × 52.143 weeks/year × Emission factor</div>
+                  <div>Active modes: {getActiveModesCount()} types</div>
+                  <div>Total weekly distance: {getTotalWeeklyDistance().toFixed(1)} km</div>
+                  {Object.entries(transportData)
+                    .filter(([_, mode]) => mode.enabled && mode.distance > 0)
+                    .map(([mode, data]) => {
+                      const annualDistance = data.distance * (data.frequency || 1) * 52.143;
+                      let emissionFactor = 0;
+                      let modeName = "";
+
+                      if (mode === "car") {
+                        emissionFactor =
+                          transportFactors.car[
+                            data.fuelType as keyof typeof transportFactors.car
+                          ] || 0;
+                        modeName = "Car";
+                      } else if (mode === "bus") {
+                        emissionFactor = transportFactors.bus;
+                        modeName = "Bus";
+                      } else if (mode === "train") {
+                        emissionFactor = transportFactors.train;
+                        modeName = "Train";
+                      } else if (mode === "tram") {
+                        emissionFactor = transportFactors.tram;
+                        modeName = "Tram";
+                      } else if (mode === "walking") {
+                        emissionFactor = transportFactors.walking;
+                        modeName = "Walking";
+                      } else if (mode === "cycling") {
+                        emissionFactor = transportFactors.cycling;
+                        modeName = "Cycling";
+                      }
+
+                      const modeEmissions = annualDistance * emissionFactor;
+
+                      return (
+                        <div key={mode} className="text-xs">
+                          {modeName}: {data.distance}km/week × 52.143 × {emissionFactor.toFixed(3)}{" "}
+                          = {modeEmissions.toFixed(1)} kg CO₂/year
+                          {mode === "car" && data.fuelType && (
+                            <span className="text-slate-500"> ({data.fuelType})</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </details>
+            )}
 
             {/* Summary */}
             {getActiveModesCount() > 0 && (
@@ -501,9 +593,14 @@ export default function QuizTransport({ open = true, onToggle, onChange }: Props
                       className="text-lg font-bold text-green-700"
                       data-testid="transport-summary-emissions"
                     >
+                      {formatEmissions(
+                        calculateTransportEmissions().totalEmissions,
+                        timeUnit || "year",
+                      )}
+                    </div>
+                    <div className="text-xs text-green-600">
                       {calculateTransportEmissions().totalEmissions.toFixed(1)} kg CO₂/year
                     </div>
-                    <div className="text-xs text-green-600">Annual emissions</div>
                   </div>
                 </div>
               </div>

@@ -34,7 +34,7 @@ export class ShareLinkService {
     let referralCode: string | undefined;
     if (userId) {
       referralCode = this.generateAnonymousReferralCode(userId);
-      
+
       // Log for analytics
       this.logReferralLink(referralCode, userId);
     }
@@ -65,7 +65,7 @@ export class ShareLinkService {
       .update(`${userId}-${timestamp}`)
       .digest("hex")
       .substring(0, 8);
-    
+
     return `${hash}${timestamp}`;
   }
 
@@ -75,21 +75,21 @@ export class ShareLinkService {
   private static buildShareableUrl(
     landingPage: string,
     referralCode?: string,
-    campaign?: string
+    campaign?: string,
   ): string {
     const url = new URL(landingPage, BASE_URL);
-    
+
     if (referralCode) {
       url.searchParams.set("ref", referralCode);
     }
-    
+
     if (campaign) {
       url.searchParams.set("campaign", campaign);
     }
-    
+
     // Add source parameter to identify QR scans
     url.searchParams.set("source", "qr_share");
-    
+
     return url.toString();
   }
 
@@ -158,12 +158,10 @@ export class ShareLinkService {
   /**
    * Generate a simple public QR code (no tracking)
    */
-  static async generatePublicQRCode(
-    landingPage: string = DEFAULT_LANDING_PAGE
-  ): Promise<string> {
+  static async generatePublicQRCode(landingPage: string = DEFAULT_LANDING_PAGE): Promise<string> {
     const url = new URL(landingPage, BASE_URL);
     url.searchParams.set("source", "qr_public");
-    
+
     return await this.generateQRCode(url.toString());
   }
 }

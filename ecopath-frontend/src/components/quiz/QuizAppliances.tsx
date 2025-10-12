@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, useRef } from "react";
+import { getTimeUnitLabel, formatEmissions } from "../../utils/timeUnits";
 
 type TimeUnit = "week" | "month" | "quarter" | "year";
 
@@ -8,6 +9,7 @@ type Props = {
   open?: boolean;
   onToggle?: () => void;
   timeUnit?: TimeUnit;
+  weeklyUsage?: Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>;
   factors?: { electricity?: number } | null;
   onChange?: (v: {
     appliancesEmissionsKgYear?: number;
@@ -129,18 +131,49 @@ export default function QuizAppliances({
   open = true,
   onToggle,
   timeUnit = "month",
+  weeklyUsage: initialWeeklyUsage,
   factors,
   onChange,
 }: Props) {
   const id = useId();
   const [localOpen, setLocalOpen] = useState(open);
   const isOpen = onToggle ? open : localOpen;
+  const initializedRef = useRef(false);
 
   const handleToggle = () => (onToggle ? onToggle() : setLocalOpen((v) => !v));
 
+  // Simplified state initialization
   const [selected, setSelected] = useState<string[]>(["fridge"]);
   const [usage, setUsage] = useState<Record<string, number>>({});
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+
+  // Initialize from props only once
+  useEffect(() => {
+    if (initialWeeklyUsage && initialWeeklyUsage.length > 0 && !initializedRef.current) {
+      console.log("[QuizAppliances] Initializing with usage:", initialWeeklyUsage);
+      const ids = initialWeeklyUsage
+        .map((item) => {
+          const ap = APPLIANCES.find((a) => a.name === item.appliance);
+          return ap?.id;
+        })
+        .filter(Boolean) as string[];
+
+      if (ids.length > 0) {
+        setSelected(ids);
+      }
+
+      const usageMap: Record<string, number> = {};
+      initialWeeklyUsage.forEach((item) => {
+        const ap = APPLIANCES.find((a) => a.name === item.appliance);
+        if (ap && item.hoursPerWeek !== undefined) {
+          usageMap[ap.id] = item.hoursPerWeek;
+        }
+      });
+
+      setUsage(usageMap);
+      initializedRef.current = true;
+    }
+  }, [initialWeeklyUsage]);
 
   const weeksInPeriod: Record<TimeUnit, number> = {
     week: 1,
@@ -149,9 +182,18 @@ export default function QuizAppliances({
     year: 52.143,
   };
 
-  const electricityFactor = factors?.electricity ?? 0; // kg/kWh
+  const electricityFactor = factors?.electricity ?? 0.8; // kg/kWh - default fallback
 
   const { emissionsKgYear, breakdown } = useMemo(() => {
+    console.log("[QuizAppliances] Calculation:", {
+      selected,
+      usage,
+      electricityFactor,
+      factors,
+      selectedCount: selected.length,
+      timeUnit,
+    });
+
     let kwhPerYear = 0;
     const map: Record<
       string,
@@ -160,7 +202,8 @@ export default function QuizAppliances({
     selected.forEach((id) => {
       const ap = APPLIANCES.find((a) => a.id === id);
       if (!ap) return;
-      const hoursPerWeek = usage[id] ?? ap.defaultHoursPerWeek;
+      // Fix: Use defaultHoursPerWeek when usage[id] is undefined or 0
+      const hoursPerWeek = usage[id] && usage[id] > 0 ? usage[id] : ap.defaultHoursPerWeek;
       const kwhYear = ap.kw * hoursPerWeek * weeksInPeriod.year;
       const kgYear = kwhYear * electricityFactor;
       kwhPerYear += kwhYear;
@@ -170,8 +213,23 @@ export default function QuizAppliances({
         emissions: Math.max(0, kgYear),
         usageHoursPerWeek: hoursPerWeek,
       };
+
+      console.log(`[QuizAppliances] ${ap.name}:`, {
+        kw: ap.kw,
+        hoursPerWeek,
+        kwhYear,
+        kgYear,
+        electricityFactor,
+        usageValue: usage[id],
+        defaultHours: ap.defaultHoursPerWeek,
+      });
     });
-    return { emissionsKgYear: Math.max(0, kwhPerYear * electricityFactor), breakdown: map };
+
+    // Fix: Calculate total emissions from individual appliance emissions
+    const totalEmissions = Object.values(map).reduce((total, item) => total + item.emissions, 0);
+    console.log("[QuizAppliances] Total:", { kwhPerYear, electricityFactor, totalEmissions });
+
+    return { emissionsKgYear: totalEmissions, breakdown: map };
   }, [selected, usage, electricityFactor, weeksInPeriod.year]);
 
   useEffect(() => {
@@ -326,8 +384,8 @@ export default function QuizAppliances({
                                   min={0}
                                   max={ap.id === "fridge" ? 168 : 100}
                                   step={0.5}
-                                  value={value}
-                                  onChange={(e) => setHours(id, Number(e.target.value))}
+                                  value={value || ""}
+                                  onChange={(e) => setHours(id, Number(e.target.value) || 0)}
                                   className="w-20 px-2 py-1 text-sm border border-purple-200 rounded focus:outline-none focus:border-purple-500 disabled:bg-slate-100"
                                   disabled={ap.alwaysOn}
                                 />
@@ -350,6 +408,37 @@ export default function QuizAppliances({
             )}
           </div>
 
+          {/* Calculation details */}
+          <details className="mt-4 bg-white/70 rounded-lg p-3 border border-purple-200">
+            <summary className="text-sm font-medium text-purple-700 cursor-pointer">
+              Calculation details
+            </summary>
+            <div className="mt-2 text-xs text-slate-700 space-y-1">
+              {factors && <div>Electricity factor: {factors.electricity ?? "-"} kg CO₂-e/kWh</div>}
+              <div>
+                Calculation: Power (kW) × Hours/week × 52.143 weeks/year × Electricity factor
+              </div>
+              <div>Selected appliances: {selected.length} items</div>
+              {selected.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {selected.map((id) => {
+                    const ap = APPLIANCES.find((a) => a.id === id);
+                    const hoursPerWeek =
+                      usage[id] && usage[id] > 0 ? usage[id] : ap?.defaultHoursPerWeek || 0;
+                    const kwhYear = (ap?.kw || 0) * hoursPerWeek * 52.143;
+                    const kgYear = kwhYear * (factors?.electricity || 0.8);
+                    return ap ? (
+                      <div key={id} className="text-xs">
+                        {ap.name}: {ap.kw}kW × {hoursPerWeek}h/week × 52.143 ×{" "}
+                        {factors?.electricity || 0.8} = {kgYear.toFixed(1)} kg CO₂/year
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              )}
+            </div>
+          </details>
+
           {/* Section total summary */}
           <div className="mt-4 bg-white/80 rounded-lg p-4 border border-purple-200/60">
             <div className="flex items-center justify-between">
@@ -359,24 +448,15 @@ export default function QuizAppliances({
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-purple-600">
-                  {(
-                    emissionsKgYear /
-                    (timeUnit === "month"
-                      ? 12
-                      : timeUnit === "quarter"
-                        ? 4
-                        : timeUnit === "week"
-                          ? 52.143
-                          : 1)
-                  ).toFixed(1)}{" "}
-                  kg CO₂/
-                  {timeUnit === "week"
-                    ? "Weekly"
-                    : timeUnit === "month"
-                      ? "Monthly"
-                      : timeUnit === "quarter"
-                        ? "Quarterly"
-                        : "Yearly"}
+                  {(() => {
+                    const formatted = formatEmissions(emissionsKgYear, timeUnit);
+                    console.log("[QuizAppliances] Display format:", {
+                      emissionsKgYear,
+                      timeUnit,
+                      formatted,
+                    });
+                    return formatted;
+                  })()}
                 </div>
                 <div className="text-xs text-purple-500">
                   {emissionsKgYear.toFixed(1)} kg CO₂/year

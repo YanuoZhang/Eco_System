@@ -22,6 +22,7 @@ export default function QuizPage() {
     gas?: number;
     units?: { gas?: string };
   } | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   // Original quiz data for AI recommendations
   const [electricity, setElectricity] = useState<number>(0);
@@ -59,6 +60,95 @@ export default function QuizPage() {
     | undefined
   >(undefined);
 
+  // Load saved data from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const savedData = localStorage.getItem("carbonFootprint");
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+
+        // Restore location
+        if (parsed.location?.state) {
+          setSelectedState(parsed.location.state);
+        } else if (parsed.state) {
+          setSelectedState(parsed.state);
+        }
+
+        // Restore time unit
+        if (parsed.timeUnit) {
+          setTimeUnit(parsed.timeUnit);
+        }
+
+        // Restore electricity data
+        if (parsed.electricity?.usage !== undefined) {
+          setElectricity(parsed.electricity.usage);
+        }
+
+        // Restore hot water data
+        if (parsed.hotWater?.system) {
+          setHotWaterSystem(parsed.hotWater.system);
+        }
+        if (parsed.hotWater?.usage !== undefined) {
+          setHotWaterUsage(parsed.hotWater.usage);
+        }
+        if (parsed.hotWater?.household !== undefined) {
+          setHotWaterHousehold(parsed.hotWater.household);
+        }
+
+        // Restore appliances data
+        if (parsed.appliances?.weeklyUsage) {
+          setAppliancesUsage(parsed.appliances.weeklyUsage);
+        }
+
+        // Restore transport data
+        if (parsed.transport?.modes) {
+          setTransportModes(parsed.transport.modes);
+        }
+
+        // Restore calculated emissions
+        if (parsed.totals) {
+          if (parsed.totals.electricityKgYear !== undefined) {
+            setElectricityEmissions(parsed.totals.electricityKgYear);
+          }
+          if (parsed.totals.hotWaterKgYear !== undefined) {
+            setHotWaterEmissions(parsed.totals.hotWaterKgYear);
+          }
+          if (parsed.totals.appliancesKgYear !== undefined) {
+            setAppliancesEmissions(parsed.totals.appliancesKgYear);
+          }
+          if (parsed.totals.transportKgYear !== undefined) {
+            setTransportEmissions(parsed.totals.transportKgYear);
+          }
+        }
+
+        // Restore breakdowns
+        if (parsed.applianceBreakdown) {
+          setApplianceBreakdown(parsed.applianceBreakdown);
+        }
+        if (parsed.transportBreakdown) {
+          setTransportBreakdown(parsed.transportBreakdown);
+        }
+
+        console.log("[Quiz] Loaded saved data from localStorage:", {
+          selectedState: parsed.location?.state || parsed.state,
+          timeUnit: parsed.timeUnit,
+          electricity: parsed.electricity?.usage,
+          hotWaterSystem: parsed.hotWater?.system,
+          hotWaterUsage: parsed.hotWater?.usage,
+          hotWaterHousehold: parsed.hotWater?.household,
+          appliancesCount: parsed.appliances?.weeklyUsage?.length || 0,
+          transportModesCount: parsed.transport?.modes?.length || 0,
+        });
+      }
+    } catch (e) {
+      console.error("[Quiz] Error loading from localStorage:", e);
+    } finally {
+      setIsDataLoaded(true);
+    }
+  }, []);
+
   const handleTransportChange = useCallback(
     (v: {
       transportEmissionsKgYear?: number;
@@ -89,13 +179,30 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (!selectedState) return;
+    console.log("[Quiz] Loading factors for state:", selectedState);
     apiClient
       .getEmissionsFactors(selectedState)
-      .then((data) =>
-        setFactors(data as { electricity?: number; gas?: number; units?: { gas?: string } }),
-      )
-      .catch(() => setFactors(null));
+      .then((data) => {
+        console.log("[Quiz] Loaded factors:", data);
+        setFactors(data as { electricity?: number; gas?: number; units?: { gas?: string } });
+      })
+      .catch((error) => {
+        console.error("[Quiz] Failed to load factors:", error);
+        setFactors(null);
+      });
   }, [selectedState]);
+
+  // Show loading state until data is loaded
+  if (!isDataLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 via-amber-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading your saved data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 via-amber-50 to-green-50">
@@ -121,6 +228,7 @@ export default function QuizPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
           <QuizElectricity
             timeUnit={timeUnit}
+            electricity={electricity}
             factors={factors}
             onChange={(v) => {
               if (v.timeUnit) setTimeUnit(v.timeUnit);
@@ -133,6 +241,9 @@ export default function QuizPage() {
           <QuizHotWater
             timeUnit={timeUnit}
             factors={factors}
+            system={hotWaterSystem}
+            usage={hotWaterUsage}
+            household={hotWaterHousehold}
             onChange={(v) => {
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (v.system) setHotWaterSystem(v.system);
@@ -145,6 +256,7 @@ export default function QuizPage() {
           <QuizAppliances
             timeUnit={timeUnit}
             factors={{ electricity: factors?.electricity }}
+            weeklyUsage={appliancesUsage}
             onChange={(v) => {
               if (v.weeklyUsage) setAppliancesUsage(v.weeklyUsage);
               if (typeof v.appliancesEmissionsKgYear === "number")
@@ -152,7 +264,12 @@ export default function QuizPage() {
               if (v.applianceBreakdownKgYear) setApplianceBreakdown(v.applianceBreakdownKgYear);
             }}
           />
-          <QuizTransport timeUnit={timeUnit} factors={factors} onChange={handleTransportChange} />
+          <QuizTransport
+            timeUnit={timeUnit}
+            factors={factors}
+            initialModes={transportModes}
+            onChange={handleTransportChange}
+          />
         </div>
       </section>
       <QuizFloatingPreview

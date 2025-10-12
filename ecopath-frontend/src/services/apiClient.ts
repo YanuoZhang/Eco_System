@@ -58,11 +58,15 @@ class ApiService {
     this.baseUrl = API_BASE_URL;
   }
 
-  private async request<T>(endpoint: string): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: { headers?: Record<string, string> } = {},
+  ): Promise<T> {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           "Content-Type": "application/json",
+          ...options.headers,
         },
       });
 
@@ -209,7 +213,13 @@ class ApiService {
 
   async saveUserPledges(body: {
     userId: string;
-    pledges: Array<{ pledgeId: string; reminderType?: string; customDate?: string }>;
+    pledges: Array<{
+      pledgeId: string;
+      reminderType?: string;
+      customDate?: string;
+      title?: string;
+      category?: string;
+    }>;
   }) {
     return this.requestWithBody(`/api/pledges/user`, "POST", body);
   }
@@ -228,13 +238,25 @@ class ApiService {
     });
   }
 
-  // Pledge Impact Prediction
-  async getPledgeImpact(body: {
-    state_code: string;
-    population: number;
-    pledges: Array<{ title: string; category?: string; description?: string }>;
-  }) {
-    return this.requestWithBody(`/api/pledge/impact`, "POST", body);
+  async completeUserPledge(recordId: string, userId: string) {
+    return this.requestWithBody(
+      `/api/pledges/user/${encodeURIComponent(recordId)}/complete`,
+      "POST",
+      {
+        userId,
+      },
+    );
+  }
+
+  // Completed pledges API methods
+  async getCompletedPledges(userId: string) {
+    return this.request(`/api/pledges/user?userId=${encodeURIComponent(userId)}&type=completed`);
+  }
+
+  async getCompletedPledgesStats(userId: string) {
+    return this.request(
+      `/api/pledges/user?userId=${encodeURIComponent(userId)}&type=completed-stats`,
+    );
   }
 
   // Population API methods
@@ -258,6 +280,104 @@ class ApiService {
     }>
   > {
     return this.request("/api/population/latest");
+  }
+
+  // Community statistics API
+  async getCommunityStats(): Promise<{
+    totalUsers: number;
+    totalPledges: number;
+    totalSavings: number;
+    topPledges: Array<{
+      type: string;
+      percentage: number;
+      count: number;
+      color: string;
+    }>;
+    lastUpdated: string;
+    dataSource: string;
+  }> {
+    return this.request("/api/community/stats");
+  }
+
+  // User impact statistics API
+  async getUserImpactStats(userId: string): Promise<{
+    userId: string;
+    totalPledges: number;
+    completedPledges: number;
+    completionRate: number;
+    estimatedSavingsKg: number;
+    estimatedSavingsTons: number;
+    categoryBreakdown: Record<string, { count: number; savings: number }>;
+    pledges: Array<{
+      id: string;
+      title: string;
+      category: string;
+      createdAt: string;
+      completedAt: string | null;
+      isCompleted: boolean;
+    }>;
+    lastUpdated: string;
+    dataSource: string;
+  }> {
+    return this.request("/api/user-stats/impact", {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
+  }
+
+  // New emissions comparison API
+  async getEmissionsComparison(
+    state: string = "VIC",
+    userId: string = "anonymous",
+  ): Promise<{
+    baseline: number;
+    withPledges: number;
+    saved: number;
+    unit: string;
+    timestamp: string;
+    metadata: {
+      state: string;
+      pledgesCount: number;
+      pledgedKgPerYearReduction: number;
+    };
+  }> {
+    return this.request(`/api/emissions/comparison?state=${state}`, {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
+  }
+
+  // New multi-year forecast API
+  async getEmissionsForecast(
+    state: string = "VIC",
+    years: number = 5,
+    userId: string = "anonymous",
+  ): Promise<{
+    userId: string;
+    state: string;
+    forecastYears: number;
+    currentBaseline: number;
+    currentWithPledges: number;
+    currentSaved: number;
+    yearlyForecast: Array<{
+      year: number;
+      baseline: number;
+      withPledges: number;
+      saved: number;
+    }>;
+    metadata: {
+      pledgesCount: number;
+      pledgedKgPerYearReduction: number;
+      generatedAt: string;
+    };
+  }> {
+    return this.request(`/api/emissions/forecast-multiyear?state=${state}&years=${years}`, {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
   }
 }
 

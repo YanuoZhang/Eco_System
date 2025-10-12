@@ -4,6 +4,8 @@ import { pool } from "../config/database";
 import { EnergyData, TransportData, FactorOverrides } from "../types";
 import { calculateEnergyEmissions, EMISSIONS_FACTORS } from "../utils/emissions";
 import { UserPledgesService } from "./userPledgesService";
+import { predictionCache } from "./predictionCache";
+import { getPledgeImpact } from "../data/pledgeImpacts";
 
 // DB-backed factors helpers
 export async function getDbElectricityFactorKgPerKwh(state: string): Promise<number | null> {
@@ -219,7 +221,7 @@ const PLEDGE_IMPACT_FACTORS = {
     decayRate: 0.02, // 2% effectiveness decay per year
     maxYears: 10,
   },
-  // Transport category pledges  
+  // Transport category pledges
   transport: {
     baseReduction: 300, // kg CO2-e per year
     decayRate: 0.01, // 1% effectiveness decay per year (transport habits more stable)
@@ -249,33 +251,104 @@ export async function generateMultiYearForecast(
 ): Promise<MultiYearForecast> {
   // Validate forecast years
   const years = Math.min(Math.max(forecastYears, 1), 10);
-  
-  // Get current baseline
+
+  // Get user pledges
+  const pledges = await UserPledgesService.list(userId);
+
+  try {
+    // 🔥 Use real ML predictions for state-level baseline
+    const mlPredictions = await predictionCache.getPredictionsForState(state);
+
+    if (mlPredictions.length > 0) {
+      console.log(`✅ Using real ML predictions for ${state}`);
+
+      // Get state population for per-person calculations
+      const popQuery = `
+        SELECT population FROM population 
+        WHERE state_id = $1 
+        ORDER BY year DESC LIMIT 1
+      `;
+      const popResult = await pool.query(popQuery, [state.toUpperCase()]);
+      const statePopulation = popResult.rows[0]?.population
+        ? parseInt(String(popResult.rows[0].population))
+        : 6700000;
+
+      // Calculate total pledge reduction per person per year using real impact values
+      let totalPledgeReductionKgPerYear = 0;
+      for (const pledge of pledges) {
+        const pledgeData = getPledgeImpact(
+          (pledge as any).title || (pledge as any).id,
+          (pledge as any).category || "OTHER",
+        );
+        totalPledgeReductionKgPerYear += pledgeData.per_person_kg_per_year;
+      }
+
+      // Extract years and convert ML predictions to per-person kg
+      const yearArray = mlPredictions.slice(0, years).map((p) => p.year);
+      const baselineProgression = mlPredictions.slice(0, years).map((p) => {
+        const emissionMt = Number(
+          (p.predicted_emission_mt as any)?.predicted_emission_mt ?? p.predicted_emission_mt ?? 0,
+        );
+        // Convert Mt to per-person kg: (Mt * 1,000,000,000 kg) / population
+        return Math.round((emissionMt * 1000000000) / statePopulation);
+      });
+
+      // Calculate withPledges by subtracting user's pledge reductions
+      const withPledgesProgression = baselineProgression.map((baseline) =>
+        Math.max(0, baseline - Math.round(totalPledgeReductionKgPerYear)),
+      );
+
+      // Calculate current baseline for metadata
+      const currentBaseline = baselineProgression[0] || 15200;
+      const totalBaselineReduction =
+        baselineProgression[baselineProgression.length - 1] - currentBaseline;
+      const totalPledgeReduction = Math.round(totalPledgeReductionKgPerYear * years);
+
+      return {
+        years: yearArray,
+        baseline: baselineProgression,
+        withPledges: withPledgesProgression,
+        unit: "kg CO2-e per year",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          state,
+          pledgesCount: pledges.length,
+          forecastYears: years,
+          totalBaselineReduction: Math.round(totalBaselineReduction),
+          totalPledgeReduction: Math.round(totalPledgeReduction),
+        },
+      };
+    }
+  } catch (error) {
+    console.error("⚠️  ML predictions unavailable, using fallback calculation:", error);
+  }
+
+  // 🔄 Fallback: Use calculated baseline if ML predictions are unavailable
+  console.log(`⚠️  Using fallback calculation for ${state}`);
   const currentBaseline = await calculateBaselineEmissions(userId, state);
-  
-  // Get user pledges and categorize them
-  const pledges = UserPledgesService.list(userId);
-  
+
   // Generate year array
   const currentYear = new Date().getFullYear();
   const yearArray = Array.from({ length: years }, (_, i) => currentYear + i + 1);
-  
+
   // Calculate baseline progression (with growth)
   const baselineProgression = yearArray.map((year, index) => {
     const yearsFromNow = index + 1;
     return Math.round(currentBaseline * Math.pow(1 + BASELINE_GROWTH_RATE, yearsFromNow));
   });
-  
+
   // Calculate pledge impact over time for each category
   const pledgeImpactsByYear = yearArray.map((year, index) => {
     const yearsFromNow = index + 1;
     let totalPledgeReduction = 0;
-    
+
     for (const pledge of pledges) {
       // Get pledge category (default to 'default' if not found)
-      const category = (pledge as any).category || 'default';
-      const factors = PLEDGE_IMPACT_FACTORS[category as keyof typeof PLEDGE_IMPACT_FACTORS] || PLEDGE_IMPACT_FACTORS.default;
-      
+      const category = (pledge as any).category || "default";
+      const factors =
+        PLEDGE_IMPACT_FACTORS[category as keyof typeof PLEDGE_IMPACT_FACTORS] ||
+        PLEDGE_IMPACT_FACTORS.default;
+
       // Check if pledge is still effective
       if (yearsFromNow <= factors.maxYears) {
         // Apply decay rate: effectiveness decreases over time
@@ -284,21 +357,22 @@ export async function generateMultiYearForecast(
         totalPledgeReduction += yearlyReduction;
       }
     }
-    
+
     return Math.round(totalPledgeReduction);
   });
-  
+
   // Calculate withPledges progression
   const withPledgesProgression = yearArray.map((_, index) => {
     const baseline = baselineProgression[index];
     const pledgeReduction = pledgeImpactsByYear[index];
     return Math.max(0, baseline - pledgeReduction);
   });
-  
+
   // Calculate totals for metadata
-  const totalBaselineReduction = baselineProgression[baselineProgression.length - 1] - currentBaseline;
+  const totalBaselineReduction =
+    baselineProgression[baselineProgression.length - 1] - currentBaseline;
   const totalPledgeReduction = pledgeImpactsByYear.reduce((sum, reduction) => sum + reduction, 0);
-  
+
   return {
     years: yearArray,
     baseline: baselineProgression,

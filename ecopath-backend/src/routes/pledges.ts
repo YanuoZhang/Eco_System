@@ -8,6 +8,7 @@ import {
   SaveUserPledgesRequest,
 } from "../types";
 import { UserPledgesService } from "../services/userPledgesService";
+import { CompletedPledgesService } from "../services/completedPledgesService";
 
 const router = Router();
 
@@ -42,29 +43,65 @@ router.post("/ai-recommendations", async (req: Request, res: Response) => {
   res.status(out.success ? 200 : 400).json(out);
 });
 
-// User pledges CRUD (in-memory)
-router.get("/user", (req: Request, res: Response) => {
+// User pledges CRUD (database-backed)
+
+router.get("/user", async (req: Request, res: Response) => {
   const userId = (req.query.userId as string) || "anonymous";
-  const data = UserPledgesService.list(userId);
-  res.json({ success: true, data, timestamp: new Date().toISOString() } as ApiResponse);
+  const type = req.query.type as string;
+
+  if (type === "completed") {
+    // Get completed pledges (is_achievement = true)
+    const data = await UserPledgesService.list(userId);
+    const completedPledges = data.filter((pledge) => pledge.isAchievement);
+    res.json({
+      success: true,
+      data: completedPledges,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse);
+  } else if (type === "completed-stats") {
+    const data = await UserPledgesService.list(userId);
+    const completedPledges = data.filter((pledge) => pledge.isAchievement);
+    const stats = {
+      totalCompleted: completedPledges.length,
+      completedByCategory: completedPledges.reduce(
+        (acc, pledge) => {
+          const category = pledge.category || "general";
+          acc[category] = (acc[category] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      recentCompletions: completedPledges.slice(0, 5),
+    };
+    res.json({ success: true, data: stats, timestamp: new Date().toISOString() } as ApiResponse);
+  } else {
+    // Get active pledges (is_achievement = false)
+    const data = await UserPledgesService.list(userId);
+    const activePledges = data.filter((pledge) => !pledge.isAchievement);
+    res.json({
+      success: true,
+      data: activePledges,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse);
+  }
 });
 
-router.post("/user", (req: Request, res: Response) => {
+router.post("/user", async (req: Request, res: Response) => {
   const body = req.body as SaveUserPledgesRequest;
   if (!body?.userId || !Array.isArray(body.pledges))
     return res
       .status(400)
       .json({ success: false, error: "userId and pledges are required" } as ApiResponse);
-  const added = UserPledgesService.save(body);
+  const added = await UserPledgesService.save(body);
   res
     .status(201)
     .json({ success: true, data: added, timestamp: new Date().toISOString() } as ApiResponse);
 });
 
-router.patch("/user/:recordId", (req: Request, res: Response) => {
+router.patch("/user/:recordId", async (req: Request, res: Response) => {
   const userId = (req.query.userId as string) || (req.body?.userId as string) || "anonymous";
   const recordId = req.params.recordId;
-  const updated = UserPledgesService.reschedule(
+  const updated = await UserPledgesService.reschedule(
     userId,
     recordId,
     req.body as RescheduleUserPledgeRequest,
@@ -74,9 +111,23 @@ router.patch("/user/:recordId", (req: Request, res: Response) => {
   res.json({ success: true, data: updated, timestamp: new Date().toISOString() } as ApiResponse);
 });
 
-router.delete("/user/:recordId", (req: Request, res: Response) => {
+router.post("/user/:recordId/complete", async (req: Request, res: Response) => {
   const userId = (req.query.userId as string) || (req.body?.userId as string) || "anonymous";
-  const ok = UserPledgesService.remove(userId, req.params.recordId);
+  const recordId = req.params.recordId;
+  const result = await UserPledgesService.markCompleted(userId, recordId);
+  if (!result.success)
+    return res.status(404).json({ success: false, error: result.message } as ApiResponse);
+  res.json({
+    success: true,
+    data: result,
+    message: result.message,
+    timestamp: new Date().toISOString(),
+  } as ApiResponse);
+});
+
+router.delete("/user/:recordId", async (req: Request, res: Response) => {
+  const userId = (req.query.userId as string) || (req.body?.userId as string) || "anonymous";
+  const ok = await UserPledgesService.remove(userId, req.params.recordId);
   if (!ok)
     return res.status(404).json({ success: false, error: "Record not found" } as ApiResponse);
   res.json({

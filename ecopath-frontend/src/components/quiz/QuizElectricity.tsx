@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, useRef } from "react";
+import { getTimeUnitLabel, formatEmissions } from "../../utils/timeUnits";
 
 type Props = {
   open?: boolean;
@@ -33,8 +34,9 @@ export default function QuizElectricity({
   const handleToggle = () => (onToggle ? onToggle() : setLocalOpen((v) => !v));
 
   // Support both known-kWh input and bill/household estimation
-  const [knowKwh, setKnowKwh] = useState<boolean>(false);
-  const [bill, setBill] = useState<number>(1); // $ per selected unit
+  // If electricity prop is provided, user has selected "I know my exact usage"
+  const [knowKwh, setKnowKwh] = useState<boolean>(electricity !== undefined);
+  const [bill, setBill] = useState<number>(0); // $ per selected unit
   const [household, setHousehold] = useState<number>(1);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [led, setLed] = useState<"yes" | "no" | "mixed" | null>(null);
@@ -45,10 +47,18 @@ export default function QuizElectricity({
   const [localTimeUnit] = useState<"week" | "month" | "quarter" | "year">("month");
   const currentTimeUnit = timeUnit ?? localTimeUnit;
 
-  // Locally controlled kWh; always editable; sync initial value from parent
-  const [localElectricity, setLocalElectricity] = useState<number | "">(electricity ?? "");
+  // Simplified local electricity state
+  const [localElectricity, setLocalElectricity] = useState<number | "">("");
+  const initializedRef = useRef(false);
+
+  // Initialize from parent props only once
   useEffect(() => {
-    if (electricity !== undefined) setLocalElectricity(electricity);
+    if (electricity !== undefined && !initializedRef.current) {
+      console.log("[QuizElectricity] Initializing with:", electricity);
+      setLocalElectricity(electricity);
+      setKnowKwh(true); // User has selected "I know my exact usage"
+      initializedRef.current = true;
+    }
   }, [electricity]);
 
   // Estimation rule (simplified from refer): kWh ≈ bill / 0.25, adjusted by household size
@@ -84,14 +94,7 @@ export default function QuizElectricity({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emissionsYear]);
 
-  const unitLabel =
-    currentTimeUnit === "week"
-      ? "Weekly"
-      : currentTimeUnit === "month"
-        ? "Monthly"
-        : currentTimeUnit === "quarter"
-          ? "Quarterly"
-          : "Yearly";
+  const unitLabel = getTimeUnitLabel(currentTimeUnit);
 
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-orange-200/50 shadow overflow-hidden">
@@ -130,42 +133,44 @@ export default function QuizElectricity({
       {isOpen && (
         <div id={`${id}-elec-body`} className="px-5 pb-5">
           <div className="bg-orange-50/80 rounded-xl p-4 border border-orange-200/30 space-y-6">
-            {/* Monthly bill slider */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-slate-800 font-semibold">
-                  {currentTimeUnit === "month"
-                    ? "Monthly"
-                    : currentTimeUnit === "quarter"
-                      ? "Quarterly"
-                      : "Yearly"}{" "}
-                  electricity bill
-                </label>
-                <div className="text-right">
-                  <div className="text-xs text-slate-500">
+            {/* Monthly bill slider - only show when not using exact kWh */}
+            {!knowKwh && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-slate-800 font-semibold">
                     {currentTimeUnit === "month"
                       ? "Monthly"
                       : currentTimeUnit === "quarter"
                         ? "Quarterly"
-                        : "Yearly"}
+                        : "Yearly"}{" "}
+                    electricity bill
+                  </label>
+                  <div className="text-right">
+                    <div className="text-xs text-slate-500">
+                      {currentTimeUnit === "month"
+                        ? "Monthly"
+                        : currentTimeUnit === "quarter"
+                          ? "Quarterly"
+                          : "Yearly"}
+                    </div>
+                    <div className="text-sm font-semibold text-orange-600">${bill}</div>
                   </div>
-                  <div className="text-sm font-semibold text-orange-600">${bill}</div>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={5000}
+                  step={1}
+                  value={bill}
+                  onChange={(e) => setBill(Number(e.target.value))}
+                  className="w-full h-3 bg-orange-200 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>$0</span>
+                  <span>$5000</span>
                 </div>
               </div>
-              <input
-                type="range"
-                min={1}
-                max={5000}
-                step={1}
-                value={bill}
-                onChange={(e) => setBill(Number(e.target.value))}
-                className="w-full h-3 bg-orange-200 rounded-lg appearance-none cursor-pointer slider"
-              />
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>$1</span>
-                <span>$5000</span>
-              </div>
-            </div>
+            )}
 
             {/* Household slider */}
             {!knowKwh && (
@@ -208,17 +213,18 @@ export default function QuizElectricity({
                 <input
                   type="number"
                   min={0}
-                  value={localElectricity}
+                  value={localElectricity || ""}
                   onChange={(e) => {
                     const v = e.target.value;
+                    console.log("[QuizElectricity] Input change:", v);
                     setLocalElectricity(v === "" ? "" : Number(v));
                     onChange?.({ electricity: v === "" ? undefined : Number(v) });
                   }}
                   className="w-full p-3 sm:p-4 border border-orange-200 rounded-xl text-slate-800 bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm sm:text-lg"
-                  placeholder="600"
+                  placeholder="Enter kWh usage"
                 />
                 <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm sm:text-base">
-                  kWh/{currentTimeUnit}
+                  kWh/{unitLabel.toLowerCase()}
                 </div>
               </div>
             )}
@@ -228,7 +234,7 @@ export default function QuizElectricity({
               <div className="text-sm text-slate-600">
                 Estimated usage:{" "}
                 <span className="font-semibold text-slate-800">
-                  {estimatedKwh} kWh/{currentTimeUnit}
+                  {estimatedKwh} kWh/{unitLabel.toLowerCase()}
                 </span>
               </div>
             )}
@@ -358,7 +364,7 @@ export default function QuizElectricity({
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-orange-600">
-                  {(emissionsYear / scale).toFixed(1)} kg CO₂/{unitLabel}
+                  {formatEmissions(emissionsYear, currentTimeUnit)}
                 </div>
                 <div className="text-xs text-orange-500">
                   {emissionsYear.toFixed(1)} kg CO₂/year

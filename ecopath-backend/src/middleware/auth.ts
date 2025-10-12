@@ -38,5 +38,3 @@ export function requireUser(req: Request, res: Response, next: NextFunction) {
     });
   }
 }
-
-

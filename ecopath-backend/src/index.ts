@@ -9,8 +9,9 @@ import apiRoutes from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { createOpenApiDoc } from "./config/openapi";
 import { performWeeklyNewsUpdate } from "./services/newsService";
-import pledgeImpactRouter from "./routes/pledgeImpact";
 import populationRouter from "./routes/population";
+import communityRouter from "./routes/community";
+import userStatsRouter from "./routes/userStats";
 import { predictionCache } from "./services/predictionCache";
 
 dotenv.config();
@@ -28,7 +29,7 @@ app.use(
       "https://ecopath.me",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -38,6 +39,7 @@ app.use(
       "Access-Control-Allow-Origin",
       "Access-Control-Allow-Headers",
       "Access-Control-Allow-Methods",
+      "x-user-id",
     ],
     optionsSuccessStatus: 200,
   }),
@@ -49,8 +51,9 @@ app.use(express.static("public"));
 // API routes
 app.use("/api", apiRoutes);
 
-app.use("/api/pledge", pledgeImpactRouter);
 app.use("/api/population", populationRouter);
+app.use("/api/community", communityRouter);
+app.use("/api/user-stats", userStatsRouter);
 
 // Root endpoint
 app.get("/", (_req: Request, res: Response) => {

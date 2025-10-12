@@ -51,8 +51,7 @@ describe("Multi-year Emissions Forecast", () => {
       vi.mocked(UserPledgesService.list).mockReturnValue([]);
 
       // Mock baseline calculation
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 5);
 
@@ -79,7 +78,7 @@ describe("Multi-year Emissions Forecast", () => {
           dateAdded: new Date().toISOString(),
         },
         {
-          id: "pledge-2", 
+          id: "pledge-2",
           userId: mockUserId,
           pledgeId: "energy-pledge-2",
           category: "energy",
@@ -88,14 +87,13 @@ describe("Multi-year Emissions Forecast", () => {
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 3);
 
       expect(result.years).toHaveLength(3);
       expect(result.metadata.pledgesCount).toBe(2);
-      
+
       // WithPledges should be less than baseline due to energy pledges
       expect(result.withPledges[0]).toBeLessThan(result.baseline[0]);
       expect(result.withPledges[0]).toBeGreaterThan(0);
@@ -113,8 +111,7 @@ describe("Multi-year Emissions Forecast", () => {
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 2);
 
@@ -135,8 +132,7 @@ describe("Multi-year Emissions Forecast", () => {
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 5);
 
@@ -144,7 +140,7 @@ describe("Multi-year Emissions Forecast", () => {
       // First year: 150kg reduction
       // Second year: 150 * (1 - 0.03) = 145.5kg reduction
       // Third year: 150 * (1 - 0.03)^2 = 141.135kg reduction
-      
+
       const year1Reduction = result.baseline[0] - result.withPledges[0];
       const year2Reduction = result.baseline[1] - result.withPledges[1];
       const year3Reduction = result.baseline[2] - result.withPledges[2];
@@ -156,8 +152,7 @@ describe("Multi-year Emissions Forecast", () => {
 
     it("should limit forecast to 10 years maximum", async () => {
       vi.mocked(UserPledgesService.list).mockReturnValue([]);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 15);
 
@@ -167,8 +162,7 @@ describe("Multi-year Emissions Forecast", () => {
 
     it("should handle minimum 1 year forecast", async () => {
       vi.mocked(UserPledgesService.list).mockReturnValue([]);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 0);
 
@@ -188,8 +182,7 @@ describe("Multi-year Emissions Forecast", () => {
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 2);
 
@@ -209,8 +202,7 @@ describe("Multi-year Emissions Forecast", () => {
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 2);
 
@@ -232,13 +224,12 @@ describe("Multi-year Emissions Forecast", () => {
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
       // Mock a very low baseline
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(100);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(100);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 3);
 
       // WithPledges should never be negative
-      result.withPledges.forEach(value => {
+      result.withPledges.forEach((value) => {
         expect(value).toBeGreaterThanOrEqual(0);
       });
     });
@@ -255,8 +246,7 @@ describe("Multi-year Emissions Forecast", () => {
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockPledges as any);
-      vi.mocked(emissionsService.calculateBaselineEmissions)
-        .mockResolvedValue(3200);
+      vi.mocked(emissionsService.calculateBaselineEmissions).mockResolvedValue(3200);
 
       const result = await emissionsService.generateMultiYearForecast(mockUserId, mockState, 5);
 

@@ -10,9 +10,9 @@ const router = Router();
 router.get("/me/impact-summary", requireUser, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId as string;
-    
+
     const impactSummary = await UserImpactService.getUserImpactSummary(userId);
-    
+
     res.json(impactSummary);
   } catch (error) {
     console.error("Error fetching user impact summary:", error);

@@ -32,9 +32,24 @@ describe("User Impact Summary API", () => {
       ];
 
       const mockPledges = [
-        { id: "pledge1", title: "Bike to Work Twice Weekly", category: "transport", estimatedCO2Reduction: "300kg CO2/year" },
-        { id: "pledge2", title: "Switch to LED Bulbs", category: "energy", estimatedCO2Reduction: "120kg CO2/year" },
-        { id: "pledge3", title: "Meatless Monday", category: "diet", estimatedCO2Reduction: "200kg CO2/year" },
+        {
+          id: "pledge1",
+          title: "Bike to Work Twice Weekly",
+          category: "transport",
+          estimatedCO2Reduction: "300kg CO2/year",
+        },
+        {
+          id: "pledge2",
+          title: "Switch to LED Bulbs",
+          category: "energy",
+          estimatedCO2Reduction: "120kg CO2/year",
+        },
+        {
+          id: "pledge3",
+          title: "Meatless Monday",
+          category: "diet",
+          estimatedCO2Reduction: "200kg CO2/year",
+        },
       ];
 
       const mockCommunityData = {
@@ -46,7 +61,7 @@ describe("User Impact Summary API", () => {
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
       vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-        return mockPledges.find(p => p.id === id) as any;
+        return mockPledges.find((p) => p.id === id) as any;
       });
       vi.mocked(CommunityService.getCommunityFootprint).mockResolvedValue(mockCommunityData);
 
@@ -60,11 +75,11 @@ describe("User Impact Summary API", () => {
       expect(res.body.reductionPercent).toBe(4); // 620/15000 * 100
       expect(res.body.completedPledges).toEqual([
         "Bike to Work Twice Weekly",
-        "Switch to LED Bulbs", 
-        "Meatless Monday"
+        "Switch to LED Bulbs",
+        "Meatless Monday",
       ]);
       expect(res.body.communityCO2SavedKg).toBe(125000);
-      
+
       // Check equivalent calculations
       // 620kg CO2 / 21kg per tree = 29.5 -> 30 trees
       expect(res.body.equivalents.treesPlanted).toBe(30);
@@ -127,14 +142,21 @@ describe("User Impact Summary API", () => {
       ];
 
       const mockPledges = [
-        { id: "pledge1", title: "Test Pledge", category: "energy", estimatedCO2Reduction: "100kg CO2/year" },
+        {
+          id: "pledge1",
+          title: "Test Pledge",
+          category: "energy",
+          estimatedCO2Reduction: "100kg CO2/year",
+        },
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
       vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-        return mockPledges.find(p => p.id === id) as any;
+        return mockPledges.find((p) => p.id === id) as any;
       });
-      vi.mocked(CommunityService.getCommunityFootprint).mockRejectedValue(new Error("Community service down"));
+      vi.mocked(CommunityService.getCommunityFootprint).mockRejectedValue(
+        new Error("Community service down"),
+      );
 
       const res = await request(app)
         .get("/api/users/me/impact-summary")
@@ -173,12 +195,17 @@ describe("UserImpactService", () => {
       ];
 
       const mockPledges = [
-        { id: "pledge1", title: "High Impact Pledge", category: "transport", estimatedCO2Reduction: "1000kg CO2/year" },
+        {
+          id: "pledge1",
+          title: "High Impact Pledge",
+          category: "transport",
+          estimatedCO2Reduction: "1000kg CO2/year",
+        },
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
       vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-        return mockPledges.find(p => p.id === id) as any;
+        return mockPledges.find((p) => p.id === id) as any;
       });
       vi.mocked(CommunityService.getCommunityFootprint).mockResolvedValue({
         totalCO2SavedKg: 50000,
@@ -204,12 +231,17 @@ describe("UserImpactService", () => {
       ];
 
       const mockPledges = [
-        { id: "pledge1", title: "High Impact Pledge", category: "transport", estimatedCO2Reduction: "3000kg CO2/year" },
+        {
+          id: "pledge1",
+          title: "High Impact Pledge",
+          category: "transport",
+          estimatedCO2Reduction: "3000kg CO2/year",
+        },
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
       vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-        return mockPledges.find(p => p.id === id) as any;
+        return mockPledges.find((p) => p.id === id) as any;
       });
       vi.mocked(CommunityService.getCommunityFootprint).mockResolvedValue({
         totalCO2SavedKg: 50000,
@@ -230,12 +262,17 @@ describe("UserImpactService", () => {
       ];
 
       const mockPledges = [
-        { id: "pledge1", title: "Extreme Impact Pledge", category: "transport", estimatedCO2Reduction: "20000kg CO2/year" },
+        {
+          id: "pledge1",
+          title: "Extreme Impact Pledge",
+          category: "transport",
+          estimatedCO2Reduction: "20000kg CO2/year",
+        },
       ];
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
       vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-        return mockPledges.find(p => p.id === id) as any;
+        return mockPledges.find((p) => p.id === id) as any;
       });
       vi.mocked(CommunityService.getCommunityFootprint).mockResolvedValue({
         totalCO2SavedKg: 50000,
@@ -261,7 +298,7 @@ describe("UserImpactService", () => {
 
       vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
       vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-        return mockPledges.find(p => p.id === id) as any;
+        return mockPledges.find((p) => p.id === id) as any;
       });
       vi.mocked(CommunityService.getCommunityFootprint).mockResolvedValue({
         totalCO2SavedKg: 50000,
@@ -290,12 +327,17 @@ describe("UserImpactService", () => {
         ];
 
         const mockPledges = [
-          { id: "pledge1", title: "Test Pledge", category: "transport", estimatedCO2Reduction: testCase.input },
+          {
+            id: "pledge1",
+            title: "Test Pledge",
+            category: "transport",
+            estimatedCO2Reduction: testCase.input,
+          },
         ];
 
         vi.mocked(UserPledgesService.list).mockReturnValue(mockUserPledges as any);
         vi.mocked(PledgesService.getPledgeById).mockImplementation(async (id: string) => {
-          return mockPledges.find(p => p.id === id) as any;
+          return mockPledges.find((p) => p.id === id) as any;
         });
         vi.mocked(CommunityService.getCommunityFootprint).mockResolvedValue({
           totalCO2SavedKg: 50000,
