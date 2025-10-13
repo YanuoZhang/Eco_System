@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 type Palette = {
   bg: string;
@@ -68,6 +69,30 @@ const routeColors: Record<string, Palette> = {
 export default function Nav() {
   const pathname = usePathname() || "/";
   const palette = routeColors[pathname] || routeColors["/"];
+  const [hasPledges, setHasPledges] = useState(false);
+
+  useEffect(() => {
+    // Check if user has pledges
+    if (typeof window !== "undefined") {
+      const userId = localStorage.getItem("ecopath_uid");
+      if (userId && userId !== "anonymous") {
+        // Check localStorage for saved pledges or fetch from API
+        fetch(`/api/pledges/user?userId=${userId}`, {
+          headers: { "x-user-id": userId },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const pledges = data?.data || [];
+            setHasPledges(pledges.length > 0);
+          })
+          .catch(() => {
+            // Fallback: check if user has completed quiz (indicator they might have pledges)
+            const carbonFootprint = localStorage.getItem("carbonFootprint");
+            setHasPledges(!!carbonFootprint);
+          });
+      }
+    }
+  }, []);
 
   const linkBase = `transition-colors ${palette.linkClass} ${palette.hoverClass}`;
   const isActive = (href: string) => (pathname === href ? palette.activeClass : undefined);
@@ -93,9 +118,11 @@ export default function Nav() {
               <Link href="/pledge" className={`${linkBase} ${isActive("/pledge")}`}>
                 My Pledge
               </Link>
-              <Link href="/visualize" className={`${linkBase} ${isActive("/visualize")}`}>
-                Visualize Impact
-              </Link>
+              {hasPledges && (
+                <Link href="/visualize" className={`${linkBase} ${isActive("/visualize")}`}>
+                  Visualize Impact
+                </Link>
+              )}
               <Link href="/info" className={`${linkBase} ${isActive("/info")}`}>
                 Info
               </Link>

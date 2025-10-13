@@ -27,38 +27,8 @@ router.get("/stats", async (req: Request, res: Response) => {
     const pledgesResult = await pool.query(pledgesQuery);
     const totalPledges = parseInt(pledgesResult.rows[0]?.total_pledges || "0");
 
-    // Get pledge categories breakdown
+    // Get pledge categories breakdown with savings-based percentage
     const categoriesQuery = `
-      SELECT 
-        up.category,
-        COUNT(*) as count,
-        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) as percentage
-      FROM user_pledges up
-      WHERE up.created_at >= NOW() - INTERVAL '1 year'
-        AND up.category IS NOT NULL
-      GROUP BY up.category
-      ORDER BY count DESC
-    `;
-    const categoriesResult = await pool.query(categoriesQuery);
-
-    // Map topPledges with calculated savings per category
-    const topPledges = categoriesResult.rows.map((row: any) => {
-      const category = row.category;
-      const count = parseInt(row.count);
-      const savingsPerPledge = getCategorySavings(category);
-      const totalSavings = count * savingsPerPledge;
-
-      return {
-        type: category,
-        percentage: parseFloat(row.percentage),
-        count: count,
-        color: getCategoryColor(category),
-        savings: totalSavings, // Add savings field
-      };
-    });
-
-    // Estimate total CO2 savings based on pledge types
-    const savingsQuery = `
       SELECT 
         up.category,
         COUNT(*) as count,
@@ -67,6 +37,10 @@ router.get("/stats", async (req: Request, res: Response) => {
           WHEN up.category = 'energy' THEN COUNT(*) * 420
           WHEN up.category = 'food' THEN COUNT(*) * 600
           WHEN up.category = 'water' THEN COUNT(*) * 180
+          WHEN up.category = 'diet' THEN COUNT(*) * 300
+          WHEN up.category = 'daily' THEN COUNT(*) * 300
+          WHEN up.category = 'general' THEN COUNT(*) * 300
+          WHEN up.category = 'waste' THEN COUNT(*) * 300
           ELSE COUNT(*) * 300
         END as estimated_savings_kg
       FROM user_pledges up
@@ -74,11 +48,31 @@ router.get("/stats", async (req: Request, res: Response) => {
         AND up.category IS NOT NULL
       GROUP BY up.category
     `;
-    const savingsResult = await pool.query(savingsQuery);
-    const totalSavings = savingsResult.rows.reduce(
+    const categoriesResult = await pool.query(categoriesQuery);
+
+    // Calculate total savings for percentage calculation
+    const totalSavings = categoriesResult.rows.reduce(
       (sum: number, row: any) => sum + parseInt(row.estimated_savings_kg || "0"),
       0,
     );
+
+    // Map topPledges with savings-based percentage
+    const topPledges = categoriesResult.rows
+      .map((row: any) => {
+        const category = row.category;
+        const count = parseInt(row.count);
+        const savings = parseInt(row.estimated_savings_kg || "0");
+        const percentage = totalSavings > 0 ? (savings / totalSavings) * 100 : 0;
+
+        return {
+          type: category,
+          percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
+          count: count,
+          color: getCategoryColor(category),
+          savings: savings,
+        };
+      })
+      .sort((a, b) => b.savings - a.savings); // Sort by savings (descending)
 
     const response = {
       totalUsers,
@@ -103,7 +97,7 @@ router.get("/stats", async (req: Request, res: Response) => {
   }
 });
 
-// Helper function to assign colors to categories
+// Helper function to assign colors to categories (7 distinct colors)
 function getCategoryColor(category: string): string {
   const colorMap: Record<string, string> = {
     TRANSPORT: "bg-emerald-500",
@@ -111,30 +105,20 @@ function getCategoryColor(category: string): string {
     FOOD: "bg-orange-500",
     WATER: "bg-cyan-500",
     WASTE: "bg-purple-500",
+    DIET: "bg-pink-500",
+    DAILY: "bg-indigo-500",
+    GENERAL: "bg-teal-500",
     // Add lowercase variants
     transport: "bg-emerald-500",
     energy: "bg-blue-500",
     food: "bg-orange-500",
     water: "bg-cyan-500",
     waste: "bg-purple-500",
-    general: "bg-gray-500",
+    diet: "bg-pink-500",
     daily: "bg-indigo-500",
+    general: "bg-teal-500",
   };
   return colorMap[category] || "bg-gray-500";
-}
-
-// Helper function to get savings per category (same as in userStats)
-function getCategorySavings(category: string): number {
-  const savingsMap: Record<string, number> = {
-    transport: 680,
-    energy: 420,
-    food: 600,
-    water: 180,
-    waste: 300,
-    general: 300,
-    daily: 300,
-  };
-  return savingsMap[category?.toLowerCase()] || 300;
 }
 
 export default router;

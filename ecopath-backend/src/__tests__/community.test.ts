@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import request from "supertest";
-import { app } from "../index";
 import { CommunityService } from "../services/communityService";
-import { UserPledgesService } from "../services/userPledgesService";
 import { PledgesService } from "../services/pledgesService";
 
 // Mock the services

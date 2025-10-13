@@ -68,6 +68,19 @@ export default function VisualizePage() {
     communityMembers: 0,
   });
 
+  // Format CO2 amount based on size: tons, kg, or g (input is kg)
+  const formatCO2 = (kilograms: number): { value: number; unit: string } => {
+    if (!kilograms || kilograms < 0) return { value: 0, unit: " kg" };
+    if (kilograms >= 1000) {
+      // Show one decimal place for tons
+      return { value: Math.round((kilograms / 1000) * 10) / 10, unit: " tons" };
+    }
+    if (kilograms >= 1) {
+      return { value: Math.round(kilograms), unit: " kg" };
+    }
+    return { value: Math.round(kilograms * 1000), unit: " g" };
+  };
+
   // Fetch real population data for a state
   const fetchStatePopulation = async (state: string) => {
     try {
@@ -745,15 +758,17 @@ export default function VisualizePage() {
                   Together, we&apos;ve made a difference
                 </p>
                 <div className="inline-flex items-center gap-4 bg-emerald-600/20 backdrop-blur-sm rounded-full px-8 py-4 border border-emerald-400/30">
-                  <span className="text-3xl font-bold text-emerald-400">
-                    <AnimatedNumber
-                      value={Math.round(animatedNumbers.communitySavings / 1000)}
-                      suffix=""
-                    />
-                  </span>
-                  <span className="text-white font-semibold">
-                    tons of CO₂ saved by our community
-                  </span>
+                  {(() => {
+                    const f = formatCO2(animatedNumbers.communitySavings);
+                    return (
+                      <>
+                        <span className="text-3xl font-bold text-emerald-400">
+                          <AnimatedNumber value={f.value} suffix="" />
+                        </span>
+                        <span className="text-white font-semibold">{`${f.unit} of CO₂ saved by our community`}</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -783,10 +798,10 @@ export default function VisualizePage() {
                         </div>
                         <div className="text-right">
                           <div className="text-emerald-400 font-bold">
-                            <AnimatedNumber
-                              value={Math.round((pledge.savings || 0) / 1000)}
-                              suffix=" tons"
-                            />
+                            {(() => {
+                              const f = formatCO2(pledge.savings || 0);
+                              return <AnimatedNumber value={f.value} suffix={f.unit} />;
+                            })()}
                           </div>
                           <div className="text-slate-400 text-sm">{pledge.percentage || 0}%</div>
                         </div>
@@ -810,6 +825,19 @@ export default function VisualizePage() {
                         const strokeDasharray = `${(pledge.percentage || 0) * 3.14} ${314 - (pledge.percentage || 0) * 3.14}`;
                         const strokeDashoffset = `-${previousPercentages * 3.14}`;
 
+                        // Map 7 distinct colors for categories
+                        const colorMap: Record<string, string> = {
+                          "bg-emerald-500": "#10b981", // transport
+                          "bg-blue-500": "#3b82f6", // energy
+                          "bg-orange-500": "#f97316", // food
+                          "bg-cyan-500": "#06b6d4", // water
+                          "bg-purple-500": "#a855f7", // waste
+                          "bg-pink-500": "#ec4899", // diet
+                          "bg-indigo-500": "#6366f1", // daily
+                          "bg-teal-500": "#14b8a6", // general
+                        };
+                        const strokeColor = colorMap[pledge.color] || "#9ca3af";
+
                         return (
                           <circle
                             key={pledge.type}
@@ -817,20 +845,12 @@ export default function VisualizePage() {
                             cy="100"
                             r="50"
                             fill="transparent"
-                            stroke={pledge.color.replace("bg-", "").replace("-500", "")}
+                            stroke={strokeColor}
                             strokeWidth="20"
                             strokeDasharray={strokeDasharray}
                             strokeDashoffset={strokeDashoffset}
                             className="transition-all duration-1000 ease-out"
                             style={{
-                              stroke:
-                                pledge.color === "bg-emerald-500"
-                                  ? "#10b981"
-                                  : pledge.color === "bg-blue-500"
-                                    ? "#3b82f6"
-                                    : pledge.color === "bg-orange-500"
-                                      ? "#f97316"
-                                      : "#06b6d4",
                               animationDelay: `${index * 500}ms`,
                             }}
                           />
@@ -839,36 +859,46 @@ export default function VisualizePage() {
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-white">
-                          <AnimatedNumber
-                            value={Math.round(animatedNumbers.communitySavings / 1000)}
-                            suffix=""
-                          />
-                        </div>
-                        <div className="text-sm text-slate-300">Total Tons</div>
+                        {(() => {
+                          const f = formatCO2(animatedNumbers.communitySavings);
+                          return (
+                            <>
+                              <div className="text-2xl font-bold text-white">
+                                <AnimatedNumber value={f.value} suffix="" />
+                              </div>
+                              <div className="text-sm text-slate-300">{`Total ${f.unit.trim()}`}</div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    {communityData.topPledges.map((pledge) => (
-                      <div key={pledge.type} className="flex items-center gap-2">
-                        <div
-                          className={`w-3 h-3 rounded-full`}
-                          style={{
-                            backgroundColor:
-                              pledge.color === "bg-emerald-500"
-                                ? "#10b981"
-                                : pledge.color === "bg-blue-500"
-                                  ? "#3b82f6"
-                                  : pledge.color === "bg-orange-500"
-                                    ? "#f97316"
-                                    : "#06b6d4",
-                          }}
-                        ></div>
-                        <span className="text-slate-300 text-sm">{pledge.type}</span>
-                      </div>
-                    ))}
+                    {communityData.topPledges.map((pledge) => {
+                      // Map 7 distinct colors for legend
+                      const colorMap: Record<string, string> = {
+                        "bg-emerald-500": "#10b981", // transport
+                        "bg-blue-500": "#3b82f6", // energy
+                        "bg-orange-500": "#f97316", // food
+                        "bg-cyan-500": "#06b6d4", // water
+                        "bg-purple-500": "#a855f7", // waste
+                        "bg-pink-500": "#ec4899", // diet
+                        "bg-indigo-500": "#6366f1", // daily
+                        "bg-teal-500": "#14b8a6", // general
+                      };
+                      const bgColor = colorMap[pledge.color] || "#9ca3af";
+
+                      return (
+                        <div key={pledge.type} className="flex items-center gap-2">
+                          <div
+                            className={`w-3 h-3 rounded-full`}
+                            style={{ backgroundColor: bgColor }}
+                          ></div>
+                          <span className="text-slate-300 text-sm">{pledge.type}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -889,7 +919,36 @@ export default function VisualizePage() {
               </div>
 
               {/* Share Card Preview */}
-              <div className="bg-gradient-to-br from-emerald-500/20 to-blue-500/20 rounded-xl p-8 border border-emerald-400/30 mb-12">
+              <div
+                id="share-card"
+                className="bg-gradient-to-br from-emerald-500/20 to-blue-500/20 rounded-xl p-8 border border-emerald-400/30 mb-12 relative"
+              >
+                {/* QR Code in top right corner */}
+                <div className="absolute top-4 right-4 bg-white p-2 rounded-lg">
+                  <canvas
+                    ref={(canvas) => {
+                      if (canvas && mounted) {
+                        import("qrcode").then((QRCode) => {
+                          QRCode.default.toCanvas(
+                            canvas,
+                            window.location.origin || "https://ecopath.app",
+                            {
+                              width: 80,
+                              margin: 1,
+                              color: {
+                                dark: "#000000",
+                                light: "#FFFFFF",
+                              },
+                            },
+                          );
+                        });
+                      }
+                    }}
+                    className="block"
+                  />
+                  <p className="text-xs text-center text-gray-700 mt-1">Scan to join</p>
+                </div>
+
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold text-white mb-2">🌱 Your Climate Impact</h3>
                   <p className="text-slate-300">Making a difference, one pledge at a time</p>
@@ -953,8 +1012,15 @@ export default function VisualizePage() {
 
                 <div className="bg-white/10 rounded-lg p-4 mb-8">
                   <p className="text-center text-white font-medium">
-                    &ldquo;Part of a community that saved{" "}
-                    {Math.round(communityData.totalSavings / 1000)} tons of CO₂&rdquo;
+                    {(() => {
+                      const f = formatCO2(communityData.totalSavings);
+                      return (
+                        <>
+                          &ldquo;Part of a community that saved {f.value} {f.unit.trim()} of
+                          CO₂&rdquo;
+                        </>
+                      );
+                    })()}
                   </p>
                 </div>
 
@@ -978,19 +1044,287 @@ export default function VisualizePage() {
 
               {/* Share Buttons */}
               <div className="flex flex-wrap gap-4 justify-center">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer flex items-center gap-2">
-                  <i className="ri-twitter-line"></i>
-                  Share on Twitter
-                </button>
-                <button className="bg-blue-800 hover:bg-blue-900 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer flex items-center gap-2">
-                  <i className="ri-linkedin-line"></i>
-                  Share on LinkedIn
-                </button>
-                <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer flex items-center gap-2">
+                <button
+                  onClick={async (e) => {
+                    try {
+                      const btn = e.currentTarget;
+                      btn.textContent = "Generating...";
+                      btn.setAttribute("disabled", "true");
+
+                      // Create a beautiful canvas image
+                      const canvas = document.createElement("canvas");
+                      const ctx = canvas.getContext("2d");
+                      if (!ctx) throw new Error("Cannot get canvas context");
+
+                      // Set high-res canvas
+                      canvas.width = 1400;
+                      canvas.height = 900;
+
+                      // Background - match website's blue gradient
+                      const bgGradient = ctx.createLinearGradient(
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height,
+                      );
+                      bgGradient.addColorStop(0, "#1e3a8a"); // blue-900
+                      bgGradient.addColorStop(0.5, "#3b82f6"); // blue-500
+                      bgGradient.addColorStop(1, "#1e3a8a"); // blue-900
+                      ctx.fillStyle = bgGradient;
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                      // Subtle overlay
+                      ctx.fillStyle = "rgba(30, 41, 59, 0.3)";
+                      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                      // Rounded border
+                      ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
+                      ctx.lineWidth = 2;
+                      ctx.beginPath();
+                      ctx.roundRect(15, 15, canvas.width - 30, canvas.height - 30, 24);
+                      ctx.stroke();
+
+                      // Title
+                      ctx.fillStyle = "#ffffff";
+                      ctx.font = "bold 52px system-ui, sans-serif";
+                      ctx.textAlign = "center";
+                      ctx.fillText("🌱 Your Climate Impact", canvas.width / 2, 120);
+
+                      // Subtitle
+                      ctx.fillStyle = "#cbd5e1";
+                      ctx.font = "26px system-ui, sans-serif";
+                      ctx.fillText(
+                        "Making a difference, one pledge at a time",
+                        canvas.width / 2,
+                        170,
+                      );
+
+                      // Stats cards with boxes
+                      const stats = [
+                        {
+                          value: savedPledges.length,
+                          label: "Active Pledges",
+                          color: "#10b981",
+                          x: 280,
+                        },
+                        {
+                          value: ((emissionsComparison?.saved || 0) / 1000).toFixed(1),
+                          label: "Tons CO₂ Saved",
+                          color: "#3b82f6",
+                          x: 700,
+                        },
+                        {
+                          value:
+                            (emissionsComparison
+                              ? Math.round(
+                                  (emissionsComparison.saved / emissionsComparison.baseline) * 100,
+                                )
+                              : 0) + "%",
+                          label: "Reduction",
+                          color: "#a855f7",
+                          x: 1120,
+                        },
+                      ];
+
+                      stats.forEach((stat) => {
+                        // Value (no card background, cleaner look)
+                        ctx.fillStyle = stat.color;
+                        ctx.font = "bold 72px system-ui, sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.fillText(String(stat.value), stat.x, 270);
+
+                        // Label
+                        ctx.fillStyle = "#e2e8f0";
+                        ctx.font = "22px system-ui, sans-serif";
+                        ctx.fillText(stat.label, stat.x, 310);
+                      });
+
+                      // Equivalents section - rounded box
+                      ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                      ctx.beginPath();
+                      ctx.roundRect(80, 380, canvas.width - 160, 200, 16);
+                      ctx.fill();
+
+                      ctx.fillStyle = "#ffffff";
+                      ctx.font = "30px system-ui, sans-serif";
+                      ctx.textAlign = "center";
+                      ctx.fillText("🌍 Your Impact Equals To:", canvas.width / 2, 430);
+
+                      const equivalents = [
+                        {
+                          emoji: "🌳",
+                          value: Math.round((emissionsComparison?.saved || 0) / 22),
+                          label: "Trees planted for a year",
+                          x: 300,
+                        },
+                        {
+                          emoji: "🚗",
+                          value: Math.round((emissionsComparison?.saved || 0) / 4.6 / 1000) + "k",
+                          label: "Miles not driven",
+                          x: 700,
+                        },
+                        {
+                          emoji: "💡",
+                          value: Math.round((emissionsComparison?.saved || 0) / 0.4),
+                          label: "LED bulbs switched",
+                          x: 1100,
+                        },
+                      ];
+
+                      equivalents.forEach((eq) => {
+                        ctx.font = "52px system-ui, sans-serif";
+                        ctx.fillText(eq.emoji, eq.x, 495);
+                        ctx.fillStyle = "#10b981";
+                        ctx.font = "bold 46px system-ui, sans-serif";
+                        ctx.fillText(String(eq.value), eq.x, 545);
+                        ctx.fillStyle = "#e2e8f0";
+                        ctx.font = "19px system-ui, sans-serif";
+                        ctx.fillText(eq.label, eq.x, 570);
+                        ctx.fillStyle = "#ffffff";
+                      });
+
+                      // Community quote - rounded box
+                      const f = formatCO2(communityData.totalSavings);
+                      ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                      ctx.beginPath();
+                      ctx.roundRect(120, 620, canvas.width - 240, 80, 16);
+                      ctx.fill();
+                      ctx.fillStyle = "#ffffff";
+                      ctx.font = "28px system-ui, sans-serif";
+                      ctx.fillText(
+                        `"Part of a community that saved ${f.value} ${f.unit.trim()} of CO₂"`,
+                        canvas.width / 2,
+                        670,
+                      );
+
+                      // Pledges badges - simple text with spacing
+                      const pledgeNames = breakdownCards
+                        .slice(0, 3)
+                        .map((p) => `${p.icon} ${p.title}`);
+                      const badgeY = 770;
+
+                      // Calculate total width and spacing
+                      const totalBadges = pledgeNames.length + (breakdownCards.length > 3 ? 1 : 0);
+                      const spacing = canvas.width / (totalBadges + 1);
+
+                      pledgeNames.forEach((name, i) => {
+                        const x = spacing * (i + 1);
+                        // Rounded pill background
+                        ctx.fillStyle = "rgba(59, 130, 246, 0.35)";
+                        ctx.beginPath();
+                        ctx.roundRect(x - 140, badgeY - 35, 280, 60, 30);
+                        ctx.fill();
+                        // Text
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "20px system-ui, sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.fillText(name, x, badgeY);
+                      });
+
+                      if (breakdownCards.length > 3) {
+                        const x = spacing * (pledgeNames.length + 1);
+                        ctx.fillStyle = "rgba(59, 130, 246, 0.35)";
+                        ctx.beginPath();
+                        ctx.roundRect(x - 80, badgeY - 35, 160, 60, 30);
+                        ctx.fill();
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "20px system-ui, sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.fillText(`+${breakdownCards.length - 3} more`, x, badgeY);
+                      }
+
+                      // QR Code (top right) - rounded white box
+                      const qrCanvas = document.createElement("canvas");
+                      const QRCode = await import("qrcode");
+                      await QRCode.default.toCanvas(qrCanvas, window.location.origin, {
+                        width: 150,
+                        margin: 1,
+                      });
+                      // White rounded background for QR
+                      ctx.fillStyle = "#ffffff";
+                      ctx.beginPath();
+                      ctx.roundRect(canvas.width - 220, 50, 180, 200, 16);
+                      ctx.fill();
+                      // QR code
+                      ctx.drawImage(qrCanvas, canvas.width - 205, 65, 150, 150);
+                      // Text below QR
+                      ctx.fillStyle = "#1e293b";
+                      ctx.font = "bold 18px system-ui, sans-serif";
+                      ctx.textAlign = "center";
+                      ctx.fillText("Scan to join", canvas.width - 130, 235);
+
+                      // Footer
+                      ctx.fillStyle = "rgba(226, 232, 240, 0.7)";
+                      ctx.font = "22px system-ui, sans-serif";
+                      ctx.textAlign = "center";
+                      ctx.fillText("EcoPath - Track Your Climate Journey", canvas.width / 2, 860);
+
+                      // Download
+                      canvas.toBlob((blob) => {
+                        if (blob) {
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `ecopath-impact-${new Date().getTime()}.png`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          btn.textContent = "✓ Saved!";
+                          setTimeout(() => {
+                            btn.textContent = "Save as Image";
+                            btn.removeAttribute("disabled");
+                          }, 2000);
+                        }
+                      });
+                    } catch (error) {
+                      console.error("Failed to save image:", error);
+                      alert(
+                        `Failed to save image: ${error instanceof Error ? error.message : "Unknown error"}`,
+                      );
+                      const btn = e.currentTarget;
+                      btn.textContent = "Save as Image";
+                      btn.removeAttribute("disabled");
+                    }
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer flex items-center gap-2"
+                >
                   <i className="ri-download-line"></i>
                   Save as Image
                 </button>
-                <button className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer flex items-center gap-2">
+                <button
+                  onClick={async (e) => {
+                    try {
+                      const btn = e.currentTarget;
+                      const originalText = btn.innerHTML;
+                      await navigator.clipboard.writeText(window.location.href);
+                      // Show temporary success message
+                      btn.innerHTML = '<i class="ri-check-line"></i> Copied!';
+                      setTimeout(() => {
+                        btn.innerHTML = originalText;
+                      }, 2000);
+                    } catch {
+                      // Fallback for older browsers
+                      const textArea = document.createElement("textarea");
+                      textArea.value = window.location.href;
+                      textArea.style.position = "fixed";
+                      textArea.style.left = "-999999px";
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      try {
+                        document.execCommand("copy");
+                        const btn = e.currentTarget;
+                        const originalText = btn.innerHTML;
+                        btn.innerHTML = '<i class="ri-check-line"></i> Copied!';
+                        setTimeout(() => {
+                          btn.innerHTML = originalText;
+                        }, 2000);
+                      } catch (err) {
+                        alert("Failed to copy link. Please copy manually: " + window.location.href);
+                      }
+                      document.body.removeChild(textArea);
+                    }
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 cursor-pointer flex items-center gap-2"
+                >
                   <i className="ri-link"></i>
                   Copy Link
                 </button>
@@ -1008,10 +1342,18 @@ export default function VisualizePage() {
                   beyond what you can see.&rdquo;
                 </blockquote>
                 <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
-                  Your {savedPledges.length} pledges are already making a difference. You&apos;ve
-                  prevented {((emissionsComparison?.saved || 0) / 1000).toFixed(1)} tons of CO₂ from
-                  entering our atmosphere, and you&apos;re part of a community that&apos;s saved{" "}
-                  {Math.round(communityData.totalSavings / 1000)} tons collectively.
+                  {(() => {
+                    const fPersonal = formatCO2(emissionsComparison?.saved || 0);
+                    const fCommunity = formatCO2(communityData.totalSavings);
+                    return (
+                      <>
+                        Your {savedPledges.length} pledges are already making a difference.
+                        You&apos;ve prevented {fPersonal.value} {fPersonal.unit.trim()} of CO₂ from
+                        entering our atmosphere, and you&apos;re part of a community that&apos;s
+                        saved {fCommunity.value} {fCommunity.unit.trim()} collectively.
+                      </>
+                    );
+                  })()}
                 </p>
                 <p className="text-xl text-emerald-300 font-semibold mb-8">
                   But this is just the beginning of your climate journey.
