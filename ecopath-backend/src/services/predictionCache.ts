@@ -14,7 +14,7 @@ interface CacheData {
 
 class PredictionCache {
   private cache: CacheData | null = null;
-  private readonly ML_SERVICE_URL = "http://127.0.0.1:8001/predict";
+  private readonly ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://127.0.0.1:8001/predict";
   private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
   async getPredictions(): Promise<PredictionRecord[]> {
