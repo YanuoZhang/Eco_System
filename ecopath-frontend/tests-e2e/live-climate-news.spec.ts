@@ -5,10 +5,10 @@ test("Home page loads with news section", async ({ page, request }) => {
   await loginViaApi(request, page);
   await page.goto("/");
   // Avoid brittle networkidle; wait for a stable UI element
-  await expect(page.getByText("EcoPath").first()).toBeVisible();
+  await expect(page.getByText("LeafForward").first()).toBeVisible();
 
   // Check if home page loads
-  await expect(page.getByText("EcoPath").first()).toBeVisible();
+  await expect(page.getByText("LeafForward").first()).toBeVisible();
 
   // Check if news section exists (may be loading)
   const newsSection = page.getByText(/Climate/i);
