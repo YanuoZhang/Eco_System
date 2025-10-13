@@ -1,14 +1,15 @@
 # ml_service/data_loader.py
 import pandas as pd
 import psycopg2
+import os
 
 def load_data():
     conn = psycopg2.connect(
-        host="localhost",
-        port=5432,
-        dbname="ecopath",
-        user="postgres",
-        password="EcoPath2024!"
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", "5432")),
+        dbname=os.getenv("DB_NAME", "ecopath"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", "EcoPath2024!")
     )
 
     query = """
