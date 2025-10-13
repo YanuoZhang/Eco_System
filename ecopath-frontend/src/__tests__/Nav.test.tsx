@@ -24,11 +24,17 @@ import Nav from "@/components/Nav";
 describe("Nav", () => {
   beforeEach(() => {
     usePathnameMock.mockReturnValue("/");
+    // Mock fetch to prevent actual API calls
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: [] }),
+      } as Response),
+    );
   });
 
   it("renders brand and primary links", () => {
     render(<Nav />);
-    expect(screen.getByText("EcoPath")).toBeInTheDocument();
+    expect(screen.getByText("LeafForward")).toBeInTheDocument();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Explore My Impact")).toBeInTheDocument();
   });

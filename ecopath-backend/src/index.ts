@@ -9,6 +9,9 @@ import apiRoutes from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { createOpenApiDoc } from "./config/openapi";
 import { performWeeklyNewsUpdate } from "./services/newsService";
+import populationRouter from "./routes/population";
+import userStatsRouter from "./routes/userStats";
+import { predictionCache } from "./services/predictionCache";
 
 dotenv.config();
 
@@ -25,7 +28,7 @@ app.use(
       "https://ecopath.me",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -35,6 +38,7 @@ app.use(
       "Access-Control-Allow-Origin",
       "Access-Control-Allow-Headers",
       "Access-Control-Allow-Methods",
+      "x-user-id",
     ],
     optionsSuccessStatus: 200,
   }),
@@ -45,6 +49,9 @@ app.use(express.static("public"));
 
 // API routes
 app.use("/api", apiRoutes);
+
+app.use("/api/population", populationRouter);
+app.use("/api/user-stats", userStatsRouter);
 
 // Root endpoint
 app.get("/", (_req: Request, res: Response) => {
@@ -115,6 +122,13 @@ if (process.env.NODE_ENV !== "test") {
       await testConnection();
     } catch {
       console.warn("Database connection failed. Some endpoints may not work properly.");
+    }
+
+    // Warm up prediction cache
+    try {
+      await predictionCache.warmUp();
+    } catch {
+      console.warn("Failed to warm up prediction cache. Will fetch on first request.");
     }
 
     if (process.env.NEWS_AUTO_UPDATE !== "false") {

@@ -95,6 +95,6 @@ describe("Home page composition", () => {
 
     // Test Footer component
     render(<BottomFooter />);
-    expect(screen.getAllByText("EcoPath").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("LeafForward").length).toBeGreaterThan(0);
   });
 });

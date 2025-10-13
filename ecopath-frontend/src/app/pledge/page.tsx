@@ -47,7 +47,7 @@ export default function PledgePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      let uid = localStorage.getItem("ecopath_uid");
+      let uid = localStorage.getItem("leafforward_uid");
       if (!uid || uid === "anonymous") {
         try {
           uid =
@@ -58,7 +58,7 @@ export default function PledgePage() {
           uid = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
         }
       }
-      localStorage.setItem("ecopath_uid", uid);
+      localStorage.setItem("leafforward_uid", uid);
       setUserId(uid);
     } catch {}
     const quizData = localStorage.getItem("carbonFootprint");
@@ -181,15 +181,20 @@ export default function PledgePage() {
   const pledgeMetaById = useMemo(() => {
     const pool = [...publicPledges, ...aiSuggestedPledges];
     const map = new Map<string, Partial<Pledge>>();
-    pool.forEach((p) =>
-      map.set(p.id, {
+    pool.forEach((p) => {
+      const meta = {
         title: p.title,
         icon: p.icon,
         benefit: p.benefit,
         category: p.category,
         impact: p.impact,
-      }),
-    );
+      };
+      // Add mapping for both id and title to handle different storage formats
+      map.set(p.id, meta);
+      if (p.title && p.title !== p.id) {
+        map.set(p.title, meta);
+      }
+    });
     return map;
   }, [publicPledges, aiSuggestedPledges]);
 
@@ -207,35 +212,51 @@ export default function PledgePage() {
             reminderType?: string;
             customDate?: string;
             dateAdded?: string;
+            title?: string;
+            category?: string;
+            isAchievement?: boolean;
           }>;
         };
         if (!resp?.success || !resp.data) return;
-        const mapMeta = (pledgeId: string): Partial<Pledge> => pledgeMetaById.get(pledgeId) || {};
-        const list: SavedPledge[] = resp.data.map((r) => ({
-          id: r.pledgeId,
-          recordId: r.id,
-          reminderType: r.reminderType as SavedPledge["reminderType"],
-          customDate: r.customDate,
-          dateAdded: r.dateAdded,
-          // fill meta if known
-          benefit: "",
-          category: "",
-          icon: "",
-          impact: "small",
-          title: "",
-          ...mapMeta(r.pledgeId),
-        }));
+
+        // Filter only active pledges (not achievements)
+        const activePledges = resp.data.filter((r) => !r.isAchievement);
+
+        const list: SavedPledge[] = activePledges.map((r) => {
+          // Use pledgeId first (the actual saved ID), then title as fallback
+          const pledgeId = r.pledgeId || r.title || "unknown";
+
+          // Try to get metadata from pledgeMetaById using both pledgeId and title
+          const meta = pledgeMetaById.get(pledgeId) || pledgeMetaById.get(r.title || "") || {};
+
+          return {
+            id: pledgeId,
+            recordId: r.id,
+            reminderType: r.reminderType as SavedPledge["reminderType"],
+            customDate: r.customDate || "",
+            dateAdded: r.dateAdded || "",
+            // Use data from backend first, then fill meta if known
+            title: r.title || meta.title || "",
+            category: r.category || meta.category || "",
+            benefit: meta.benefit || "",
+            icon: meta.icon || "",
+            impact: meta.impact || "small",
+          };
+        });
         if (!cancelled) setSavedPledges(list);
       } catch {}
     })();
     return () => {
       cancelled = true;
     };
-  }, [userId, pledgeMetaById]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   useEffect(() => {
     if (!hasCompletedQuiz) return;
-    if (activeTab !== "ai" && aiSuggestedPledges.length > 0) return;
+    // Only load if we don't have suggestions yet
+    if (aiSuggestedPledges.length > 0) return;
+
     let cancelled = false;
     (async () => {
       try {
@@ -247,7 +268,11 @@ export default function PledgePage() {
           return;
         }
         const quizData = JSON.parse(raw);
-        const resp = (await apiClient.getAiRecommendations(quizData)) as {
+
+        const resp = (await apiClient.getAiRecommendations({
+          quizData,
+          // Removed timestamp to allow caching based on quiz content
+        })) as {
           success: boolean;
           data?: unknown;
         };
@@ -283,11 +308,13 @@ export default function PledgePage() {
         };
 
         const rawData: unknown = resp?.data;
+
         const list: AiRecommendation[] = isAiRecommendationArray(rawData)
           ? rawData
           : hasRecommendationsArray(rawData)
             ? rawData.recommendations
             : [];
+
         if (resp?.success && list.length > 0) {
           const mapped: Pledge[] = list.map((r) => ({
             id: r.id,
@@ -312,8 +339,7 @@ export default function PledgePage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasCompletedQuiz, activeTab]);
+  }, [hasCompletedQuiz, aiSuggestedPledges.length]);
 
   const getCurrentPledges = () => (activeTab === "public" ? publicPledges : aiSuggestedPledges);
 
@@ -457,6 +483,8 @@ export default function PledgePage() {
         userId,
         pledges: newSaved.map((p) => ({
           pledgeId: p.id,
+          title: p.title,
+          category: p.category,
           reminderType: p.reminderType,
           customDate: p.customDate,
         })),
@@ -469,23 +497,28 @@ export default function PledgePage() {
           reminderType?: string;
           customDate?: string;
           dateAdded?: string;
+          title?: string;
+          category?: string;
         }>;
       };
       if (resp?.success) {
         // Merge server-added records
         const added = (resp.data || []).map((r) => {
-          const meta = [...publicPledges, ...aiSuggestedPledges].find((m) => m.id === r.pledgeId);
+          const pledgeId = r.title || r.pledgeId;
+          const meta = [...publicPledges, ...aiSuggestedPledges].find(
+            (m) => m.id === pledgeId || m.title === r.title,
+          );
           return {
-            id: r.pledgeId,
+            id: pledgeId,
             recordId: r.id,
             reminderType: r.reminderType as SavedPledge["reminderType"],
             customDate: r.customDate,
             dateAdded: r.dateAdded,
+            title: r.title || meta?.title || pledgeId,
+            category: r.category || meta?.category || "",
             benefit: meta?.benefit || "",
-            category: meta?.category || "",
             icon: meta?.icon || "",
             impact: meta?.impact || "small",
-            title: meta?.title || r.pledgeId,
           } as SavedPledge;
         });
         const existingByRecord = new Set(savedPledges.map((s) => s.recordId));
@@ -557,7 +590,17 @@ export default function PledgePage() {
         : "text-purple-600 bg-purple-100";
 
   const isPledgeSelected = (id: string) => selectedPledges.some((p) => p.id === id);
-  const isPledgeAlreadySaved = (id: string) => savedPledges.some((p) => p.id === id);
+  const isPledgeAlreadySaved = (id: string, title: string) => {
+    return savedPledges.some((saved) => {
+      // Match by id
+      if (saved.id === id) return true;
+      // Match by title (case-insensitive to be safe)
+      if (saved.id === title || saved.title === title) return true;
+      // Also check if the saved pledge's title matches current id (for reverse match)
+      if (saved.title === id) return true;
+      return false;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-emerald-50 to-sky-50">
@@ -633,7 +676,10 @@ export default function PledgePage() {
                 <div className="text-center text-red-600 py-8">{aiError}</div>
               )}
               {!aiLoading && !aiError && aiSuggestedPledges.length === 0 && (
-                <div className="text-center text-slate-600 py-8">No suggestions yet.</div>
+                <div className="text-center text-slate-600 py-8">
+                  <div>No suggestions yet.</div>
+                  <div className="text-sm mt-2 opacity-60"></div>
+                </div>
               )}
             </>
           )}
@@ -643,17 +689,17 @@ export default function PledgePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
               {getCurrentPledges().map((pledge) => {
                 const selected = isPledgeSelected(pledge.id);
-                const already = isPledgeAlreadySaved(pledge.id);
+                const already = isPledgeAlreadySaved(pledge.id, pledge.title);
                 return (
                   <div
                     key={pledge.id}
                     onClick={() => !already && handlePledgeToggle(pledge)}
-                    className={`bg-white/90 backdrop-blur-sm rounded-2xl p-6 border-2 transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer ${
+                    className={`bg-white/90 backdrop-blur-sm rounded-2xl p-6 border-2 transition-all duration-300 ${
                       already
-                        ? "border-gray-400 bg-gray-50/80 opacity-75 cursor-not-allowed"
+                        ? "border-gray-300 bg-gray-100/90 opacity-60 cursor-not-allowed grayscale"
                         : selected
-                          ? "border-emerald-400 bg-emerald-50/80 shadow-lg shadow-emerald-200/50 scale-105"
-                          : "border-slate-200/50 hover:border-emerald-300/50"
+                          ? "border-emerald-400 bg-emerald-50/80 shadow-lg shadow-emerald-200/50 scale-105 cursor-pointer hover:scale-105 hover:shadow-xl"
+                          : "border-slate-200/50 hover:border-emerald-300/50 cursor-pointer hover:scale-105 hover:shadow-xl"
                     }`}
                   >
                     <div className="flex justify_between items-start mb-4">
@@ -697,10 +743,10 @@ export default function PledgePage() {
                       </div>
                     </div>
                     {already && (
-                      <div className="w-full bg-gray-100 text-gray-600 font-semibold py-3 px-6 rounded-xl text-center">
+                      <div className="w-full bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl text-center border-2 border-gray-300">
                         <div className="flex items-center justify-center gap-2">
-                          <span>✅</span>
-                          <span>Already Added</span>
+                          <span className="text-xl">✅</span>
+                          <span className="uppercase text-sm tracking-wide">Already Added</span>
                         </div>
                       </div>
                     )}
@@ -831,7 +877,7 @@ export default function PledgePage() {
                 </div>
                 <div className="mt-6">
                   <Link
-                    href="/future-impact"
+                    href="/visualize"
                     className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 text-white font-bold px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer inline-flex items-center gap-3 whitespace-nowrap"
                   >
                     <span className="text-xl">🔮</span>

@@ -21,8 +21,8 @@ const pacifico = Pacifico({
 });
 
 export const metadata: Metadata = {
-  title: "EcoPath",
-  description: "EcoPath App",
+  title: "LeafForward",
+  description: "LeafForward - Track your climate impact and take action",
 };
 
 export default function RootLayout({

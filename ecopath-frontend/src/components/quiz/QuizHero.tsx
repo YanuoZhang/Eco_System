@@ -5,10 +5,14 @@ export default function QuizHero({
   states = [],
   selectedState = "",
   onStateChange,
+  onClearData,
+  onDebugData,
 }: {
   states?: { id: string; displayName?: string }[];
   selectedState?: string;
   onStateChange?: (state: string) => void;
+  onClearData?: () => void;
+  onDebugData?: () => void;
 }) {
   type Factors = {
     electricity?: number;
@@ -65,25 +69,45 @@ export default function QuizHero({
                 <label className="block text-sm font-medium text-slate-600 mb-2">
                   State/Territory
                 </label>
-                <div className="relative">
-                  <select
-                    required
-                    value={selectedState || "VIC"}
-                    onChange={(e) => {
-                      const val = e.target.value || "VIC";
-                      onStateChange?.(val);
-                    }}
-                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 text-slate-700 pr-8"
-                  >
-                    {states.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.displayName || s.id}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-lg">
-                    ▾
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <select
+                      required
+                      value={selectedState || "VIC"}
+                      onChange={(e) => {
+                        const val = e.target.value || "VIC";
+                        onStateChange?.(val);
+                      }}
+                      className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-orange-500 text-slate-700 pr-8"
+                    >
+                      {states.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.displayName || s.id}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-lg">
+                      ▾
+                    </div>
                   </div>
+                  {onClearData && (
+                    <button
+                      onClick={onClearData}
+                      className="px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-300 text-red-600 rounded-xl font-medium transition-all duration-200 text-sm whitespace-nowrap"
+                      title="Clear saved data and start fresh"
+                    >
+                      🔄 Fresh Start
+                    </button>
+                  )}
+                  {onDebugData && (
+                    <button
+                      onClick={onDebugData}
+                      className="px-4 py-3 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-300 text-blue-600 rounded-xl font-medium transition-all duration-200 text-sm whitespace-nowrap"
+                      title="Debug localStorage data"
+                    >
+                      🔍 Debug
+                    </button>
+                  )}
                 </div>
               </div>
 

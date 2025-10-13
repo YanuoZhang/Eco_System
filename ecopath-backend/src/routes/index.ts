@@ -8,6 +8,9 @@ import timelineRoutes from "./timeline";
 import statesRoutes from "./states";
 import climateTargetsRoutes from "./climateTargets";
 import pledgesRoutes from "./pledges";
+import communityRoutes from "./community";
+import usersRoutes from "./users";
+import shareRoutes from "./share";
 
 const router = Router();
 
@@ -19,5 +22,8 @@ router.use("/timeline", timelineRoutes);
 router.use("/states", statesRoutes);
 router.use("/climate-targets", climateTargetsRoutes);
 router.use("/pledges", pledgesRoutes);
+router.use("/community", communityRoutes);
+router.use("/users", usersRoutes);
+router.use(shareRoutes); // Mount directly for /api/share-link routes
 
 export default router;

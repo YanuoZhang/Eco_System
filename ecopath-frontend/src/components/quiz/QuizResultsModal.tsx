@@ -92,34 +92,6 @@ export default function QuizResultsModal({
           <div className="text-sm text-slate-500">({year.toFixed(1)} kg CO₂/year)</div>
         </div>
 
-        {/* AI Recommendations (refer-style concise) */}
-        <div className="mt-8 bg-gradient-to-r from-sky-50 to-blue-50 rounded-2xl p-6 border border-sky-200">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="text-2xl">🤖</span>
-            <h4 className="text-xl font-bold text-sky-800">AI Recommendations</h4>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="bg-white/80 rounded-lg p-4">
-              <div className="font-semibold text-sky-800 mb-2">Quick Wins</div>
-              <ul className="text-left text-sky-700 space-y-1">
-                <li>• Switch to LED bulbs</li>
-                <li>• Walk or cycle short trips</li>
-                <li>• Set AC thermostat +2°C / heater -2°C</li>
-                <li>• Use public transport when possible</li>
-              </ul>
-            </div>
-            <div className="bg-white/80 rounded-lg p-4">
-              <div className="font-semibold text-sky-800 mb-2">Long-term Impact</div>
-              <ul className="text-left text-sky-700 space-y-1">
-                <li>• Consider electric vehicles</li>
-                <li>• Explore green electricity plans</li>
-                <li>• Improve home insulation</li>
-                <li>• Plan efficient travel routes</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         {/* Equivalents */}
         <div className="mt-6 bg-white/80 rounded-2xl p-6 border border-orange-200">
           <div className="text-lg text-slate-700 mb-3 flex items-center gap-2">

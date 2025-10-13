@@ -58,11 +58,15 @@ class ApiService {
     this.baseUrl = API_BASE_URL;
   }
 
-  private async request<T>(endpoint: string): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: { headers?: Record<string, string> } = {},
+  ): Promise<T> {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           "Content-Type": "application/json",
+          ...options.headers,
         },
       });
 
@@ -209,7 +213,13 @@ class ApiService {
 
   async saveUserPledges(body: {
     userId: string;
-    pledges: Array<{ pledgeId: string; reminderType?: string; customDate?: string }>;
+    pledges: Array<{
+      pledgeId: string;
+      reminderType?: string;
+      customDate?: string;
+      title?: string;
+      category?: string;
+    }>;
   }) {
     return this.requestWithBody(`/api/pledges/user`, "POST", body);
   }
@@ -225,6 +235,173 @@ class ApiService {
     // Allow sending userId in body for convenience
     return this.requestWithBody(`/api/pledges/user/${encodeURIComponent(recordId)}`, "DELETE", {
       userId,
+    });
+  }
+
+  async completeUserPledge(recordId: string, userId: string) {
+    return this.requestWithBody(
+      `/api/pledges/user/${encodeURIComponent(recordId)}/complete`,
+      "POST",
+      {
+        userId,
+      },
+    );
+  }
+
+  // Completed pledges API methods
+  async getCompletedPledges(userId: string) {
+    return this.request(`/api/pledges/user?userId=${encodeURIComponent(userId)}&type=completed`);
+  }
+
+  async getCompletedPledgesStats(userId: string) {
+    return this.request(
+      `/api/pledges/user?userId=${encodeURIComponent(userId)}&type=completed-stats`,
+    );
+  }
+
+  // Population API methods
+  async getStatePopulation(state: string): Promise<{
+    state_id: string;
+    state_name: string;
+    abbreviation: string;
+    year: number;
+    population: number;
+  }> {
+    return this.request(`/api/population?state=${state}`);
+  }
+
+  async getLatestPopulationData(): Promise<
+    Array<{
+      state_id: string;
+      state_name: string;
+      abbreviation: string;
+      year: number;
+      population: number;
+    }>
+  > {
+    return this.request("/api/population/latest");
+  }
+
+  // Community statistics API
+  async getCommunityStats(): Promise<{
+    totalUsers: number;
+    totalPledges: number;
+    totalSavings: number; // in kg
+    topPledges: Array<{
+      type: string;
+      percentage: number;
+      count: number;
+      color: string;
+      savings: number; // in kg
+    }>;
+    lastUpdated: string;
+    dataSource: string;
+  }> {
+    return this.request("/api/community/stats");
+  }
+
+  // User impact statistics API
+  async getUserImpactStats(userId: string): Promise<{
+    userId: string;
+    totalPledges: number;
+    completedPledges: number;
+    completionRate: number;
+    estimatedSavingsKg: number;
+    estimatedSavingsTons: number;
+    categoryBreakdown: Record<string, { count: number; savings: number }>;
+    pledges: Array<{
+      id: string;
+      title: string;
+      category: string;
+      createdAt: string;
+      completedAt: string | null;
+      isCompleted: boolean;
+    }>;
+    lastUpdated: string;
+    dataSource: string;
+  }> {
+    return this.request("/api/user-stats/impact", {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
+  }
+
+  // New emissions comparison API
+  async getEmissionsComparison(
+    state: string = "VIC",
+    userId: string = "anonymous",
+    quizData?: unknown,
+  ): Promise<{
+    baseline: number;
+    withPledges: number;
+    saved: number;
+    unit: string;
+    timestamp: string;
+    metadata: {
+      state: string;
+      pledgesCount: number;
+      pledgedKgPerYearReduction: number;
+    };
+  }> {
+    let url = `/api/emissions/comparison?state=${state}`;
+    if (quizData) {
+      url += `&quizData=${encodeURIComponent(JSON.stringify(quizData))}`;
+    }
+    return this.request(url, {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
+  }
+
+  // New multi-year forecast API
+  async getEmissionsForecast(
+    state: string = "VIC",
+    years: number = 5,
+    userId: string = "anonymous",
+    quizData?: unknown,
+  ): Promise<{
+    userId: string;
+    state: string;
+    forecastYears: number;
+    currentBaseline: number;
+    currentWithPledges: number;
+    currentSaved: number;
+    yearlyForecast: Array<{
+      year: number;
+      baseline: number;
+      withPledges: number;
+      saved: number;
+    }>;
+    metadata: {
+      pledgesCount: number;
+      pledgedKgPerYearReduction: number;
+      generatedAt: string;
+    };
+  }> {
+    let url = `/api/emissions/forecast-multiyear?state=${state}&years=${years}`;
+    if (quizData) {
+      url += `&quizData=${encodeURIComponent(JSON.stringify(quizData))}`;
+    }
+    return this.request(url, {
+      headers: {
+        "x-user-id": userId,
+      },
+    });
+  }
+
+  // Per-pledge savings API
+  async getPledgeSavings(userId: string): Promise<
+    Array<{
+      name: string;
+      saving: number;
+    }>
+  > {
+    return this.request("/api/emissions/by-pledge", {
+      headers: {
+        "x-user-id": userId,
+      },
     });
   }
 }

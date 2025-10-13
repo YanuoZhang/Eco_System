@@ -1,9 +1,13 @@
-import { useState, useEffect, useId, useMemo, useCallback } from "react";
+import { useState, useEffect, useId, useMemo, useCallback, useRef } from "react";
+import { getTimeUnitLabel, formatEmissions } from "../../utils/timeUnits";
 
 type Props = {
   open?: boolean;
   onToggle?: () => void;
   timeUnit?: "week" | "month" | "quarter" | "year";
+  system?: "electric" | "gas" | "solar";
+  usage?: number;
+  household?: number;
   onChange?: (v: {
     hotWaterEmissionsKgYear?: number;
     timeUnit?: "month" | "quarter" | "year";
@@ -18,22 +22,51 @@ export default function QuizHotWater({
   open = true,
   onToggle,
   timeUnit = "month",
+  system: initialSystem,
+  usage: initialUsage,
+  household: initialHousehold,
   onChange,
   factors,
 }: Props) {
   const id = useId();
   const [localOpen, setLocalOpen] = useState(open);
   const isOpen = onToggle ? open : localOpen;
+  const initializedRef = useRef(false);
 
   const handleToggle = () => (onToggle ? onToggle() : setLocalOpen((v) => !v));
 
-  // Hot water system state
-  const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | null>(null);
+  // Simplified state initialization
+  const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | null>(
+    initialSystem || null,
+  );
   const [energySaving, setEnergySaving] = useState<boolean>(false);
-  const [usageKnown, setUsageKnown] = useState<boolean>(false);
-  const [knownUsage, setKnownUsage] = useState<string>(""); // energy usage per period (string allows empty)
-  // Removed legacy cost-based path to avoid unused state and keep logic simple
-  const [household, setHousehold] = useState<number>(1);
+  const [usageKnown, setUsageKnown] = useState<boolean>(initialUsage !== undefined);
+  const [knownUsage, setKnownUsage] = useState<string>(
+    initialUsage !== undefined ? String(initialUsage) : "",
+  );
+  const [household, setHousehold] = useState<number>(initialHousehold || 1);
+
+  // Initialize from props only once
+  useEffect(() => {
+    if (!initializedRef.current) {
+      console.log("[QuizHotWater] Initializing with:", {
+        initialSystem,
+        initialUsage,
+        initialHousehold,
+      });
+      if (initialSystem) {
+        setHotWaterSystem(initialSystem);
+      }
+      if (initialUsage !== undefined) {
+        setUsageKnown(true);
+        setKnownUsage(String(initialUsage));
+      }
+      if (initialHousehold !== undefined) {
+        setHousehold(initialHousehold);
+      }
+      initializedRef.current = true;
+    }
+  }, [initialSystem, initialUsage, initialHousehold]);
 
   // Local fallback timeUnit when parent is not controlling it
   const [localTimeUnit] = useState<"week" | "month" | "quarter" | "year">("month");
@@ -162,14 +195,7 @@ export default function QuizHotWater({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotWaterEmissionsKgYear, hotWaterSystem, knownUsage, usageKnown, household]);
 
-  const unitLabel =
-    currentTimeUnit === "week"
-      ? "Weekly"
-      : currentTimeUnit === "month"
-        ? "Monthly"
-        : currentTimeUnit === "quarter"
-          ? "Quarterly"
-          : "Yearly";
+  const unitLabel = getTimeUnitLabel(currentTimeUnit);
 
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-orange-200/50 shadow overflow-hidden">
@@ -307,7 +333,7 @@ export default function QuizHotWater({
                     placeholder={hotWaterSystem === "gas" ? "e.g. 120" : "e.g. 60"}
                   />
                   <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm sm:text-base">
-                    {usageUnit}/{currentTimeUnit}
+                    {usageUnit}/{unitLabel.toLowerCase()}
                   </div>
                   {(hotWaterSystem === "electric" || hotWaterSystem === "solar") && (
                     <div className="mt-2 text-xs text-slate-500">
@@ -330,7 +356,8 @@ export default function QuizHotWater({
                 {usageKnown && knownUsageValue > 0 ? (
                   <>
                     <div>
-                      Usage-based calculation: {knownUsageValue} {usageUnit}/{currentTimeUnit}
+                      Usage-based calculation: {knownUsageValue} {usageUnit}/
+                      {unitLabel.toLowerCase()}
                     </div>
                     <div>Energy-saving multiplier: {energySaving ? "0.7" : "1.0"}</div>
                     {hotWaterSystem === "electric" || hotWaterSystem === "solar" ? (
@@ -388,17 +415,7 @@ export default function QuizHotWater({
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-red-600">
-                  {(
-                    hotWaterEmissionsKgYear /
-                    (currentTimeUnit === "month"
-                      ? 12
-                      : currentTimeUnit === "quarter"
-                        ? 4
-                        : currentTimeUnit === "week"
-                          ? 52.143
-                          : 1)
-                  ).toFixed(1)}{" "}
-                  kg CO₂/{unitLabel}
+                  {formatEmissions(hotWaterEmissionsKgYear, currentTimeUnit)}
                 </div>
                 <div className="text-xs text-red-500">
                   {hotWaterEmissionsKgYear.toFixed(1)} kg CO₂/year

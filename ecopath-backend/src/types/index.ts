@@ -174,16 +174,48 @@ export interface UserPledge {
   userId: string;
   pledgeId: string;
   title?: string;
+  category?: string;
   icon?: string;
   reminderType?: ReminderType;
   customDate?: string; // ISO date
   dateAdded: string; // ISO datetime
+  completedAt?: string; // ISO datetime when pledge was completed
+  isAchievement?: boolean; // true if this is a completed achievement
+}
+
+export interface CompletedPledge {
+  id: string;
+  userId: string;
+  pledgeId: string;
+  pledgeType: "public" | "ai_suggestion";
+  title: string;
+  category?: string;
+  icon?: string;
+  benefit?: string;
+  impact?: string;
+  completedAt: string;
+  originalRecordId?: string;
+  createdAt: string;
+}
+
+export interface CompletePledgeRequest {
+  userId: string;
+  pledgeId: string;
+  pledgeType: "public" | "ai_suggestion";
+  title: string;
+  category?: string;
+  icon?: string;
+  benefit?: string;
+  impact?: string;
+  originalRecordId?: string;
 }
 
 export interface SaveUserPledgesRequest {
   userId: string;
   pledges: Array<{
     pledgeId: string;
+    title?: string;
+    category?: string;
     reminderType?: ReminderType;
     customDate?: string;
   }>;
