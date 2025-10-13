@@ -19,14 +19,21 @@ const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 5001;
 
 // Middleware
-app.use(
-  cors({
-    origin: [
+// Parse CORS origins from environment variable or use defaults
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
+  : [
       "http://localhost:3000",
       "http://127.0.0.1:3000",
-      "https://www.ecopath.me",
-      "https://ecopath.me",
-    ],
+      "https://leafforward.space",
+      "https://www.leafforward.space",
+    ];
+
+console.log("🔒 CORS allowed origins:", allowedOrigins);
+
+app.use(
+  cors({
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
