@@ -1,11 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as emissionsService from "../services/emissionsService";
 import { UserPledgesService } from "../services/userPledgesService";
+import { predictionCache } from "../services/predictionCache";
+import { pool } from "../config/database";
 
 // Mock UserPledgesService
 vi.mock("../services/userPledgesService", () => ({
   UserPledgesService: {
     list: vi.fn(),
+  },
+}));
+
+// Mock predictionCache
+vi.mock("../services/predictionCache", () => ({
+  predictionCache: {
+    getPredictionsForState: vi.fn(),
+    getPredictions: vi.fn(),
+  },
+}));
+
+// Mock database pool
+vi.mock("../config/database", () => ({
+  pool: {
+    query: vi.fn(),
   },
 }));
 
@@ -26,6 +43,33 @@ describe("Multi-year Emissions Forecast", () => {
     vi.clearAllMocks();
     // Reset Date.now() mock if any
     vi.useRealTimers();
+
+    // Mock ML predictions data
+    // For VIC with population 6.7M, to get ~12000 kg/person/year baseline:
+    // Mt = kg_per_person * population / 1,000,000,000
+    // Mt = 12000 * 6700000 / 1000000000 = 80.4 Mt
+    const mockMLPredictions = [
+      { state_id: "VIC", year: 2026, predicted_emission_mt: 80.4 },
+      { state_id: "VIC", year: 2027, predicted_emission_mt: 79.2 },
+      { state_id: "VIC", year: 2028, predicted_emission_mt: 78.0 },
+      { state_id: "VIC", year: 2029, predicted_emission_mt: 76.8 },
+      { state_id: "VIC", year: 2030, predicted_emission_mt: 75.6 },
+      { state_id: "VIC", year: 2031, predicted_emission_mt: 74.4 },
+      { state_id: "VIC", year: 2032, predicted_emission_mt: 73.2 },
+      { state_id: "VIC", year: 2033, predicted_emission_mt: 72.0 },
+      { state_id: "VIC", year: 2034, predicted_emission_mt: 70.8 },
+      { state_id: "VIC", year: 2035, predicted_emission_mt: 69.6 },
+    ];
+    vi.mocked(predictionCache.getPredictionsForState).mockResolvedValue(mockMLPredictions);
+
+    // Mock population data
+    vi.mocked(pool.query).mockResolvedValue({
+      rows: [{ population: 6700000 }],
+      command: "SELECT",
+      rowCount: 1,
+      oid: 0,
+      fields: [],
+    } as any);
   });
 
   describe("calculateSavedEmissions", () => {
