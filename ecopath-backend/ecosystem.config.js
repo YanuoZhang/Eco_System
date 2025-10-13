@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "ecopath-backend",
-      cwd: "./ecopath-backend",
+      cwd: "./",
       script: "dist/index.js",
       instances: 1,
       exec_mode: "cluster",
@@ -19,4 +19,3 @@ module.exports = {
     },
   ],
 };
-
