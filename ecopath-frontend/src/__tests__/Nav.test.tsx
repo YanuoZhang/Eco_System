@@ -34,7 +34,7 @@ describe("Nav", () => {
 
   it("renders brand and primary links", () => {
     render(<Nav />);
-    expect(screen.getByText("EcoPath")).toBeInTheDocument();
+    expect(screen.getByText("LeafForward")).toBeInTheDocument();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Explore My Impact")).toBeInTheDocument();
   });

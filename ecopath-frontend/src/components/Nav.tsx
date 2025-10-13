@@ -66,7 +66,7 @@ export default function Nav() {
   useEffect(() => {
     // Check if user has pledges
     if (typeof window !== "undefined") {
-      const userId = localStorage.getItem("ecopath_uid");
+      const userId = localStorage.getItem("leafforward_uid");
       if (userId && userId !== "anonymous") {
         // Check localStorage for saved pledges or fetch from API
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -99,7 +99,7 @@ export default function Nav() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16">
           <div className="h-full flex items-center justify-between">
             <div className={`font-['Pacifico'] text-2xl sm:text-3xl ${palette.brandClass}`}>
-              EcoPath
+              LeafForward
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <Link href="/" className={`${linkBase} ${isActive("/")}`}>

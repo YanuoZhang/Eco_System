@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { apiClient } from "@/services/apiClient";
+import InfoTooltip from "@/components/InfoTooltip";
 
 type SavedPledge = {
   id: string;
@@ -105,7 +106,7 @@ export default function VisualizePage() {
 
     if (typeof window === "undefined") return;
     try {
-      const uid = localStorage.getItem("ecopath_uid") || "anonymous";
+      const uid = localStorage.getItem("leafforward_uid") || "anonymous";
       setUserId(uid);
 
       // Get user's selected state from quiz carbonFootprint data
@@ -572,7 +573,7 @@ export default function VisualizePage() {
                       🤖 Real ML-powered predictions for {selectedState}
                       {statePopulation && ` (${(statePopulation / 1000000).toFixed(1)}M people)`}
                       <span className="block text-xs text-emerald-300 mt-1">
-                        Baseline from quiz data + scientific pledge calculations
+                        Baseline from quiz data calculations
                       </span>
                     </span>
                   </div>
@@ -584,7 +585,24 @@ export default function VisualizePage() {
                 <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:scale-105 transition-all duration-300 hover:bg-white/15">
                   <div className="text-center">
                     <div className="text-3xl mb-4">📉</div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Your CO₂ Projection</h3>
+                    <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
+                      Your CO₂ Projection
+                      <InfoTooltip
+                        position="bottom"
+                        title="Calculation Method"
+                        content={
+                          <div>
+                            <p className="mb-2">
+                              <strong>Actual = Baseline - Saved</strong>
+                            </p>
+                            <p>
+                              This shows your reduced annual emissions after applying all your
+                              pledges.
+                            </p>
+                          </div>
+                        }
+                      />
+                    </h3>
                     <div className="text-3xl font-bold text-emerald-400 mb-2">
                       <AnimatedNumber value={animatedNumbers.actualEmissions} suffix=" kg" />
                     </div>
@@ -595,8 +613,26 @@ export default function VisualizePage() {
                 <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:scale-105 transition-all duration-300 hover:bg-white/15">
                   <div className="text-center">
                     <div className="text-3xl mb-4">📊</div>
-                    <h3 className="text-lg font-semibold text-white mb-2">
+                    <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
                       Baseline Without Pledges
+                      <InfoTooltip
+                        position="bottom"
+                        title="How Baseline is Calculated"
+                        content={
+                          <div>
+                            <p className="mb-2">Based on your Quiz data:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>⚡ Electricity usage</li>
+                              <li>🚗 Transportation modes & distances</li>
+                              <li>🔥 Hot water system type</li>
+                              <li>🏠 Home appliances usage</li>
+                            </ul>
+                            <p className="mt-2 text-blue-300">
+                              Using state-specific emission factors
+                            </p>
+                          </div>
+                        }
+                      />
                     </h3>
                     <div className="text-3xl font-bold text-slate-400 mb-2">
                       <AnimatedNumber value={animatedNumbers.baselineEmissions} suffix=" kg" />
@@ -608,7 +644,28 @@ export default function VisualizePage() {
                 <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:scale-105 transition-all duration-300 hover:bg-white/15">
                   <div className="text-center">
                     <div className="text-3xl mb-4">🌱</div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Total CO₂ Saved</h3>
+                    <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
+                      Total CO₂ Saved
+                      <InfoTooltip
+                        position="bottom"
+                        title="Savings Calculation"
+                        content={
+                          <div>
+                            <p className="mb-2">
+                              Sum of all your pledge impacts based on scientific estimates:
+                            </p>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>🔌 Energy pledges: % reduction of your baseline</li>
+                              <li>🚗 Transport pledges: km saved × emission factors</li>
+                              <li>♻️ Lifestyle pledges: standard impact values</li>
+                            </ul>
+                            <p className="mt-2 text-green-300">
+                              Personalized to your Quiz baseline
+                            </p>
+                          </div>
+                        }
+                      />
+                    </h3>
                     <div className="text-3xl font-bold text-green-400 mb-2">
                       <AnimatedNumber value={animatedNumbers.personalSavings} suffix=" kg" />
                     </div>
@@ -621,8 +678,26 @@ export default function VisualizePage() {
 
               {/* Line Chart */}
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 mb-12">
-                <h3 className="text-xl font-semibold text-white mb-2 text-center">
+                <h3 className="text-xl font-semibold text-white mb-2 text-center flex items-center justify-center gap-2">
                   Annual CO₂ Emissions Forecast
+                  <InfoTooltip
+                    title="AI-Powered Forecast"
+                    content={
+                      <div>
+                        <p className="mb-2">
+                          <strong>ML Model Predictions:</strong>
+                        </p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li>🤖 Trained on state emission trends</li>
+                          <li>📉 Projects future reductions</li>
+                          <li>⏳ Applies 2-3% annual decay to pledge effectiveness</li>
+                        </ul>
+                        <p className="mt-2 text-purple-300">
+                          Baseline gradually decreases as state improves infrastructure
+                        </p>
+                      </div>
+                    }
+                  />
                 </h3>
                 <p className="text-sm text-slate-400 text-center mb-6">
                   📊 Real ML predictions showing gradual emission reductions over time
@@ -711,8 +786,30 @@ export default function VisualizePage() {
 
               {/* Pledge Breakdown */}
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-                <h3 className="text-xl font-semibold text-white mb-6 text-center">
+                <h3 className="text-xl font-semibold text-white mb-6 text-center flex items-center justify-center gap-2">
                   Impact Breakdown by Pledge
+                  <InfoTooltip
+                    title="Per-Pledge Impact"
+                    content={
+                      <div>
+                        <p className="mb-2">Each pledge&apos;s annual savings calculated from:</p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li>
+                            <strong>Energy:</strong> % of your electricity baseline
+                          </li>
+                          <li>
+                            <strong>Transport:</strong> Distance × fuel type factor
+                          </li>
+                          <li>
+                            <strong>Lifestyle:</strong> Scientific standard values
+                          </li>
+                        </ul>
+                        <p className="mt-2 text-emerald-300">
+                          Values specific to your usage patterns
+                        </p>
+                      </div>
+                    }
+                  />
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {breakdownCards.map((pledge, index) => (
@@ -1317,7 +1414,7 @@ export default function VisualizePage() {
                         setTimeout(() => {
                           btn.innerHTML = originalText;
                         }, 2000);
-                      } catch (err) {
+                      } catch {
                         alert("Failed to copy link. Please copy manually: " + window.location.href);
                       }
                       document.body.removeChild(textArea);

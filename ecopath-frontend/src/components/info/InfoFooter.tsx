@@ -4,7 +4,7 @@ export default function InfoFooter() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center">
           <div className="font-['Pacifico'] text-3xl sm:text-4xl text-emerald-300 mb-6">
-            EcoPath
+            LeafForward
           </div>
           <p className="text-lg sm:text-xl text-emerald-200 max-w-3xl mx-auto mb-8">
             Climate information platform based on authoritative data sources, providing scientific
