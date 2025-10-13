@@ -77,7 +77,8 @@ export default function Nav() {
       const userId = localStorage.getItem("ecopath_uid");
       if (userId && userId !== "anonymous") {
         // Check localStorage for saved pledges or fetch from API
-        fetch(`/api/pledges/user?userId=${userId}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        fetch(`${apiUrl}/api/pledges/user?userId=${userId}`, {
           headers: { "x-user-id": userId },
         })
           .then((res) => res.json())

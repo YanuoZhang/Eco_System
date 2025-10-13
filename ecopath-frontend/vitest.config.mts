@@ -20,6 +20,8 @@ export default defineConfig({
     globals: true,
     css: true,
     setupFiles: ["./vitest.setup.ts"],
+    testTimeout: 10000,
+    hookTimeout: 10000,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

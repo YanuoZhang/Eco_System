@@ -205,7 +205,8 @@ export class UserPledgesService {
         RETURNING 
           id,
           user_id as "userId",
-          pledge_id as "pledgeId",
+          title,
+          category,
           reminder_type as "reminderType",
           custom_date as "customDate",
           created_at as "dateAdded"
@@ -220,16 +221,10 @@ export class UserPledgesService {
         return null;
       }
 
-      // Get pledge details
-      const pledgeDetails = await pool.query("SELECT title, category FROM pledges WHERE id = $1", [
-        result.rows[0].pledgeId,
-      ]);
-
       console.log(`✅ Rescheduled pledge ${recordId} for user ${userId}`);
       return {
         ...result.rows[0],
-        title: pledgeDetails.rows[0]?.title,
-        category: pledgeDetails.rows[0]?.category,
+        pledgeId: result.rows[0].title, // Use title as pledgeId for compatibility
       };
     } catch (error) {
       console.error("Error rescheduling user pledge:", error);
