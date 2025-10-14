@@ -54,9 +54,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-        <link rel="icon" href="/favicon.png?v=2" type="image/png" />
-        <link rel="apple-touch-icon" href="/favicon.png?v=2" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico?v=3" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/assets/leafforward.jpg" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} antialiased overflow-x-hidden`}
