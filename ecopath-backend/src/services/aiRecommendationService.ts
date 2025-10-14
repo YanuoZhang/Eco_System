@@ -96,64 +96,131 @@ export class AIRecommendationService {
         }
       }
 
-      // Fallback: generate simple pledges based on quiz insights
+      // Fallback: generate pledges based on actual emissions data
       const fallbackPledges: AIRecommendedPledge[] = [];
+      const actualQuizData = (quizData as any).quizData || quizData;
+      const totals = actualQuizData.totals || {};
 
-      // Generate specific, actionable pledges based on insights
-      if (insights.includes("Electricity usage detected")) {
-        fallbackPledges.push({
-          id: "unplug-electronics-nightly",
-          title: "Unplug Electronics at Night",
-          description:
-            "Unplug all chargers, TVs, and electronics before bed. Use a power strip for easy switching.",
-          category: "energy",
-          priority: "high",
-          impactScore: 2,
-          aiReason:
-            "Phantom energy from plugged-in devices adds up - unplugging saves money and reduces emissions",
-          impact: "medium",
-        });
-        fallbackPledges.push({
-          id: "switch-to-led-bulbs",
-          title: "Switch to LED Bulbs",
-          description:
-            "Replace all incandescent bulbs with LED bulbs. Start with the most-used rooms first.",
-          category: "energy",
-          priority: "high",
-          impactScore: 3,
-          aiReason: "LED bulbs use 75% less energy than traditional bulbs and last much longer",
-          impact: "large",
-        });
+      // Sort categories by emissions (highest first)
+      const categories = [
+        { name: "appliances", kg: totals.appliancesKgYear || 0 },
+        { name: "hotWater", kg: totals.hotWaterKgYear || 0 },
+        { name: "transport", kg: totals.transportKgYear || 0 },
+        { name: "electricity", kg: totals.electricityKgYear || 0 },
+      ]
+        .filter((c) => c.kg > 0)
+        .sort((a, b) => b.kg - a.kg);
+
+      console.log("[AI] Fallback - Categories by emissions:", categories);
+
+      // Generate pledges for top emission categories
+      for (const cat of categories.slice(0, 2)) {
+        // Focus on top 2 categories
+        if (cat.name === "appliances" && fallbackPledges.length < 3) {
+          fallbackPledges.push({
+            id: "switch-to-energy-efficient-appliances",
+            title: "Use Energy-Efficient Appliances",
+            description:
+              "Replace old appliances with Energy Star rated models. Start with the fridge and AC.",
+            category: "energy",
+            priority: "high",
+            impactScore: 3,
+            aiReason: `Your appliances produce ${Math.round(cat.kg)} kg CO2/year - upgrading can reduce this by 25-50%`,
+            impact: "large",
+          });
+        }
+
+        if (cat.name === "hotWater" && fallbackPledges.length < 3) {
+          fallbackPledges.push({
+            id: "take-5-minute-showers",
+            title: "Take 5-Minute Showers",
+            description:
+              "Set a timer for 5 minutes and stick to it. Every minute saved reduces energy and water usage.",
+            category: "water",
+            priority: "high",
+            impactScore: 2,
+            aiReason: `Hot water heating produces ${Math.round(cat.kg)} kg CO2/year - shorter showers can save up to 30%`,
+            impact: "medium",
+          });
+        }
+
+        if (cat.name === "transport" && fallbackPledges.length < 3) {
+          // Check actual transport modes
+          const modes = actualQuizData.transport?.modes || [];
+          const hasCar = modes.some((m: any) => m.mode === "car" && m.distance > 0);
+
+          if (hasCar) {
+            fallbackPledges.push({
+              id: "walk-or-bike-short-trips",
+              title: "Walk or Bike for Short Trips",
+              description:
+                "For trips under 2km, choose walking or cycling instead of driving. Set a weekly goal.",
+              category: "transport",
+              priority: "high",
+              impactScore: 3,
+              aiReason: `Transport produces ${Math.round(cat.kg)} kg CO2/year - replacing short car trips can save 20%`,
+              impact: "large",
+            });
+          } else {
+            fallbackPledges.push({
+              id: "optimize-public-transport-routes",
+              title: "Optimize Your Commute Route",
+              description:
+                "Review your regular routes and consider combining trips or choosing more efficient options.",
+              category: "transport",
+              priority: "medium",
+              impactScore: 2,
+              aiReason: `Transport produces ${Math.round(cat.kg)} kg CO2/year - optimizing routes can reduce emissions`,
+              impact: "medium",
+            });
+          }
+        }
+
+        if (cat.name === "electricity" && fallbackPledges.length < 3) {
+          fallbackPledges.push({
+            id: "switch-to-led-bulbs",
+            title: "Switch to LED Bulbs",
+            description:
+              "Replace all incandescent bulbs with LED bulbs. Start with the most-used rooms first.",
+            category: "energy",
+            priority: "high",
+            impactScore: 3,
+            aiReason: `Electricity produces ${Math.round(cat.kg)} kg CO2/year - LED bulbs use 75% less energy`,
+            impact: "large",
+          });
+        }
       }
 
-      if (insights.includes("Hot water usage detected")) {
-        fallbackPledges.push({
-          id: "take-5-minute-showers",
-          title: "Take 5-Minute Showers",
-          description:
-            "Set a timer for 5 minutes and stick to it. Every minute saved reduces energy and water usage.",
-          category: "water",
-          priority: "high",
-          impactScore: 2,
-          aiReason:
-            "Shorter showers significantly reduce hot water heating costs and water consumption",
-          impact: "medium",
-        });
-      }
-
-      if (insights.includes("Car usage detected")) {
-        fallbackPledges.push({
-          id: "walk-or-bike-short-trips",
-          title: "Walk or Bike for Short Trips",
-          description:
-            "For trips under 2km, choose walking or cycling instead of driving. Set a weekly goal.",
-          category: "transport",
-          priority: "high",
-          impactScore: 3,
-          aiReason:
-            "Short car trips are inefficient and contribute significantly to your transport emissions",
-          impact: "large",
-        });
+      // Add general pledges if we don't have enough yet
+      if (fallbackPledges.length < 3 && totals.totalKgYear > 0) {
+        if (!fallbackPledges.some((p) => p.category === "waste")) {
+          fallbackPledges.push({
+            id: "use-reusable-bags",
+            title: "Use Reusable Shopping Bags",
+            description:
+              "Keep reusable bags in your car or by the door. Say no to plastic bags at checkout.",
+            category: "waste",
+            priority: "medium",
+            impactScore: 2,
+            aiReason:
+              "Reducing single-use plastics helps decrease waste and manufacturing emissions",
+            impact: "medium",
+          });
+        }
+        if (fallbackPledges.length < 3 && !fallbackPledges.some((p) => p.category === "food")) {
+          fallbackPledges.push({
+            id: "reduce-food-waste",
+            title: "Plan Meals to Reduce Food Waste",
+            description:
+              "Create a weekly meal plan and shopping list. Store leftovers properly and use them creatively.",
+            category: "food",
+            priority: "medium",
+            impactScore: 2,
+            aiReason:
+              "Food waste contributes to methane emissions - reducing it has significant climate impact",
+            impact: "medium",
+          });
+        }
       }
 
       // Cache fallback pledges too (but with shorter expiry)
@@ -214,27 +281,82 @@ export class AIRecommendationService {
 
     // Handle nested quizData structure
     const actualQuizData = (quizData as any).quizData || quizData;
+    const totals = actualQuizData.totals || {};
+    const breakdown = {
+      electricity: totals.electricityKgYear || 0,
+      hotWater: totals.hotWaterKgYear || 0,
+      appliances: totals.appliancesKgYear || 0,
+      transport: totals.transportKgYear || 0,
+      total: totals.totalKgYear || 0,
+    };
 
-    // More flexible electricity analysis
-    console.log("[AI] Debug - Electricity usage:", actualQuizData.electricity?.usage);
-    if (actualQuizData.electricity?.usage && (actualQuizData.electricity.usage || 0) > 100) {
-      list.push("Electricity usage detected");
-      console.log("[AI] Debug - Added electricity insight");
+    console.log("[AI] Debug - Emissions breakdown:", breakdown);
+
+    // Analyze based on actual emissions from totals (more accurate)
+    if (breakdown.electricity > 0) {
+      list.push(`High electricity usage (${Math.round(breakdown.electricity)} kg CO2/year)`);
+      console.log("[AI] Debug - Added electricity insight from totals");
     }
 
-    // Check for hot water usage (any type)
-    if (actualQuizData.hotWater?.usage && (actualQuizData.hotWater.usage || 0) > 0)
-      list.push("Hot water usage detected");
+    if (breakdown.hotWater > 0) {
+      const system = actualQuizData.hotWater?.system || "unknown";
+      list.push(
+        `Hot water emissions (${Math.round(breakdown.hotWater)} kg CO2/year, ${system} system)`,
+      );
+    }
 
-    // Check for car usage in different formats
-    const carDistance =
-      (actualQuizData.transport as any)?.car?.distance ||
-      (actualQuizData.transport?.modes || []).find((m: any) => m.mode === "car")?.distance ||
-      0;
-    if (carDistance > 20) list.push("Car usage detected");
+    if (breakdown.appliances > 0) {
+      // Get appliance details for more specific insights
+      const appBreakdown = actualQuizData.applianceBreakdown || {};
+      const topAppliances = Object.entries(appBreakdown)
+        .map(([_key, data]: [string, any]) => ({
+          name: data.name,
+          emissions: data.emissions || 0,
+        }))
+        .filter((a) => a.emissions > 0)
+        .sort((a, b) => b.emissions - a.emissions)
+        .slice(0, 3);
 
-    // Check for appliances
-    if ((actualQuizData.appliances?.weeklyUsage || []).length > 0) list.push("Appliances in use");
+      if (topAppliances.length > 0) {
+        const names = topAppliances.map((a) => a.name).join(", ");
+        list.push(
+          `High appliance usage (${Math.round(breakdown.appliances)} kg CO2/year from ${names})`,
+        );
+      } else {
+        list.push(`Appliances contribute ${Math.round(breakdown.appliances)} kg CO2/year`);
+      }
+    }
+
+    if (breakdown.transport > 0) {
+      // Analyze transport modes
+      const modes = actualQuizData.transport?.modes || [];
+      const transportBreakdown = actualQuizData.transportBreakdown || {};
+      const modeDetails = modes
+        .filter((m: any) => m.distance > 0)
+        .map((m: any) => {
+          const emissions = transportBreakdown[m.mode]?.emissions || 0;
+          return { mode: m.mode, distance: m.distance, emissions };
+        })
+        .sort((a: any, b: any) => b.emissions - a.emissions);
+
+      if (modeDetails.length > 0) {
+        const modeList = modeDetails.map((m: any) => m.mode).join(", ");
+        list.push(
+          `Transport emissions: ${Math.round(breakdown.transport)} kg CO2/year (using ${modeList})`,
+        );
+      } else {
+        list.push(`Transport contributes ${Math.round(breakdown.transport)} kg CO2/year`);
+      }
+    }
+
+    // Add total footprint context
+    if (breakdown.total > 0) {
+      const avgAustralian = 15000; // Average Australian carbon footprint
+      const percentOfAvg = Math.round((breakdown.total / avgAustralian) * 100);
+      list.push(
+        `Total footprint: ${Math.round(breakdown.total)} kg CO2/year (${percentOfAvg}% of average Australian)`,
+      );
+    }
 
     // If we have any meaningful data, generate insights
     if (list.length > 0) return list;
@@ -252,14 +374,33 @@ export class AIRecommendationService {
   }
 
   private static buildPrompt(quizData: QuizData, insights: string[], _pledges: Pledge[]): string {
+    const actualQuizData = (quizData as any).quizData || quizData;
+    const state = actualQuizData.state || "VIC";
+
     return [
-      `Create specific, actionable climate pledges based on: ${insights.join(", ")}.`,
-      `Generate concrete actions that users can implement immediately and set reminders for.`,
-      `Examples of good pledges: "Switch to LED bulbs", "Take 5-minute showers", "Use reusable bags", "Bike to work twice a week"`,
-      `Avoid generic advice like "complete quiz" or "learn more". Focus on specific, measurable actions.`,
+      `You are an expert climate advisor helping an Australian in ${state} reduce their carbon footprint.`,
       ``,
-      `JSON format: {"recommendations": [{"id": "unique-id", "title": "Specific Action", "description": "Clear steps to take", "category": "energy|transport|waste|water|food|lifestyle", "impact": "small|medium|large", "aiReason": "Why this helps"}]}`,
-      `Max 3 items. No markdown.`,
+      `User's Current Emissions:`,
+      insights.map((i) => `- ${i}`).join("\n"),
+      ``,
+      `Generate 3-5 specific, actionable climate pledges that will have the MOST IMPACT on their emissions.`,
+      `Focus on the categories with highest emissions first.`,
+      ``,
+      `Requirements:`,
+      `1. Each pledge must be specific and measurable (e.g., "Switch all bulbs to LED" not "save energy")`,
+      `2. Include clear, actionable steps in the description`,
+      `3. Explain the carbon reduction benefit in aiReason`,
+      `4. Category must be: energy, transport, waste, water, food, or lifestyle`,
+      `5. Impact rating: small (<100kg/year), medium (100-500kg/year), large (>500kg/year)`,
+      ``,
+      `Examples of good pledges:`,
+      `- "Switch to LED bulbs" (energy, large impact for high electricity users)`,
+      `- "Take 5-minute showers" (water/energy, medium impact for high hot water usage)`,
+      `- "Use reusable coffee cup daily" (waste, small impact but easy habit)`,
+      `- "Bike to work twice a week" (transport, large impact for car commuters)`,
+      ``,
+      `Output JSON only (no markdown):`,
+      `{"recommendations": [{"id": "action-slug", "title": "Clear Action Title", "description": "Specific steps to take", "category": "energy", "impact": "large", "aiReason": "Why this matters for this user"}]}`,
     ].join("\n");
   }
 

@@ -25,6 +25,8 @@ export default function InfoPage() {
   const [climateTarget, setClimateTarget] = useState<ClimateTarget | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Only show states with complete data (emissions, energy mix, and climate targets)
+  // ACT and NT are excluded due to missing energy generation data
   const states: State[] = [
     { id: "NSW", name: "New South Wales" },
     { id: "VIC", name: "Victoria" },
@@ -32,8 +34,6 @@ export default function InfoPage() {
     { id: "SA", name: "South Australia" },
     { id: "WA", name: "Western Australia" },
     { id: "TAS", name: "Tasmania" },
-    { id: "ACT", name: "Australian Capital Territory" },
-    { id: "NT", name: "Northern Territory" },
   ];
 
   const selectedStateName = states.find((s) => s.id === selectedState)?.name || selectedState;
@@ -43,7 +43,12 @@ export default function InfoPage() {
       const data = await apiClient.getEmissionsData(state, "10y");
       setEmissionsData(data);
     } catch (error) {
-      console.error("Error fetching emissions data:", error);
+      // Set null for errors - component will handle display
+      setEmissionsData(null);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes("404")) {
+        console.error("Error fetching emissions data:", error);
+      }
     }
   };
 
@@ -52,7 +57,12 @@ export default function InfoPage() {
       const data = await apiClient.getEnergyMixData(state);
       setEnergyMixData(data);
     } catch (error) {
-      console.error("Error fetching energy mix data:", error);
+      // Set empty array for 404 or other errors - component will show "no data available"
+      setEnergyMixData([]);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes("404")) {
+        console.error("Error fetching energy mix data:", error);
+      }
     }
   };
 
@@ -61,7 +71,12 @@ export default function InfoPage() {
       const data = await apiClient.getClimateTargets(state);
       setClimateTarget(data);
     } catch (error) {
-      console.error("Error fetching climate target:", error);
+      // Set null for errors - component will handle display
+      setClimateTarget(null);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes("404")) {
+        console.error("Error fetching climate target:", error);
+      }
     }
   };
 
