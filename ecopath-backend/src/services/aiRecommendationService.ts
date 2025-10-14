@@ -9,16 +9,8 @@ try {
   } else {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-    model = genAI.getGenerativeModel({
-      model: modelName,
-      generationConfig: {
-        temperature: 0.7, // Lower = more focused
-        maxOutputTokens: 600, // Limit response length for faster replies
-        topP: 0.8,
-        topK: 40,
-      },
-    });
-    // init info removed
+    model = genAI.getGenerativeModel({ model: modelName });
+    console.log(`[AI] Initialized model: ${modelName} with API key: ${apiKey.substring(0, 10)}...`);
   }
 } catch (e: any) {
   console.error("[AI] Failed to initialize Gemini:", e?.message || e);
@@ -74,9 +66,9 @@ export class AIRecommendationService {
 
       console.log("[AI] Making AI request with insights:", insights);
 
-      // Use timeout for the main request (20 seconds for faster responses)
+      // Use timeout for the main request (60 seconds for gemini-2.5-pro with thinking)
       const requestTimeout = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("AI request timeout after 20s")), 20000);
+        setTimeout(() => reject(new Error("AI request timeout after 60s")), 60000);
       });
 
       const aiRequest = this.makeAIRequest(quizData, insights);
@@ -146,12 +138,28 @@ export class AIRecommendationService {
     // Only use top 3 most important insights
     const topInsights = insights.slice(0, 3);
     const prompt = this.buildPrompt(quizData, topInsights);
+    console.log("[AI] Prompt sent to Gemini:", prompt);
+
     if (!model) throw new Error("Gemini model not initialized");
 
     // Generate with optimized settings for faster, more concise responses
     const result = await model.generateContent(prompt);
 
+    // Check for safety issues or blocked content
+    const response = result.response;
+    console.log("[AI] Response candidates:", response.candidates?.length || 0);
+    if (response.promptFeedback) {
+      console.log("[AI] Prompt feedback:", JSON.stringify(response.promptFeedback));
+    }
+
     const text = (result.response.text() || "").trim();
+    console.log(
+      "[AI] Raw response from Gemini (length:",
+      text.length,
+      "):",
+      text.substring(0, 500),
+    );
+
     return this.parse(text);
   }
 
@@ -263,7 +271,11 @@ export class AIRecommendationService {
     }
 
     // If we have any meaningful data, generate insights
-    if (list.length > 0) return list;
+    if (list.length > 0) {
+      const result = list.slice(0, 3);
+      console.log("[AI] Debug - Final insights to AI:", result);
+      return result;
+    }
 
     // Fallback: generate basic insights based on any data present
     const hasElectricity = quizData.electricity?.usage && quizData.electricity.usage > 0;
@@ -277,23 +289,87 @@ export class AIRecommendationService {
     return ["Complete more quiz sections to improve personalization"];
   }
 
-  private static buildPrompt(quizData: QuizData, insights: string[]): string {
+  private static buildPrompt(quizData: QuizData, _insights: string[]): string {
     const actualQuizData = (quizData as any).quizData || quizData;
     const state = actualQuizData.state || "VIC";
 
+    // Build detailed context from ACTUAL quiz data
+    const context: string[] = [];
+
+    // Electricity usage
+    if (actualQuizData.electricity) {
+      const elec = actualQuizData.electricity;
+      if (elec.usage && elec.usage > 0) {
+        context.push(`Electricity: User entered ${elec.usage} kWh/month (exact usage)`);
+      } else if (elec.bill && elec.household) {
+        context.push(
+          `Electricity: Estimated from $${elec.bill}/month bill for ${elec.household}-person household`,
+        );
+      }
+    }
+
+    // Hot water system
+    if (actualQuizData.hotWater) {
+      const hw = actualQuizData.hotWater;
+      if (hw.system) {
+        if (hw.usage && hw.usage > 0) {
+          context.push(`Hot water: ${hw.system} system, ${hw.usage} kWh/month (exact usage)`);
+        } else if (hw.household) {
+          context.push(`Hot water: ${hw.system} system for ${hw.household}-person household`);
+        }
+      }
+    }
+
+    // Appliances (ONLY those with actual usage > 0)
+    if (actualQuizData.appliances?.weeklyUsage) {
+      const usedAppliances = actualQuizData.appliances.weeklyUsage.filter(
+        (a: any) => a.hoursPerWeek > 0,
+      );
+      if (usedAppliances.length > 0) {
+        const appList = usedAppliances
+          .map(
+            (a: any) =>
+              `${a.appliance} (${a.hoursPerWeek}h/week${a.energyEfficient ? ", efficient" : ", not efficient"})`,
+          )
+          .join(", ");
+        context.push(`Appliances in use: ${appList}`);
+      }
+    }
+
+    // Transport (ONLY those with actual usage > 0)
+    if (actualQuizData.transport?.modes) {
+      const usedTransport = actualQuizData.transport.modes.filter((m: any) => m.distance > 0);
+      if (usedTransport.length > 0) {
+        const transportList = usedTransport
+          .map((m: any) => `${m.mode} (${m.distance} km/${m.frequency})`)
+          .join(", ");
+        context.push(`Transport: ${transportList}`);
+      }
+    }
+
     return [
-      `Climate advisor for ${state} Australian. User emissions: ${insights.join("; ")}`,
+      `You are a climate advisor for ${state}, Australia.`,
       ``,
-      `Generate exactly 3 pledges. Focus on highest impact first.`,
+      `USER'S ACTUAL QUIZ DATA (ONLY recommend based on what they entered):`,
+      ...context.map((c) => `- ${c}`),
       ``,
-      `Requirements:`,
-      `- Specific actions (e.g. "Switch to LED bulbs")`,
-      `- Description: ONE sentence, max 15 words`,
-      `- aiReason: ONE sentence, max 20 words`,
-      `- Category: energy|transport|waste|water|food`,
-      `- Impact: small|medium|large`,
+      `TASK: Generate EXACTLY 3 actionable pledges based ONLY on the data above.`,
+      `- Focus on the HIGHEST impact areas from their actual usage`,
+      `- DO NOT suggest actions for categories they didn't fill out`,
+      `- If they use gas hot water, suggest switching to heat pump`,
+      `- If they use non-efficient appliances, suggest efficient replacements`,
+      `- If they drive, suggest reducing or switching to public transport`,
+      `- Prioritize: 1) largest emissions, 2) easiest to implement, 3) cost-effective`,
       ``,
-      `Output JSON only (no markdown, no explanation):`,
+      `FORMAT REQUIREMENTS:`,
+      `- id: kebab-case slug (e.g. "switch-to-heat-pump")`,
+      `- title: Clear action (max 6 words)`,
+      `- description: ONE sentence explaining how (max 15 words)`,
+      `- category: energy|transport|waste|water|food (match their quiz data)`,
+      `- impact: small|medium|large (based on their emissions)`,
+      `- aiReason: ONE sentence why this matters for THEIR situation (max 20 words)`,
+      ``,
+      `Output ONLY valid JSON (no markdown, no explanation):`,
       `{"recommendations": [{"id": "action-slug", "title": "Action Title", "description": "One sentence how-to", "category": "energy", "impact": "large", "aiReason": "One sentence why"}]}`,
     ].join("\n");
   }

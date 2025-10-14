@@ -25,12 +25,16 @@ export default function QuizPage() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   // Original quiz data for AI recommendations
-  const [electricity, setElectricity] = useState<number>(0);
+  // Electricity: either exact usage OR bill/household for estimation
+  const [electricity, setElectricity] = useState<number | undefined>(undefined);
+  const [electricityBill, setElectricityBill] = useState<number | undefined>(undefined);
+  const [electricityHousehold, setElectricityHousehold] = useState<number | undefined>(undefined);
+
   const [hotWaterSystem, setHotWaterSystem] = useState<"electric" | "gas" | "solar" | undefined>(
     undefined,
   );
-  const [hotWaterUsage, setHotWaterUsage] = useState<number>(0);
-  const [hotWaterHousehold, setHotWaterHousehold] = useState<number>(0);
+  const [hotWaterUsage, setHotWaterUsage] = useState<number | undefined>(undefined);
+  const [hotWaterHousehold, setHotWaterHousehold] = useState<number | undefined>(undefined);
   const [appliancesUsage, setAppliancesUsage] = useState<
     Array<{ appliance: string; hoursPerWeek?: number; energyEfficient?: boolean }>
   >([]);
@@ -80,9 +84,17 @@ export default function QuizPage() {
           setTimeUnit(parsed.timeUnit);
         }
 
-        // Restore electricity data
-        if (parsed.electricity?.usage !== undefined) {
+        // Restore electricity data - check mode
+        if (parsed.electricity?.usage !== undefined && parsed.electricity.usage > 0) {
+          // User entered exact usage
           setElectricity(parsed.electricity.usage);
+          setElectricityBill(undefined);
+          setElectricityHousehold(undefined);
+        } else if (parsed.electricity?.bill !== undefined) {
+          // User used estimation
+          setElectricity(undefined);
+          setElectricityBill(parsed.electricity.bill);
+          setElectricityHousehold(parsed.electricity.household || 1);
         }
 
         // Restore hot water data
@@ -228,10 +240,48 @@ export default function QuizPage() {
           <QuizElectricity
             timeUnit={timeUnit}
             electricity={electricity}
+            bill={electricityBill}
+            household={electricityHousehold}
             factors={factors}
             onChange={(v) => {
+              console.log("[Quiz Page] Electricity onChange received:", v);
+              console.log("[Quiz Page] Current state:", {
+                electricity,
+                electricityBill,
+                electricityHousehold,
+              });
+
               if (v.timeUnit) setTimeUnit(v.timeUnit);
-              if (typeof v.electricity === "number") setElectricity(v.electricity);
+              // Handle both modes - only update if explicitly provided
+              if (v.electricity !== undefined) {
+                // User is in exact usage mode
+                if (v.electricity !== electricity) {
+                  console.log("[Quiz Page] Updating electricity:", v.electricity);
+                  setElectricity(v.electricity);
+                }
+                if (electricityBill !== undefined) {
+                  console.log("[Quiz Page] Clearing electricityBill");
+                  setElectricityBill(undefined);
+                }
+                if (electricityHousehold !== undefined) {
+                  console.log("[Quiz Page] Clearing electricityHousehold");
+                  setElectricityHousehold(undefined);
+                }
+              } else if (v.bill !== undefined) {
+                // User is in estimation mode
+                if (electricity !== undefined) {
+                  console.log("[Quiz Page] Clearing electricity");
+                  setElectricity(undefined);
+                }
+                if (v.bill !== electricityBill) {
+                  console.log("[Quiz Page] Updating electricityBill:", v.bill);
+                  setElectricityBill(v.bill);
+                }
+                if (v.household !== electricityHousehold) {
+                  console.log("[Quiz Page] Updating electricityHousehold:", v.household);
+                  setElectricityHousehold(v.household);
+                }
+              }
               if (typeof v.electricityEmissionsKgYear === "number")
                 setElectricityEmissions(v.electricityEmissionsKgYear);
             }}
@@ -243,10 +293,38 @@ export default function QuizPage() {
             usage={hotWaterUsage}
             household={hotWaterHousehold}
             onChange={(v) => {
+              console.log("[Quiz Page] HotWater onChange received:", v);
+              console.log("[Quiz Page] Current hotWater state:", {
+                hotWaterUsage,
+                hotWaterHousehold,
+              });
+
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (v.system) setHotWaterSystem(v.system);
-              if (typeof v.usage === "number") setHotWaterUsage(v.usage);
-              if (typeof v.household === "number") setHotWaterHousehold(v.household);
+
+              // Handle both modes
+              if (v.usage !== undefined) {
+                // User entered exact usage
+                if (v.usage !== hotWaterUsage) {
+                  console.log("[Quiz Page] Updating hotWaterUsage:", v.usage);
+                  setHotWaterUsage(v.usage);
+                }
+                if (hotWaterHousehold !== undefined) {
+                  console.log("[Quiz Page] Clearing hotWaterHousehold");
+                  setHotWaterHousehold(undefined);
+                }
+              } else if (v.household !== undefined) {
+                // User using estimation
+                if (hotWaterUsage !== undefined) {
+                  console.log("[Quiz Page] Clearing hotWaterUsage");
+                  setHotWaterUsage(undefined);
+                }
+                if (v.household !== hotWaterHousehold) {
+                  console.log("[Quiz Page] Updating hotWaterHousehold:", v.household);
+                  setHotWaterHousehold(v.household);
+                }
+              }
+
               if (typeof v.hotWaterEmissionsKgYear === "number")
                 setHotWaterEmissions(v.hotWaterEmissionsKgYear);
             }}
@@ -281,17 +359,18 @@ export default function QuizPage() {
             const payload = {
               // Original quiz data for AI recommendations
               location: { state: selectedState },
-              electricity: {
-                usage: electricity,
-                timeUnit,
-                household: 1, // Default household size
-              },
-              hotWater: {
-                system: hotWaterSystem,
-                usage: hotWaterUsage,
-                timeUnit,
-                household: hotWaterHousehold,
-              },
+              electricity:
+                electricity !== undefined
+                  ? // User entered exact usage
+                    { usage: electricity, timeUnit }
+                  : // User used estimation
+                    { bill: electricityBill, household: electricityHousehold, timeUnit },
+              hotWater:
+                hotWaterUsage !== undefined
+                  ? // User entered exact usage
+                    { system: hotWaterSystem, usage: hotWaterUsage, timeUnit }
+                  : // User using estimation
+                    { system: hotWaterSystem, household: hotWaterHousehold, timeUnit },
               appliances: {
                 weeklyUsage: appliancesUsage,
               },
@@ -377,17 +456,18 @@ export default function QuizPage() {
                 const payload = {
                   // Original quiz data for AI recommendations
                   location: { state: selectedState },
-                  electricity: {
-                    usage: electricity,
-                    timeUnit,
-                    household: 1, // Default household size
-                  },
-                  hotWater: {
-                    system: hotWaterSystem,
-                    usage: hotWaterUsage,
-                    timeUnit,
-                    household: hotWaterHousehold,
-                  },
+                  electricity:
+                    electricity !== undefined
+                      ? // User entered exact usage
+                        { usage: electricity, timeUnit }
+                      : // User used estimation
+                        { bill: electricityBill, household: electricityHousehold, timeUnit },
+                  hotWater:
+                    hotWaterUsage !== undefined
+                      ? // User entered exact usage
+                        { system: hotWaterSystem, usage: hotWaterUsage, timeUnit }
+                      : // User using estimation
+                        { system: hotWaterSystem, household: hotWaterHousehold, timeUnit },
                   appliances: {
                     weeklyUsage: appliancesUsage,
                   },

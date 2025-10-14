@@ -46,27 +46,36 @@ export default function QuizHotWater({
   );
   const [household, setHousehold] = useState<number>(initialHousehold || 1);
 
-  // Initialize from props only once
+  // Initialize from props - update when props change
   useEffect(() => {
-    if (!initializedRef.current) {
-      console.log("[QuizHotWater] Initializing with:", {
-        initialSystem,
-        initialUsage,
-        initialHousehold,
-      });
-      if (initialSystem) {
-        setHotWaterSystem(initialSystem);
-      }
-      if (initialUsage !== undefined) {
-        setUsageKnown(true);
-        setKnownUsage(String(initialUsage));
-      }
-      if (initialHousehold !== undefined) {
-        setHousehold(initialHousehold);
-      }
-      initializedRef.current = true;
+    console.log("[QuizHotWater] Initializing/updating with:", {
+      initialSystem,
+      initialUsage,
+      initialHousehold,
+    });
+    if (initialSystem) {
+      setHotWaterSystem(initialSystem);
     }
+    if (initialUsage !== undefined && initialUsage > 0) {
+      setUsageKnown(true);
+      setKnownUsage(String(initialUsage));
+    } else if (initialUsage === 0) {
+      // Don't show 0 in the input field
+      setUsageKnown(false);
+      setKnownUsage("");
+    }
+    if (initialHousehold !== undefined) {
+      setHousehold(initialHousehold);
+    }
+    initializedRef.current = true;
   }, [initialSystem, initialUsage, initialHousehold]);
+
+  // Clear input when user unchecks "I know my exact usage"
+  useEffect(() => {
+    if (!usageKnown) {
+      setKnownUsage("");
+    }
+  }, [usageKnown]);
 
   // Local fallback timeUnit when parent is not controlling it
   const [localTimeUnit] = useState<"week" | "month" | "quarter" | "year">("month");
@@ -103,7 +112,7 @@ export default function QuizHotWater({
     return Number.isFinite(n) && n > 0 ? n : 0;
   }, [knownUsage]);
 
-  // Calculate hot water emissions based on system type and household size
+  // Calculate hot water emissions based on system type and household/usage
   const hotWaterEmissionsKgYear = useMemo(() => {
     if (!hotWaterSystem) return 0;
 
@@ -185,15 +194,67 @@ export default function QuizHotWater({
     computeGasEmissionsKg,
   ]);
 
+  // Track the last reported values to prevent infinite loops
+  const lastReportedRef = useRef<{
+    emissions: number;
+    system?: string;
+    usage?: number;
+    household?: number;
+    usageKnown: boolean;
+  }>({ emissions: 0, usageKnown: false });
+
   useEffect(() => {
-    onChange?.({
-      hotWaterEmissionsKgYear,
-      system: hotWaterSystem || undefined,
-      usage: usageKnown ? Number(knownUsage) || undefined : undefined,
-      household: household || undefined,
-    });
+    // Only call onChange if values actually changed
+    const hasChanged =
+      lastReportedRef.current.emissions !== hotWaterEmissionsKgYear ||
+      lastReportedRef.current.system !== (hotWaterSystem || undefined) ||
+      lastReportedRef.current.usageKnown !== usageKnown ||
+      (usageKnown && lastReportedRef.current.usage !== knownUsageValue) ||
+      (!usageKnown && lastReportedRef.current.household !== household);
+
+    if (hasChanged) {
+      console.log("[QuizHotWater] onChange triggered:", {
+        usageKnown,
+        usage: usageKnown ? knownUsageValue : undefined,
+        household: !usageKnown ? household : undefined,
+      });
+
+      if (usageKnown) {
+        // User entered exact usage - save only usage value
+        lastReportedRef.current = {
+          emissions: hotWaterEmissionsKgYear,
+          system: hotWaterSystem || undefined,
+          usage: knownUsageValue > 0 ? knownUsageValue : undefined,
+          household: undefined,
+          usageKnown: true,
+        };
+        onChange?.({
+          hotWaterEmissionsKgYear,
+          system: hotWaterSystem || undefined,
+          // Only pass usage when user explicitly entered it
+          usage: knownUsageValue > 0 ? knownUsageValue : undefined,
+          household: undefined,
+        });
+      } else {
+        // User using estimation - save household only
+        lastReportedRef.current = {
+          emissions: hotWaterEmissionsKgYear,
+          system: hotWaterSystem || undefined,
+          usage: undefined,
+          household: household,
+          usageKnown: false,
+        };
+        onChange?.({
+          hotWaterEmissionsKgYear,
+          system: hotWaterSystem || undefined,
+          // Clear usage when using estimation
+          usage: undefined,
+          household: household,
+        });
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hotWaterEmissionsKgYear, hotWaterSystem, knownUsage, usageKnown, household]);
+  }, [hotWaterEmissionsKgYear, hotWaterSystem, usageKnown, knownUsageValue, household]);
 
   const unitLabel = getTimeUnitLabel(currentTimeUnit);
 
