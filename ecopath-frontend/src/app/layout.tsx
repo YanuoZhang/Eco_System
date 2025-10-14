@@ -23,6 +23,23 @@ const pacifico = Pacifico({
 export const metadata: Metadata = {
   title: "LeafForward",
   description: "LeafForward - Track your climate impact and take action",
+  icons: {
+    icon: "/assets/leafforward.jpg",
+    apple: "/assets/leafforward.jpg",
+  },
+  openGraph: {
+    title: "LeafForward",
+    description: "Track your climate impact and take action for a sustainable future",
+    images: ["/assets/leafforward.jpg"],
+    type: "website",
+    siteName: "LeafForward",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeafForward",
+    description: "Track your climate impact and take action for a sustainable future",
+    images: ["/assets/leafforward.jpg"],
+  },
 };
 
 export default function RootLayout({
