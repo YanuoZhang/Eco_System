@@ -24,8 +24,12 @@ export const metadata: Metadata = {
   title: "LeafForward",
   description: "LeafForward - Track your climate impact and take action",
   icons: {
-    icon: "/assets/leafforward.jpg",
-    apple: "/assets/leafforward.jpg",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/assets/leafforward.jpg", type: "image/jpeg" },
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
   },
   openGraph: {
     title: "LeafForward",
