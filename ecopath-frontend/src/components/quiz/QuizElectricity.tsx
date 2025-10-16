@@ -57,28 +57,10 @@ export default function QuizElectricity({
   const [localElectricity, setLocalElectricity] = useState<number | "">("");
   const initializedRef = useRef(false);
 
-  // Initialize from parent props - only run once on mount or when switching modes
+  // Initialize from parent props - only run once on mount
   useEffect(() => {
-    // Skip if already initialized and props haven't meaningfully changed
+    // Only initialize once
     if (initializedRef.current) {
-      // Check if we need to switch modes
-      const shouldBeKnowKwh = electricity !== undefined && electricity > 0;
-      const shouldBeEstimation = initialBill !== undefined && initialBill > 0;
-
-      if (shouldBeKnowKwh && !knowKwh) {
-        console.log("[QuizElectricity] Switching to exact usage mode:", electricity);
-        setLocalElectricity(electricity);
-        setKnowKwh(true);
-      } else if (shouldBeEstimation && knowKwh) {
-        console.log("[QuizElectricity] Switching to estimation mode:", {
-          bill: initialBill,
-          household: initialHousehold,
-        });
-        setBill(initialBill);
-        setHousehold(initialHousehold || 1);
-        setKnowKwh(false);
-        setLocalElectricity("");
-      }
       return;
     }
 
@@ -102,7 +84,8 @@ export default function QuizElectricity({
       // No saved data - default to estimation mode
       initializedRef.current = true;
     }
-  }, [electricity, initialBill, initialHousehold, knowKwh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Clear input when user unchecks "I know my exact usage"
   useEffect(() => {

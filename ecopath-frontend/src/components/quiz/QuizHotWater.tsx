@@ -46,9 +46,14 @@ export default function QuizHotWater({
   );
   const [household, setHousehold] = useState<number>(initialHousehold || 1);
 
-  // Initialize from props - update when props change
+  // Initialize from props - only run once on mount
   useEffect(() => {
-    console.log("[QuizHotWater] Initializing/updating with:", {
+    // Only initialize once
+    if (initializedRef.current) {
+      return;
+    }
+
+    console.log("[QuizHotWater] Initializing with:", {
       initialSystem,
       initialUsage,
       initialHousehold,
@@ -68,7 +73,8 @@ export default function QuizHotWater({
       setHousehold(initialHousehold);
     }
     initializedRef.current = true;
-  }, [initialSystem, initialUsage, initialHousehold]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Clear input when user unchecks "I know my exact usage"
   useEffect(() => {
