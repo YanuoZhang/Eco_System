@@ -91,6 +91,9 @@ export default function EmissionsSection({ emissionsData, stateName }: Emissions
             <div>
               <h4 className="text-lg font-semibold text-blue-200 mb-2">Data Insights</h4>
               <ul className="text-slate-300 space-y-1 text-sm">
+                <li>
+                  • <strong>Mt = Megatonnes</strong> (1 Mt = 1 million tonnes of CO₂ equivalent)
+                </li>
                 <li>• Emissions data shows {stateName}&apos;s carbon footprint over time</li>
                 <li>• Lower values indicate better environmental performance</li>
                 <li>• Negative values mean the state absorbs more CO₂ than it emits</li>
