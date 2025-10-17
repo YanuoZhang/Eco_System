@@ -708,16 +708,6 @@ export default function VisualizePage() {
                   )}
                 </p>
                 <div className="relative h-64 flex items-end justify-between gap-2">
-                  {/* Reference line for 20,000 kg */}
-                  <div
-                    className="absolute left-0 right-0 border-t border-dashed border-slate-400/50"
-                    style={{ bottom: "45%" }}
-                  >
-                    <span className="absolute -left-16 top-0 text-xs text-slate-400 transform -translate-y-1/2">
-                      20,000 kg
-                    </span>
-                  </div>
-
                   {chartYears.map((year: string, index: number) => {
                     // Calculate scaling for trend visualization with better proportion
                     const allValues = [...baselineData, ...actualData];
