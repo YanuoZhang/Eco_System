@@ -43,6 +43,64 @@ export default function PledgePage() {
   const [customEnd, setCustomEnd] = useState<Record<string, string>>({});
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [lastQuizDataHash, setLastQuizDataHash] = useState<string | null>(null); // Track quiz data content
+
+  // Helper function to save and load hash from localStorage
+  const saveHashToStorage = (hash: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lastQuizDataHash", hash);
+    }
+  };
+
+  // Helper function to get stable quiz data (excluding dynamic fields)
+  const getStableQuizData = (quizData: Record<string, unknown>) => {
+    const stableData = {
+      location: quizData.location,
+      electricity: quizData.electricity,
+      hotWater: quizData.hotWater,
+      appliances: quizData.appliances,
+      transport: quizData.transport,
+      state: quizData.state,
+      timeUnit: quizData.timeUnit,
+      totals: quizData.totals,
+      applianceBreakdown: quizData.applianceBreakdown,
+      transportBreakdown: quizData.transportBreakdown,
+      // Exclude savedAt and other dynamic fields
+    };
+
+    // Use a more robust JSON.stringify that properly handles nested objects
+    const stableJsonString = JSON.stringify(stableData, (key, value) => {
+      // Skip undefined values
+      if (value === undefined) return undefined;
+      // Sort object keys recursively
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        const sortedObj: Record<string, unknown> = {};
+        Object.keys(value)
+          .sort()
+          .forEach((k) => {
+            sortedObj[k] = value[k];
+          });
+        return sortedObj;
+      }
+      return value;
+    });
+
+    return stableJsonString;
+  };
+
+  // Helper function to calculate hash from stable JSON string
+  const calculateHash = (jsonString: string): string => {
+    let hash = 0;
+    if (jsonString.length === 0) return "0";
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & 0xffffffff; // Convert to 32bit signed integer
+    }
+    return Math.abs(hash).toString(16);
+  };
+
+  // Listen for quiz data changes via custom event
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,6 +123,38 @@ export default function PledgePage() {
     if (quizData) {
       setHasCompletedQuiz(true);
       setActiveTab("ai");
+
+      // Calculate current quiz data hash (excluding dynamic fields like savedAt)
+      const parsedQuizData = JSON.parse(quizData);
+      const currentStableJson = getStableQuizData(parsedQuizData);
+      const currentHash = calculateHash(currentStableJson);
+
+      // Load data version from localStorage to check if quiz data changed
+      let currentDataVersion = localStorage.getItem("quizDataVersion");
+
+      // If no version exists but we have quiz data, create one
+      if (!currentDataVersion && quizData) {
+        currentDataVersion = Date.now().toString();
+        localStorage.setItem("quizDataVersion", currentDataVersion);
+      }
+
+      const lastKnownDataVersion = localStorage.getItem("lastKnownQuizDataVersion");
+
+      // Determine if quiz data has changed by comparing version numbers
+      const quizDataChanged = !lastKnownDataVersion || lastKnownDataVersion !== currentDataVersion;
+
+      // Set lastQuizDataHash to trigger AI useEffect comparison
+      // If data changed, use a different hash to force refresh
+      // If data unchanged, use the same hash to use cache
+      if (quizDataChanged) {
+        setLastQuizDataHash("CHANGED"); // Use special value to force refresh
+        // Don't update lastKnownQuizDataVersion here - wait until AI recommendations are successfully loaded
+      } else {
+        setLastQuizDataHash(currentHash);
+      }
+
+      // Save current hash to localStorage for next comparison
+      saveHashToStorage(currentHash);
     }
   }, []);
 
@@ -254,8 +344,6 @@ export default function PledgePage() {
 
   useEffect(() => {
     if (!hasCompletedQuiz) return;
-    // Only load if we don't have suggestions yet
-    if (aiSuggestedPledges.length > 0) return;
 
     let cancelled = false;
     (async () => {
@@ -269,10 +357,20 @@ export default function PledgePage() {
         }
         const quizData = JSON.parse(raw);
 
-        const resp = (await apiClient.getAiRecommendations({
-          quizData,
-          // Removed timestamp to allow caching based on quiz content
-        })) as {
+        // Check if quiz data content has actually changed by comparing hashes
+        const currentStableJson = getStableQuizData(quizData);
+        const currentHash = calculateHash(currentStableJson);
+
+        // Force refresh if lastQuizDataHash is 'CHANGED' (special value indicating data changed)
+        // or if the hashes are different
+        const forceRefresh = lastQuizDataHash === "CHANGED" || lastQuizDataHash !== currentHash;
+
+        const resp = (await apiClient.getAiRecommendations(
+          {
+            quizData,
+          },
+          forceRefresh,
+        )) as {
           success: boolean;
           data?: unknown;
         };
@@ -326,6 +424,20 @@ export default function PledgePage() {
             aiReason: r.aiReason,
           }));
           setAiSuggestedPledges(mapped);
+
+          // Update lastQuizDataHash to current hash after successful load
+          // This prevents unnecessary refreshes on subsequent loads with same data
+          if (lastQuizDataHash === "CHANGED") {
+            setLastQuizDataHash(currentHash);
+
+            // Also update the last known data version to prevent future unnecessary refreshes
+            const currentDataVersion = localStorage.getItem("quizDataVersion");
+            if (currentDataVersion) {
+              localStorage.setItem("lastKnownQuizDataVersion", currentDataVersion);
+            }
+          }
+
+          // Don't update hash here - it should only be updated when quiz data actually changes
         } else {
           setAiSuggestedPledges([]);
         }
@@ -339,7 +451,24 @@ export default function PledgePage() {
     return () => {
       cancelled = true;
     };
-  }, [hasCompletedQuiz, aiSuggestedPledges.length]);
+  }, [hasCompletedQuiz, lastQuizDataHash]);
+
+  // Clear AI recommendations when quiz data changes (triggered by quizDataUpdated event)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleQuizDataUpdate = () => {
+      // Clear AI recommendations to force reload with new data
+      setAiSuggestedPledges([]);
+    };
+
+    // Listen for custom quiz data update events
+    window.addEventListener("quizDataUpdated", handleQuizDataUpdate);
+
+    return () => {
+      window.removeEventListener("quizDataUpdated", handleQuizDataUpdate);
+    };
+  }, [aiSuggestedPledges.length]); // Add dependency to ensure we have latest state
 
   const getCurrentPledges = () => (activeTab === "public" ? publicPledges : aiSuggestedPledges);
 

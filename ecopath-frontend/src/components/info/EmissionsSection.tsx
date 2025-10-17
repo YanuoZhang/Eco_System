@@ -91,6 +91,17 @@ export default function EmissionsSection({ emissionsData, stateName }: Emissions
             <div>
               <h4 className="text-lg font-semibold text-blue-200 mb-2">Data Insights</h4>
               <ul className="text-slate-300 space-y-1 text-sm">
+                <li>
+                  • <strong>Mt CO₂-e = Megatonnes CO₂ equivalent</strong> (1 Mt = 1 million tonnes)
+                </li>
+                <li>
+                  • <strong>CO₂-e</strong> means all greenhouse gases (methane, nitrous oxide, etc.)
+                  are converted to equivalent CO₂ amounts
+                </li>
+                <li>
+                  • <strong>Example:</strong> 84.2 Mt CO₂-e = 84.2 million tonnes of CO₂ equivalent
+                  emissions
+                </li>
                 <li>• Emissions data shows {stateName}&apos;s carbon footprint over time</li>
                 <li>• Lower values indicate better environmental performance</li>
                 <li>• Negative values mean the state absorbs more CO₂ than it emits</li>

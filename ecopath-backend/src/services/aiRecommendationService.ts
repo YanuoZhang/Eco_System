@@ -1,5 +1,4 @@
-import { QuizData, AIRecommendedPledge, AIRecommendationResponse, Pledge } from "../types";
-import { PledgesService } from "./pledgesService";
+import { QuizData, AIRecommendedPledge, AIRecommendationResponse } from "../types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
@@ -11,7 +10,6 @@ try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
     model = genAI.getGenerativeModel({ model: modelName });
-    // init info removed
   }
 } catch (e: any) {
   console.error("[AI] Failed to initialize Gemini:", e?.message || e);
@@ -21,19 +19,27 @@ try {
 export class AIRecommendationService {
   private static cache = new Map<string, { data: AIRecommendedPledge[]; expireAt: number }>();
 
-  static async generateRecommendations(quizData: QuizData): Promise<AIRecommendationResponse> {
+  // Clear all cached recommendations (call when quiz data is updated)
+  public static clearCache(): void {
+    this.cache.clear();
+  }
+
+  static async generateRecommendations(
+    quizData: QuizData,
+    forceRefresh = false,
+  ): Promise<AIRecommendationResponse> {
     if (!quizData) {
       return { success: false, error: "Quiz data is required", data: [], totalRecommendations: 0 };
     }
     const insights = this.analyze(quizData);
-    console.log("[AI] Debug - Insights generated:", insights);
 
     // Cache key by quiz hash (stable stringify)
     const key = this.hashQuiz(quizData);
     const now = Date.now();
     const hit = this.cache.get(key);
 
-    if (hit && hit.expireAt > now && hit.data.length > 0) {
+    // Skip cache if forceRefresh is true
+    if (!forceRefresh && hit && hit.expireAt > now && hit.data.length > 0) {
       return {
         success: true,
         data: hit.data,
@@ -49,15 +55,26 @@ export class AIRecommendationService {
       this.cache.delete(key);
     }
     try {
-      // Use timeout for the main request
+      // Check if model is initialized
+      if (!model) {
+        console.error("[AI] Gemini model not initialized - check GEMINI_API_KEY");
+        return {
+          success: false,
+          error: "AI model not initialized. Please check GEMINI_API_KEY environment variable.",
+          data: [],
+          totalRecommendations: 0,
+        };
+      }
+
+      // Use timeout for the main request (60 seconds for gemini-2.5-pro with thinking)
       const requestTimeout = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("AI request timeout")), 8000); // 8 second timeout
+        setTimeout(() => reject(new Error("AI request timeout after 60s")), 60000);
       });
 
       const aiRequest = this.makeAIRequest(quizData, insights);
       const parsed = await Promise.race([aiRequest, requestTimeout]);
 
-      // Only cache successful AI responses, not fallback suggestions
+      // Only cache successful AI responses
       if (parsed.length > 0) {
         const expireAt = now + 24 * 60 * 60 * 1000;
         this.cache.set(key, { data: parsed, expireAt });
@@ -72,6 +89,7 @@ export class AIRecommendationService {
       };
     } catch (err: any) {
       console.error("[AI] generateRecommendations failed:", err?.message || err);
+      console.error("[AI] Full error:", err);
 
       // Only retry once for rate limiting, not for timeouts
       const message = String(err?.message || "");
@@ -92,149 +110,18 @@ export class AIRecommendationService {
               insights,
               timestamp: new Date().toISOString(),
             };
-          } catch {}
-        }
-      }
-
-      // Fallback: generate pledges based on actual emissions data
-      const fallbackPledges: AIRecommendedPledge[] = [];
-      const actualQuizData = (quizData as any).quizData || quizData;
-      const totals = actualQuizData.totals || {};
-
-      // Sort categories by emissions (highest first)
-      const categories = [
-        { name: "appliances", kg: totals.appliancesKgYear || 0 },
-        { name: "hotWater", kg: totals.hotWaterKgYear || 0 },
-        { name: "transport", kg: totals.transportKgYear || 0 },
-        { name: "electricity", kg: totals.electricityKgYear || 0 },
-      ]
-        .filter((c) => c.kg > 0)
-        .sort((a, b) => b.kg - a.kg);
-
-      console.log("[AI] Fallback - Categories by emissions:", categories);
-
-      // Generate pledges for top emission categories
-      for (const cat of categories.slice(0, 2)) {
-        // Focus on top 2 categories
-        if (cat.name === "appliances" && fallbackPledges.length < 3) {
-          fallbackPledges.push({
-            id: "switch-to-energy-efficient-appliances",
-            title: "Use Energy-Efficient Appliances",
-            description:
-              "Replace old appliances with Energy Star rated models. Start with the fridge and AC.",
-            category: "energy",
-            priority: "high",
-            impactScore: 3,
-            aiReason: `Your appliances produce ${Math.round(cat.kg)} kg CO2/year - upgrading can reduce this by 25-50%`,
-            impact: "large",
-          });
-        }
-
-        if (cat.name === "hotWater" && fallbackPledges.length < 3) {
-          fallbackPledges.push({
-            id: "take-5-minute-showers",
-            title: "Take 5-Minute Showers",
-            description:
-              "Set a timer for 5 minutes and stick to it. Every minute saved reduces energy and water usage.",
-            category: "water",
-            priority: "high",
-            impactScore: 2,
-            aiReason: `Hot water heating produces ${Math.round(cat.kg)} kg CO2/year - shorter showers can save up to 30%`,
-            impact: "medium",
-          });
-        }
-
-        if (cat.name === "transport" && fallbackPledges.length < 3) {
-          // Check actual transport modes
-          const modes = actualQuizData.transport?.modes || [];
-          const hasCar = modes.some((m: any) => m.mode === "car" && m.distance > 0);
-
-          if (hasCar) {
-            fallbackPledges.push({
-              id: "walk-or-bike-short-trips",
-              title: "Walk or Bike for Short Trips",
-              description:
-                "For trips under 2km, choose walking or cycling instead of driving. Set a weekly goal.",
-              category: "transport",
-              priority: "high",
-              impactScore: 3,
-              aiReason: `Transport produces ${Math.round(cat.kg)} kg CO2/year - replacing short car trips can save 20%`,
-              impact: "large",
-            });
-          } else {
-            fallbackPledges.push({
-              id: "optimize-public-transport-routes",
-              title: "Optimize Your Commute Route",
-              description:
-                "Review your regular routes and consider combining trips or choosing more efficient options.",
-              category: "transport",
-              priority: "medium",
-              impactScore: 2,
-              aiReason: `Transport produces ${Math.round(cat.kg)} kg CO2/year - optimizing routes can reduce emissions`,
-              impact: "medium",
-            });
+          } catch (retryErr) {
+            console.error("[AI] Retry also failed:", retryErr);
           }
         }
-
-        if (cat.name === "electricity" && fallbackPledges.length < 3) {
-          fallbackPledges.push({
-            id: "switch-to-led-bulbs",
-            title: "Switch to LED Bulbs",
-            description:
-              "Replace all incandescent bulbs with LED bulbs. Start with the most-used rooms first.",
-            category: "energy",
-            priority: "high",
-            impactScore: 3,
-            aiReason: `Electricity produces ${Math.round(cat.kg)} kg CO2/year - LED bulbs use 75% less energy`,
-            impact: "large",
-          });
-        }
       }
 
-      // Add general pledges if we don't have enough yet
-      if (fallbackPledges.length < 3 && totals.totalKgYear > 0) {
-        if (!fallbackPledges.some((p) => p.category === "waste")) {
-          fallbackPledges.push({
-            id: "use-reusable-bags",
-            title: "Use Reusable Shopping Bags",
-            description:
-              "Keep reusable bags in your car or by the door. Say no to plastic bags at checkout.",
-            category: "waste",
-            priority: "medium",
-            impactScore: 2,
-            aiReason:
-              "Reducing single-use plastics helps decrease waste and manufacturing emissions",
-            impact: "medium",
-          });
-        }
-        if (fallbackPledges.length < 3 && !fallbackPledges.some((p) => p.category === "food")) {
-          fallbackPledges.push({
-            id: "reduce-food-waste",
-            title: "Plan Meals to Reduce Food Waste",
-            description:
-              "Create a weekly meal plan and shopping list. Store leftovers properly and use them creatively.",
-            category: "food",
-            priority: "medium",
-            impactScore: 2,
-            aiReason:
-              "Food waste contributes to methane emissions - reducing it has significant climate impact",
-            impact: "medium",
-          });
-        }
-      }
-
-      // Cache fallback pledges too (but with shorter expiry)
-      if (fallbackPledges.length > 0) {
-        const shortExpireAt = now + 2 * 60 * 60 * 1000; // 2 hours for fallback
-        this.cache.set(key, { data: fallbackPledges.slice(0, 5), expireAt: shortExpireAt });
-      }
-
+      // Return error - no fallback
       return {
-        success: true,
-        data: fallbackPledges.slice(0, 5),
-        totalRecommendations: fallbackPledges.length,
-        quizData,
-        insights,
+        success: false,
+        error: `AI recommendation failed: ${message}. Please ensure GEMINI_API_KEY is set correctly.`,
+        data: [],
+        totalRecommendations: 0,
       };
     }
   }
@@ -243,12 +130,20 @@ export class AIRecommendationService {
     quizData: QuizData,
     insights: string[],
   ): Promise<AIRecommendedPledge[]> {
-    const all = await PledgesService.getPublicPledges(1, 50); // Reduced from 100 to 50
-    const prompt = this.buildPrompt(quizData, insights, all.data || []);
+    // Only use top 3 most important insights
+    const topInsights = insights.slice(0, 3);
+    const prompt = this.buildPrompt(quizData, topInsights);
+
     if (!model) throw new Error("Gemini model not initialized");
-    const result = await model.generateContent([prompt]);
+
+    // Generate with optimized settings for faster, more concise responses
+    const result = await model.generateContent(prompt);
+
+    // Check for safety issues or blocked content
+
     const text = (result.response.text() || "").trim();
-    return this.parse(text, all.data || []);
+
+    return this.parse(text);
   }
 
   private static hashQuiz(obj: unknown): string {
@@ -277,7 +172,6 @@ export class AIRecommendationService {
 
   private static analyze(quizData: QuizData): string[] {
     const list: string[] = [];
-    console.log("[AI] Debug - Analyzing quizData:", JSON.stringify(quizData, null, 2));
 
     // Handle nested quizData structure
     const actualQuizData = (quizData as any).quizData || quizData;
@@ -290,12 +184,9 @@ export class AIRecommendationService {
       total: totals.totalKgYear || 0,
     };
 
-    console.log("[AI] Debug - Emissions breakdown:", breakdown);
-
     // Analyze based on actual emissions from totals (more accurate)
     if (breakdown.electricity > 0) {
       list.push(`High electricity usage (${Math.round(breakdown.electricity)} kg CO2/year)`);
-      console.log("[AI] Debug - Added electricity insight from totals");
     }
 
     if (breakdown.hotWater > 0) {
@@ -359,7 +250,10 @@ export class AIRecommendationService {
     }
 
     // If we have any meaningful data, generate insights
-    if (list.length > 0) return list;
+    if (list.length > 0) {
+      const result = list.slice(0, 3);
+      return result;
+    }
 
     // Fallback: generate basic insights based on any data present
     const hasElectricity = quizData.electricity?.usage && quizData.electricity.usage > 0;
@@ -373,50 +267,100 @@ export class AIRecommendationService {
     return ["Complete more quiz sections to improve personalization"];
   }
 
-  private static buildPrompt(quizData: QuizData, insights: string[], _pledges: Pledge[]): string {
+  private static buildPrompt(quizData: QuizData, _insights: string[]): string {
     const actualQuizData = (quizData as any).quizData || quizData;
     const state = actualQuizData.state || "VIC";
 
+    // Build detailed context from ACTUAL quiz data
+    const context: string[] = [];
+
+    // Electricity usage
+    if (actualQuizData.electricity) {
+      const elec = actualQuizData.electricity;
+      if (elec.usage && elec.usage > 0) {
+        context.push(`Electricity: User entered ${elec.usage} kWh/month (exact usage)`);
+      } else if (elec.bill && elec.household) {
+        context.push(
+          `Electricity: Estimated from $${elec.bill}/month bill for ${elec.household}-person household`,
+        );
+      }
+    }
+
+    // Hot water system
+    if (actualQuizData.hotWater) {
+      const hw = actualQuizData.hotWater;
+      if (hw.system) {
+        if (hw.usage && hw.usage > 0) {
+          context.push(`Hot water: ${hw.system} system, ${hw.usage} kWh/month (exact usage)`);
+        } else if (hw.household) {
+          context.push(`Hot water: ${hw.system} system for ${hw.household}-person household`);
+        }
+      }
+    }
+
+    // Appliances (ONLY those with actual usage > 0)
+    if (actualQuizData.appliances?.weeklyUsage) {
+      const usedAppliances = actualQuizData.appliances.weeklyUsage.filter(
+        (a: any) => a.hoursPerWeek > 0,
+      );
+      if (usedAppliances.length > 0) {
+        const appList = usedAppliances
+          .map(
+            (a: any) =>
+              `${a.appliance} (${a.hoursPerWeek}h/week${a.energyEfficient ? ", efficient" : ", not efficient"})`,
+          )
+          .join(", ");
+        context.push(`Appliances in use: ${appList}`);
+      }
+    }
+
+    // Transport (ONLY those with actual usage > 0)
+    if (actualQuizData.transport?.modes) {
+      const usedTransport = actualQuizData.transport.modes.filter((m: any) => m.distance > 0);
+      if (usedTransport.length > 0) {
+        const transportList = usedTransport
+          .map((m: any) => `${m.mode} (${m.distance} km/${m.frequency})`)
+          .join(", ");
+        context.push(`Transport: ${transportList}`);
+      }
+    }
+
     return [
-      `You are an expert climate advisor helping an Australian in ${state} reduce their carbon footprint.`,
+      `You are a climate advisor for ${state}, Australia.`,
       ``,
-      `User's Current Emissions:`,
-      insights.map((i) => `- ${i}`).join("\n"),
+      `USER'S ACTUAL QUIZ DATA (ONLY recommend based on what they entered):`,
+      ...context.map((c) => `- ${c}`),
       ``,
-      `Generate 3-5 specific, actionable climate pledges that will have the MOST IMPACT on their emissions.`,
-      `Focus on the categories with highest emissions first.`,
+      `TASK: Generate EXACTLY 5 actionable pledges based ONLY on the data above.`,
+      `- Focus on the HIGHEST impact areas from their actual usage`,
+      `- DO NOT suggest actions for categories they didn't fill out`,
+      `- If they use gas hot water, suggest switching to heat pump`,
+      `- If they use non-efficient appliances, suggest efficient replacements`,
+      `- If they drive, suggest reducing or switching to public transport`,
+      `- Prioritize: 1) largest emissions, 2) easiest to implement, 3) cost-effective`,
       ``,
-      `Requirements:`,
-      `1. Each pledge must be specific and measurable (e.g., "Switch all bulbs to LED" not "save energy")`,
-      `2. Include clear, actionable steps in the description`,
-      `3. Explain the carbon reduction benefit in aiReason`,
-      `4. Category must be: energy, transport, waste, water, food, or lifestyle`,
-      `5. Impact rating: small (<100kg/year), medium (100-500kg/year), large (>500kg/year)`,
+      `FORMAT REQUIREMENTS:`,
+      `- id: kebab-case slug (e.g. "switch-to-heat-pump")`,
+      `- title: Clear action (max 6 words)`,
+      `- description: ONE sentence explaining how (max 15 words)`,
+      `- category: energy|transport|waste|water|food (match their quiz data)`,
+      `- impact: small|medium|large (based on their emissions)`,
+      `- aiReason: ONE sentence why this matters for THEIR situation (max 20 words)`,
       ``,
-      `Examples of good pledges:`,
-      `- "Switch to LED bulbs" (energy, large impact for high electricity users)`,
-      `- "Take 5-minute showers" (water/energy, medium impact for high hot water usage)`,
-      `- "Use reusable coffee cup daily" (waste, small impact but easy habit)`,
-      `- "Bike to work twice a week" (transport, large impact for car commuters)`,
-      ``,
-      `Output JSON only (no markdown):`,
-      `{"recommendations": [{"id": "action-slug", "title": "Clear Action Title", "description": "Specific steps to take", "category": "energy", "impact": "large", "aiReason": "Why this matters for this user"}]}`,
+      `Output ONLY valid JSON (no markdown, no explanation):`,
+      `{"recommendations": [{"id": "action-slug", "title": "Action Title", "description": "One sentence how-to", "category": "energy", "impact": "large", "aiReason": "One sentence why"}]}`,
     ].join("\n");
   }
 
-  private static parse(text: string, pledges: Pledge[]): AIRecommendedPledge[] {
-    console.log("[AI] Parse Debug - Input text:", text.slice(0, 500));
-
+  private static parse(text: string): AIRecommendedPledge[] {
     // First attempt: strict JSON parse (with code-fence stripping)
     try {
       let jsonLike = text;
       const fence = text.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
       if (fence && fence[1]) jsonLike = fence[1].trim();
       const obj = JSON.parse(jsonLike);
-      console.log("[AI] Parse Debug - Parsed object:", obj);
 
       const arr = Array.isArray(obj?.recommendations) ? obj.recommendations : [];
-      console.log("[AI] Parse Debug - Extracted array:", arr);
 
       const normalized: AIRecommendedPledge[] = [];
       for (const r of arr) {
@@ -440,35 +384,14 @@ export class AIRecommendationService {
         });
         if (normalized.length >= 5) break;
       }
-      console.log("[AI] Parse Debug - Normalized pledges:", normalized);
       if (normalized.length > 0) return normalized;
+
+      // No valid pledges parsed
+      console.error("[AI] Parse failed: No valid pledges found in AI response");
+      return [];
     } catch (err) {
-      console.log("[AI] Parse Debug - JSON parse failed:", err);
+      console.error("[AI] Parse Debug - JSON parse failed:", err);
+      return [];
     }
-
-    // Fallback 1: regex extract ids from free-form text
-    const ids = new Set((text.match(/pledge-\d{3}/g) || []).slice(0, 5));
-    const selected = pledges.filter((p) => ids.has(p.id)).slice(0, 5);
-    if (selected.length) return selected.map(this.toAI);
-
-    // Fallback 2: first N from candidates
-    return pledges.slice(0, 5).map(this.toAI);
-  }
-
-  private static toAI(p: Pledge, jsonHint?: any): AIRecommendedPledge {
-    return {
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      category: p.category,
-      priority: "high",
-      impactScore: p.impact === "high" ? 3 : p.impact === "medium" ? 2 : 1,
-      aiReason: typeof jsonHint?.aiReason === "string" ? jsonHint.aiReason : undefined,
-      impact:
-        typeof jsonHint?.impact === "string" &&
-        ["small", "medium", "large"].includes(jsonHint.impact)
-          ? (jsonHint.impact as any)
-          : undefined,
-    };
   }
 }

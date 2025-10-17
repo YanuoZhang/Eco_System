@@ -202,8 +202,11 @@ class ApiService {
     return this.request(`/api/pledges/${id}`);
   }
 
-  async getAiRecommendations(quizData: unknown) {
-    return this.requestWithBody(`/api/pledges/ai-recommendations`, "POST", quizData);
+  async getAiRecommendations(quizData: unknown, forceRefresh = false) {
+    const url = forceRefresh
+      ? `/api/pledges/ai-recommendations?forceRefresh=true`
+      : `/api/pledges/ai-recommendations`;
+    return this.requestWithBody(url, "POST", quizData);
   }
 
   // User pledges (in-memory server storage)

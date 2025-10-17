@@ -38,7 +38,8 @@ router.get("/search", async (req: Request, res: Response) => {
 
 router.post("/ai-recommendations", async (req: Request, res: Response) => {
   const quizData = req.body as QuizData;
-  const out = await AIRecommendationService.generateRecommendations(quizData);
+  const forceRefresh = req.query.forceRefresh === "true" || req.body.forceRefresh === true;
+  const out = await AIRecommendationService.generateRecommendations(quizData, forceRefresh);
   res.status(out.success ? 200 : 400).json(out);
 });
 

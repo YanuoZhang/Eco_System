@@ -47,9 +47,39 @@ vi.mock("../services/pledgesService", () => ({
   },
 }));
 
-// Mock Gemini SDK
+// Mock Gemini SDK to return valid JSON recommendations
 const generateContent = vi.fn(async () => ({
-  response: { text: () => "pledge-001 pledge-006 pledge-010" },
+  response: {
+    text: () =>
+      JSON.stringify({
+        recommendations: [
+          {
+            id: "led-bulbs",
+            title: "Switch to LED Bulbs",
+            description: "Replace all incandescent bulbs with energy-efficient LEDs",
+            category: "energy",
+            impact: "large",
+            aiReason: "High electricity usage detected, LEDs can save significant energy",
+          },
+          {
+            id: "public-transport",
+            title: "Use Public Transport",
+            description: "Take bus or train twice a week instead of driving",
+            category: "transport",
+            impact: "medium",
+            aiReason: "Regular car usage contributes to high transport emissions",
+          },
+          {
+            id: "cold-wash",
+            title: "Cold Water Washing",
+            description: "Wash clothes in cold water to save energy",
+            category: "energy",
+            impact: "small",
+            aiReason: "Hot water heating uses significant energy",
+          },
+        ],
+      }),
+  },
 }));
 const getGenerativeModel = vi.fn(() => ({ generateContent }));
 vi.mock("@google/generative-ai", () => ({
@@ -82,10 +112,12 @@ describe("AIRecommendationService caching and fallback", () => {
     const Svc = await loadService();
     const res1 = await Svc.generateRecommendations(sampleQuiz as any);
     expect(res1.success).toBe(true);
+    expect(res1.data.length).toBeGreaterThan(0); // Should have recommendations
     expect(generateContent).toHaveBeenCalledTimes(1);
 
     const res2 = await Svc.generateRecommendations(sampleQuiz as any);
     expect(res2.success).toBe(true);
+    expect(res2.data.length).toBeGreaterThan(0); // Should have same recommendations from cache
     // Still one call thanks to in-memory cache
     expect(generateContent).toHaveBeenCalledTimes(1);
   });

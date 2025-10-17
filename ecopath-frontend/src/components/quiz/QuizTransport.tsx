@@ -68,7 +68,6 @@ export default function QuizTransport({
   // Initialize from props only once
   useEffect(() => {
     if (initialModes && initialModes.length > 0 && !initializedRef.current) {
-      console.log("[QuizTransport] Initializing with modes:", initialModes);
       setTransportData((prev) => {
         const newData = { ...prev };
         initialModes.forEach((mode) => {
@@ -198,7 +197,6 @@ export default function QuizTransport({
     field: keyof TransportMode,
     value: string | number | boolean,
   ) => {
-    console.log("[QuizTransport] handleModeChange:", { mode, field, value });
     setTransportData((prev) => ({
       ...prev,
       [mode]: {
@@ -302,7 +300,6 @@ export default function QuizTransport({
                           type="number"
                           value={transportData.car.distance || ""}
                           onChange={(e) => {
-                            console.log("[QuizTransport] Car distance input:", e.target.value);
                             handleModeChange("car", "distance", parseFloat(e.target.value) || 0);
                           }}
                           className="w-full p-3 border border-green-200 rounded-lg text-slate-800 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"

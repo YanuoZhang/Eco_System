@@ -150,7 +150,6 @@ export default function QuizAppliances({
   // Initialize from props only once
   useEffect(() => {
     if (initialWeeklyUsage && initialWeeklyUsage.length > 0 && !initializedRef.current) {
-      console.log("[QuizAppliances] Initializing with usage:", initialWeeklyUsage);
       const ids = initialWeeklyUsage
         .map((item) => {
           const ap = APPLIANCES.find((a) => a.name === item.appliance);
@@ -185,16 +184,6 @@ export default function QuizAppliances({
   const electricityFactor = factors?.electricity ?? 0.8; // kg/kWh - default fallback
 
   const { emissionsKgYear, breakdown } = useMemo(() => {
-    console.log("[QuizAppliances] Calculation:", {
-      selected,
-      usage,
-      electricityFactor,
-      factors,
-      selectedCount: selected.length,
-      timeUnit,
-    });
-
-    let kwhPerYear = 0;
     const map: Record<
       string,
       { name: string; icon: string; emissions: number; usageHoursPerWeek: number }
@@ -206,31 +195,19 @@ export default function QuizAppliances({
       const hoursPerWeek = usage[id] && usage[id] > 0 ? usage[id] : ap.defaultHoursPerWeek;
       const kwhYear = ap.kw * hoursPerWeek * weeksInPeriod.year;
       const kgYear = kwhYear * electricityFactor;
-      kwhPerYear += kwhYear;
       map[id] = {
         name: ap.name,
         icon: ap.icon,
         emissions: Math.max(0, kgYear),
         usageHoursPerWeek: hoursPerWeek,
       };
-
-      console.log(`[QuizAppliances] ${ap.name}:`, {
-        kw: ap.kw,
-        hoursPerWeek,
-        kwhYear,
-        kgYear,
-        electricityFactor,
-        usageValue: usage[id],
-        defaultHours: ap.defaultHoursPerWeek,
-      });
     });
 
     // Fix: Calculate total emissions from individual appliance emissions
     const totalEmissions = Object.values(map).reduce((total, item) => total + item.emissions, 0);
-    console.log("[QuizAppliances] Total:", { kwhPerYear, electricityFactor, totalEmissions });
 
     return { emissionsKgYear: totalEmissions, breakdown: map };
-  }, [selected, usage, electricityFactor, weeksInPeriod.year, factors, timeUnit]);
+  }, [selected, usage, electricityFactor, weeksInPeriod.year]);
 
   useEffect(() => {
     const weeklyUsageData = selected.map((apId) => {
@@ -450,11 +427,7 @@ export default function QuizAppliances({
                 <div className="text-lg font-bold text-purple-600">
                   {(() => {
                     const formatted = formatEmissions(emissionsKgYear, timeUnit);
-                    console.log("[QuizAppliances] Display format:", {
-                      emissionsKgYear,
-                      timeUnit,
-                      formatted,
-                    });
+
                     return formatted;
                   })()}
                 </div>

@@ -6,11 +6,15 @@ import { getTimeUnitLabel, formatEmissions } from "../../utils/timeUnits";
 type Props = {
   open?: boolean;
   onToggle?: () => void;
-  electricity?: number; // kWh
+  electricity?: number; // kWh (only if user entered)
+  bill?: number; // $ (only if user didn't enter kWh)
+  household?: number; // household size for estimation
   gasMJ?: number; // MJ
   timeUnit?: "week" | "month" | "quarter" | "year";
   onChange?: (v: {
-    electricity?: number;
+    electricity?: number; // only if knowKwh is true
+    bill?: number; // only if knowKwh is false
+    household?: number; // for estimation
     gasMJ?: number;
     timeUnit?: "week" | "month" | "quarter" | "year";
     electricityEmissionsKgYear?: number;
@@ -22,6 +26,8 @@ export default function QuizElectricity({
   open = true,
   onToggle,
   electricity,
+  bill: initialBill,
+  household: initialHousehold,
   gasMJ: _gasMJ, // eslint-disable-line @typescript-eslint/no-unused-vars
   timeUnit = "month",
   onChange,
@@ -34,10 +40,10 @@ export default function QuizElectricity({
   const handleToggle = () => (onToggle ? onToggle() : setLocalOpen((v) => !v));
 
   // Support both known-kWh input and bill/household estimation
-  // If electricity prop is provided, user has selected "I know my exact usage"
-  const [knowKwh, setKnowKwh] = useState<boolean>(electricity !== undefined);
-  const [bill, setBill] = useState<number>(0); // $ per selected unit
-  const [household, setHousehold] = useState<number>(1);
+  // Determine mode from props: if electricity is provided, user entered exact usage
+  const [knowKwh, setKnowKwh] = useState<boolean>(electricity !== undefined && electricity > 0);
+  const [bill, setBill] = useState<number>(initialBill || 0); // $ per selected unit
+  const [household, setHousehold] = useState<number>(initialHousehold || 1);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [led, setLed] = useState<"yes" | "no" | "mixed" | null>(null);
   const [ac, setAc] = useState<"frequently" | "rarely" | "seasonally" | null>(null);
@@ -51,15 +57,37 @@ export default function QuizElectricity({
   const [localElectricity, setLocalElectricity] = useState<number | "">("");
   const initializedRef = useRef(false);
 
-  // Initialize from parent props only once
+  // Initialize from parent props - only run once on mount
   useEffect(() => {
-    if (electricity !== undefined && !initializedRef.current) {
-      console.log("[QuizElectricity] Initializing with:", electricity);
+    // Only initialize once
+    if (initializedRef.current) {
+      return;
+    }
+
+    // First time initialization
+    if (electricity !== undefined && electricity > 0) {
       setLocalElectricity(electricity);
-      setKnowKwh(true); // User has selected "I know my exact usage"
+      setKnowKwh(true);
+      initializedRef.current = true;
+    } else if (initialBill !== undefined && initialBill > 0) {
+      setBill(initialBill);
+      setHousehold(initialHousehold || 1);
+      setKnowKwh(false);
+      setLocalElectricity("");
+      initializedRef.current = true;
+    } else {
+      // No saved data - default to estimation mode
       initializedRef.current = true;
     }
-  }, [electricity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Clear input when user unchecks "I know my exact usage"
+  useEffect(() => {
+    if (!knowKwh) {
+      setLocalElectricity("");
+    }
+  }, [knowKwh]);
 
   // Estimation rule (simplified from refer): kWh ≈ bill / 0.25, adjusted by household size
   const estimatedKwh = useMemo(() => {
@@ -89,10 +117,61 @@ export default function QuizElectricity({
   const efficientMultiplier = efficient === "yes" ? 0.8 : efficient === "mixed" ? 0.9 : 1.0;
   emissionsYear = emissionsYear * ledMultiplier * acMultiplier * efficientMultiplier;
 
+  // Track the last reported values to prevent infinite loops
+  const lastReportedRef = useRef<{
+    emissions: number;
+    electricity?: number;
+    bill?: number;
+    household?: number;
+    knowKwh: boolean;
+  }>({ emissions: 0, knowKwh: false });
+
   useEffect(() => {
-    onChange?.({ electricityEmissionsKgYear: emissionsYear });
+    // Only call onChange if values actually changed
+    const electricityValue = typeof localElectricity === "number" ? localElectricity : 0;
+
+    const hasChanged =
+      lastReportedRef.current.emissions !== emissionsYear ||
+      lastReportedRef.current.knowKwh !== knowKwh ||
+      (knowKwh && lastReportedRef.current.electricity !== electricityValue) ||
+      (!knowKwh &&
+        (lastReportedRef.current.bill !== bill || lastReportedRef.current.household !== household));
+
+    if (hasChanged) {
+      if (knowKwh) {
+        // User entered exact usage - save only electricity value
+        lastReportedRef.current = {
+          emissions: emissionsYear,
+          electricity: electricityValue,
+          bill: undefined,
+          household: undefined,
+          knowKwh: true,
+        };
+        onChange?.({
+          electricityEmissionsKgYear: emissionsYear,
+          electricity: electricityValue > 0 ? electricityValue : undefined,
+          bill: undefined,
+          household: undefined,
+        });
+      } else {
+        // User using estimation - save bill and household
+        lastReportedRef.current = {
+          emissions: emissionsYear,
+          electricity: undefined,
+          bill: bill,
+          household: household,
+          knowKwh: false,
+        };
+        onChange?.({
+          electricityEmissionsKgYear: emissionsYear,
+          electricity: undefined,
+          bill: bill,
+          household: household,
+        });
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emissionsYear]);
+  }, [emissionsYear, knowKwh, localElectricity, bill, household]);
 
   const unitLabel = getTimeUnitLabel(currentTimeUnit);
 
@@ -216,7 +295,6 @@ export default function QuizElectricity({
                   value={localElectricity || ""}
                   onChange={(e) => {
                     const v = e.target.value;
-                    console.log("[QuizElectricity] Input change:", v);
                     setLocalElectricity(v === "" ? "" : Number(v));
                     onChange?.({ electricity: v === "" ? undefined : Number(v) });
                   }}

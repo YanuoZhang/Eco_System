@@ -23,6 +23,27 @@ const pacifico = Pacifico({
 export const metadata: Metadata = {
   title: "LeafForward",
   description: "LeafForward - Track your climate impact and take action",
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/assets/leafforward.jpg", type: "image/jpeg" },
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
+  },
+  openGraph: {
+    title: "LeafForward",
+    description: "Track your climate impact and take action for a sustainable future",
+    images: ["/assets/leafforward.jpg"],
+    type: "website",
+    siteName: "LeafForward",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeafForward",
+    description: "Track your climate impact and take action for a sustainable future",
+    images: ["/assets/leafforward.jpg"],
+  },
 };
 
 export default function RootLayout({
@@ -32,6 +53,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico?v=3" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/assets/leafforward.jpg" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} antialiased overflow-x-hidden`}
       >
