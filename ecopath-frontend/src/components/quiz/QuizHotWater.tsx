@@ -53,11 +53,6 @@ export default function QuizHotWater({
       return;
     }
 
-    console.log("[QuizHotWater] Initializing with:", {
-      initialSystem,
-      initialUsage,
-      initialHousehold,
-    });
     if (initialSystem) {
       setHotWaterSystem(initialSystem);
     }
@@ -219,12 +214,6 @@ export default function QuizHotWater({
       (!usageKnown && lastReportedRef.current.household !== household);
 
     if (hasChanged) {
-      console.log("[QuizHotWater] onChange triggered:", {
-        usageKnown,
-        usage: usageKnown ? knownUsageValue : undefined,
-        household: !usageKnown ? household : undefined,
-      });
-
       if (usageKnown) {
         // User entered exact usage - save only usage value
         lastReportedRef.current = {

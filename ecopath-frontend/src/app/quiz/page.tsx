@@ -11,6 +11,24 @@ import QuizFloatingPreview from "@/components/quiz/QuizFloatingPreview";
 import QuizResultsModal from "@/components/quiz/QuizResultsModal";
 import apiClient, { StateData } from "@/services/apiClient";
 
+// Helper function to save quiz data and trigger storage event
+const saveQuizDataWithEvent = (payload: unknown) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("carbonFootprint", JSON.stringify(payload));
+
+    // Save a data version number to track changes
+    const dataVersion = Date.now().toString();
+    localStorage.setItem("quizDataVersion", dataVersion);
+
+    // Trigger a custom event to notify other tabs/pages that quiz data has been updated
+    window.dispatchEvent(
+      new CustomEvent("quizDataUpdated", {
+        detail: { timestamp: Date.now(), dataVersion },
+      }),
+    );
+  }
+};
+
 export default function QuizPage() {
   const router = useRouter();
   const [states, setStates] = useState<StateData[]>([]);
@@ -62,6 +80,7 @@ export default function QuizPage() {
     | Record<string, { name: string; icon: string; emissions: number; usageHoursPerWeek: number }>
     | undefined
   >(undefined);
+  const [isLoadingData, setIsLoadingData] = useState(true); // Prevent auto-save during initial load
 
   // Load saved data from localStorage on mount
   useEffect(() => {
@@ -141,22 +160,20 @@ export default function QuizPage() {
         if (parsed.transportBreakdown) {
           setTransportBreakdown(parsed.transportBreakdown);
         }
-
-        console.log("[Quiz] Loaded saved data from localStorage:", {
-          selectedState: parsed.location?.state || parsed.state,
-          timeUnit: parsed.timeUnit,
-          electricity: parsed.electricity?.usage,
-          hotWaterSystem: parsed.hotWater?.system,
-          hotWaterUsage: parsed.hotWater?.usage,
-          hotWaterHousehold: parsed.hotWater?.household,
-          appliancesCount: parsed.appliances?.weeklyUsage?.length || 0,
-          transportModesCount: parsed.transport?.modes?.length || 0,
-        });
       }
     } catch (e) {
       console.error("[Quiz] Error loading from localStorage:", e);
     } finally {
       setIsDataLoaded(true);
+      setIsLoadingData(false); // Allow auto-save after initial load is complete
+
+      // If we loaded existing data, ensure we have a data version number
+      const existingData = localStorage.getItem("carbonFootprint");
+      const existingVersion = localStorage.getItem("quizDataVersion");
+      if (existingData && !existingVersion) {
+        const dataVersion = Date.now().toString();
+        localStorage.setItem("quizDataVersion", dataVersion);
+      }
     }
   }, []);
 
@@ -190,11 +207,9 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (!selectedState) return;
-    console.log("[Quiz] Loading factors for state:", selectedState);
     apiClient
       .getEmissionsFactors(selectedState)
       .then((data) => {
-        console.log("[Quiz] Loaded factors:", data);
         setFactors(data as { electricity?: number; gas?: number; units?: { gas?: string } });
       })
       .catch((error) => {
@@ -202,6 +217,84 @@ export default function QuizPage() {
         setFactors(null);
       });
   }, [selectedState]);
+
+  // Auto-save quiz data when values change (for AI recommendations)
+  useEffect(() => {
+    // Don't auto-save during initial data loading
+    if (isLoadingData) {
+      return;
+    }
+
+    // Only save if we have meaningful data
+    if (
+      electricity !== undefined ||
+      electricityBill !== undefined ||
+      hotWaterSystem !== undefined ||
+      appliancesUsage.length > 0 ||
+      transportModes.length > 0
+    ) {
+      try {
+        const payload = {
+          // Original quiz data for AI recommendations
+          location: { state: selectedState },
+          electricity:
+            electricity !== undefined
+              ? // User entered exact usage
+                { usage: electricity, timeUnit }
+              : // User used estimation
+                { bill: electricityBill, household: electricityHousehold, timeUnit },
+          hotWater:
+            hotWaterUsage !== undefined
+              ? // User entered exact usage
+                { system: hotWaterSystem, usage: hotWaterUsage, timeUnit }
+              : // User using estimation
+                { system: hotWaterSystem, household: hotWaterHousehold, timeUnit },
+          appliances: {
+            weeklyUsage: appliancesUsage,
+          },
+          transport: {
+            modes: transportModes,
+          },
+          // Calculated results for display
+          state: selectedState,
+          timeUnit,
+          totals: {
+            electricityKgYear: electricityEmissions,
+            hotWaterKgYear: hotWaterEmissions,
+            appliancesKgYear: appliancesEmissions,
+            transportKgYear: transportEmissions,
+            totalKgYear:
+              electricityEmissions + hotWaterEmissions + appliancesEmissions + transportEmissions,
+          },
+          applianceBreakdown: applianceBreakdown || {},
+          transportBreakdown: transportBreakdown || {},
+          savedAt: new Date().toISOString(),
+        };
+
+        saveQuizDataWithEvent(payload);
+      } catch (e) {
+        console.error("[Quiz] Error auto-saving to localStorage:", e);
+      }
+    }
+  }, [
+    selectedState,
+    electricity,
+    electricityBill,
+    electricityHousehold,
+    hotWaterSystem,
+    hotWaterUsage,
+    hotWaterHousehold,
+    appliancesUsage,
+    transportModes,
+    timeUnit,
+    electricityEmissions,
+    hotWaterEmissions,
+    appliancesEmissions,
+    transportEmissions,
+    applianceBreakdown,
+    transportBreakdown,
+    isLoadingData, // Add dependency to prevent auto-save during loading
+  ]);
 
   // Show loading state until data is loaded
   if (!isDataLoaded) {
@@ -244,41 +337,28 @@ export default function QuizPage() {
             household={electricityHousehold}
             factors={factors}
             onChange={(v) => {
-              console.log("[Quiz Page] Electricity onChange received:", v);
-              console.log("[Quiz Page] Current state:", {
-                electricity,
-                electricityBill,
-                electricityHousehold,
-              });
-
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               // Handle both modes - only update if explicitly provided
               if (v.electricity !== undefined) {
                 // User is in exact usage mode
                 if (v.electricity !== electricity) {
-                  console.log("[Quiz Page] Updating electricity:", v.electricity);
                   setElectricity(v.electricity);
                 }
                 if (electricityBill !== undefined) {
-                  console.log("[Quiz Page] Clearing electricityBill");
                   setElectricityBill(undefined);
                 }
                 if (electricityHousehold !== undefined) {
-                  console.log("[Quiz Page] Clearing electricityHousehold");
                   setElectricityHousehold(undefined);
                 }
               } else if (v.bill !== undefined) {
                 // User is in estimation mode
                 if (electricity !== undefined) {
-                  console.log("[Quiz Page] Clearing electricity");
                   setElectricity(undefined);
                 }
                 if (v.bill !== electricityBill) {
-                  console.log("[Quiz Page] Updating electricityBill:", v.bill);
                   setElectricityBill(v.bill);
                 }
                 if (v.household !== electricityHousehold) {
-                  console.log("[Quiz Page] Updating electricityHousehold:", v.household);
                   setElectricityHousehold(v.household);
                 }
               }
@@ -293,12 +373,6 @@ export default function QuizPage() {
             usage={hotWaterUsage}
             household={hotWaterHousehold}
             onChange={(v) => {
-              console.log("[Quiz Page] HotWater onChange received:", v);
-              console.log("[Quiz Page] Current hotWater state:", {
-                hotWaterUsage,
-                hotWaterHousehold,
-              });
-
               if (v.timeUnit) setTimeUnit(v.timeUnit);
               if (v.system) setHotWaterSystem(v.system);
 
@@ -306,21 +380,17 @@ export default function QuizPage() {
               if (v.usage !== undefined) {
                 // User entered exact usage
                 if (v.usage !== hotWaterUsage) {
-                  console.log("[Quiz Page] Updating hotWaterUsage:", v.usage);
                   setHotWaterUsage(v.usage);
                 }
                 if (hotWaterHousehold !== undefined) {
-                  console.log("[Quiz Page] Clearing hotWaterHousehold");
                   setHotWaterHousehold(undefined);
                 }
               } else if (v.household !== undefined) {
                 // User using estimation
                 if (hotWaterUsage !== undefined) {
-                  console.log("[Quiz Page] Clearing hotWaterUsage");
                   setHotWaterUsage(undefined);
                 }
                 if (v.household !== hotWaterHousehold) {
-                  console.log("[Quiz Page] Updating hotWaterHousehold:", v.household);
                   setHotWaterHousehold(v.household);
                 }
               }
@@ -417,9 +487,7 @@ export default function QuizPage() {
               savedAt: new Date().toISOString(),
             };
 
-            if (typeof window !== "undefined") {
-              localStorage.setItem("carbonFootprint", JSON.stringify(payload));
-            }
+            saveQuizDataWithEvent(payload);
           } catch (e) {
             console.error("[Quiz] Error saving to localStorage:", e);
           }
@@ -493,14 +561,12 @@ export default function QuizPage() {
                   savedAt: new Date().toISOString(),
                 };
 
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("carbonFootprint", JSON.stringify(payload));
-                }
+                saveQuizDataWithEvent(payload);
 
                 // Navigate to pledge page
                 router.push("/pledge");
               } catch (e) {
-                console.error("[Quiz] Error saving to localStorage:", e);
+                console.error("[Quiz] Error saving and navigating:", e);
                 // Still navigate even if save fails
                 router.push("/pledge");
               }

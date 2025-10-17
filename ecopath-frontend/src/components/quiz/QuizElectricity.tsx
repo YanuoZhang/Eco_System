@@ -66,15 +66,10 @@ export default function QuizElectricity({
 
     // First time initialization
     if (electricity !== undefined && electricity > 0) {
-      console.log("[QuizElectricity] Initializing with exact usage:", electricity);
       setLocalElectricity(electricity);
       setKnowKwh(true);
       initializedRef.current = true;
     } else if (initialBill !== undefined && initialBill > 0) {
-      console.log("[QuizElectricity] Initializing with bill/household:", {
-        bill: initialBill,
-        household: initialHousehold,
-      });
       setBill(initialBill);
       setHousehold(initialHousehold || 1);
       setKnowKwh(false);
@@ -143,13 +138,6 @@ export default function QuizElectricity({
         (lastReportedRef.current.bill !== bill || lastReportedRef.current.household !== household));
 
     if (hasChanged) {
-      console.log("[QuizElectricity] onChange triggered:", {
-        knowKwh,
-        electricity: knowKwh ? electricityValue : undefined,
-        bill: !knowKwh ? bill : undefined,
-        household: !knowKwh ? household : undefined,
-      });
-
       if (knowKwh) {
         // User entered exact usage - save only electricity value
         lastReportedRef.current = {
@@ -307,7 +295,6 @@ export default function QuizElectricity({
                   value={localElectricity || ""}
                   onChange={(e) => {
                     const v = e.target.value;
-                    console.log("[QuizElectricity] Input change:", v);
                     setLocalElectricity(v === "" ? "" : Number(v));
                     onChange?.({ electricity: v === "" ? undefined : Number(v) });
                   }}

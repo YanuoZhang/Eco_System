@@ -10,7 +10,6 @@ try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash";
     model = genAI.getGenerativeModel({ model: modelName });
-    console.log(`[AI] Initialized model: ${modelName} with API key: ${apiKey.substring(0, 10)}...`);
   }
 } catch (e: any) {
   console.error("[AI] Failed to initialize Gemini:", e?.message || e);
@@ -20,22 +19,27 @@ try {
 export class AIRecommendationService {
   private static cache = new Map<string, { data: AIRecommendedPledge[]; expireAt: number }>();
 
-  static async generateRecommendations(quizData: QuizData): Promise<AIRecommendationResponse> {
+  // Clear all cached recommendations (call when quiz data is updated)
+  public static clearCache(): void {
+    this.cache.clear();
+  }
+
+  static async generateRecommendations(
+    quizData: QuizData,
+    forceRefresh = false,
+  ): Promise<AIRecommendationResponse> {
     if (!quizData) {
       return { success: false, error: "Quiz data is required", data: [], totalRecommendations: 0 };
     }
     const insights = this.analyze(quizData);
-    console.log("[AI] Debug - Insights generated:", insights);
 
     // Cache key by quiz hash (stable stringify)
     const key = this.hashQuiz(quizData);
     const now = Date.now();
     const hit = this.cache.get(key);
 
-    if (hit && hit.expireAt > now && hit.data.length > 0) {
-      console.log(
-        `[AI] ✅ Cache HIT for quiz ${key} - returning ${hit.data.length} cached recommendations`,
-      );
+    // Skip cache if forceRefresh is true
+    if (!forceRefresh && hit && hit.expireAt > now && hit.data.length > 0) {
       return {
         success: true,
         data: hit.data,
@@ -45,8 +49,6 @@ export class AIRecommendationService {
         timestamp: new Date().toISOString(),
       };
     }
-
-    console.log(`[AI] ❌ Cache MISS for quiz ${key} - fetching new AI recommendations`);
 
     // Clear any bad cache entries
     if (hit && hit.data.length === 0) {
@@ -64,8 +66,6 @@ export class AIRecommendationService {
         };
       }
 
-      console.log("[AI] Making AI request with insights:", insights);
-
       // Use timeout for the main request (60 seconds for gemini-2.5-pro with thinking)
       const requestTimeout = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error("AI request timeout after 60s")), 60000);
@@ -74,15 +74,10 @@ export class AIRecommendationService {
       const aiRequest = this.makeAIRequest(quizData, insights);
       const parsed = await Promise.race([aiRequest, requestTimeout]);
 
-      console.log("[AI] AI request successful, got", parsed.length, "recommendations");
-
       // Only cache successful AI responses
       if (parsed.length > 0) {
         const expireAt = now + 24 * 60 * 60 * 1000;
         this.cache.set(key, { data: parsed, expireAt });
-        console.log(
-          `[AI] 💾 Cached ${parsed.length} recommendations for quiz ${key} (expires in 24h)`,
-        );
       }
       return {
         success: true,
@@ -138,7 +133,6 @@ export class AIRecommendationService {
     // Only use top 3 most important insights
     const topInsights = insights.slice(0, 3);
     const prompt = this.buildPrompt(quizData, topInsights);
-    console.log("[AI] Prompt sent to Gemini:", prompt);
 
     if (!model) throw new Error("Gemini model not initialized");
 
@@ -146,19 +140,8 @@ export class AIRecommendationService {
     const result = await model.generateContent(prompt);
 
     // Check for safety issues or blocked content
-    const response = result.response;
-    console.log("[AI] Response candidates:", response.candidates?.length || 0);
-    if (response.promptFeedback) {
-      console.log("[AI] Prompt feedback:", JSON.stringify(response.promptFeedback));
-    }
 
     const text = (result.response.text() || "").trim();
-    console.log(
-      "[AI] Raw response from Gemini (length:",
-      text.length,
-      "):",
-      text.substring(0, 500),
-    );
 
     return this.parse(text);
   }
@@ -189,7 +172,6 @@ export class AIRecommendationService {
 
   private static analyze(quizData: QuizData): string[] {
     const list: string[] = [];
-    console.log("[AI] Debug - Analyzing quizData:", JSON.stringify(quizData, null, 2));
 
     // Handle nested quizData structure
     const actualQuizData = (quizData as any).quizData || quizData;
@@ -202,12 +184,9 @@ export class AIRecommendationService {
       total: totals.totalKgYear || 0,
     };
 
-    console.log("[AI] Debug - Emissions breakdown:", breakdown);
-
     // Analyze based on actual emissions from totals (more accurate)
     if (breakdown.electricity > 0) {
       list.push(`High electricity usage (${Math.round(breakdown.electricity)} kg CO2/year)`);
-      console.log("[AI] Debug - Added electricity insight from totals");
     }
 
     if (breakdown.hotWater > 0) {
@@ -273,7 +252,6 @@ export class AIRecommendationService {
     // If we have any meaningful data, generate insights
     if (list.length > 0) {
       const result = list.slice(0, 3);
-      console.log("[AI] Debug - Final insights to AI:", result);
       return result;
     }
 
@@ -353,7 +331,7 @@ export class AIRecommendationService {
       `USER'S ACTUAL QUIZ DATA (ONLY recommend based on what they entered):`,
       ...context.map((c) => `- ${c}`),
       ``,
-      `TASK: Generate EXACTLY 3 actionable pledges based ONLY on the data above.`,
+      `TASK: Generate EXACTLY 5 actionable pledges based ONLY on the data above.`,
       `- Focus on the HIGHEST impact areas from their actual usage`,
       `- DO NOT suggest actions for categories they didn't fill out`,
       `- If they use gas hot water, suggest switching to heat pump`,
@@ -375,18 +353,14 @@ export class AIRecommendationService {
   }
 
   private static parse(text: string): AIRecommendedPledge[] {
-    console.log("[AI] Parse Debug - Input text:", text.slice(0, 500));
-
     // First attempt: strict JSON parse (with code-fence stripping)
     try {
       let jsonLike = text;
       const fence = text.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
       if (fence && fence[1]) jsonLike = fence[1].trim();
       const obj = JSON.parse(jsonLike);
-      console.log("[AI] Parse Debug - Parsed object:", obj);
 
       const arr = Array.isArray(obj?.recommendations) ? obj.recommendations : [];
-      console.log("[AI] Parse Debug - Extracted array:", arr);
 
       const normalized: AIRecommendedPledge[] = [];
       for (const r of arr) {
@@ -408,9 +382,8 @@ export class AIRecommendationService {
           aiReason,
           impact: impact as any,
         });
-        if (normalized.length >= 3) break;
+        if (normalized.length >= 5) break;
       }
-      console.log("[AI] Parse Debug - Normalized pledges:", normalized);
       if (normalized.length > 0) return normalized;
 
       // No valid pledges parsed
